@@ -1,0 +1,1 @@
+# gcc-plugin-for-static-analyzer-support
