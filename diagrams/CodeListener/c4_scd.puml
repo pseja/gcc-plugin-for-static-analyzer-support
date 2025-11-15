@@ -16,7 +16,7 @@ System_Ext(gcc, "GCC", "GNU Compiler Collection")
 ' https://llvm.org/
 System_Ext(llvm, "LLVM", "LLVM Compiler Infrastructure")
 ' https://www.fit.vut.cz/research/group/verifit/public/tools/predator/
-System_Ext(predator, "Predator Analyzer", "Tool for automated formal verification of sequential C programs operating with pointers and linked lists")
+System_Ext(predator, "Predator", "Tool for automated formal verification of sequential C programs operating with pointers and linked lists")
 
 Rel(developer, build_system, "Builds project via", "GNU Make and CMake")
 Rel(build_system, gcc, "Invokes GCC to compile code", "gcc -fplugin=libsl.so ...")
