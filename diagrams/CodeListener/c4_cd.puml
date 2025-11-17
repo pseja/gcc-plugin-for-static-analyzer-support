@@ -1,0 +1,72 @@
+@startuml c4_cd
+!include <C4/C4_Container>
+
+title CodeListener Container Diagram (C4 Level 2)
+
+Person(developer, "C/C++ Developer", "Writes system-level C code that manipulates pointers, linked lists, and low-level memory")
+System_Ext(build_system, "Build System", "A tool or set of tools that automate the compilation and linking of source code into an executable program or library.")
+System_Ext(gcc, "GCC", "GNU Compiler Collection")
+System_Ext(llvm, "LLVM", "LLVM Compiler Infrastructure")
+System_Ext(predator, "Predator", "Tool for automated formal verification of sequential C programs operating with pointers and linked lists")
+System_Ext(graphviz, "GraphViz", "An open source graph visualization software for rendering DOT files")
+
+System_Boundary(cl_system, "CodeListener System") {
+    Container(gcc_frontend, "GCC Frontend", "C (GCC Plugin API)", "Traverses GIMPLE IR, emits CodeListener events")
+
+    Container(llvm_frontend, "LLVM Frontend", "C++ (LLVM Pass API)", "Traverses LLVM IR, emits CodeListener events")
+
+    Container(core_api, "Event Stream API", "C/C++ (ICodeListener)", "Event-driven interface for code traversal callbacks")
+
+    Container(filter_pipeline, "Filter Pipeline", "C++ (ClFilterBase)", "Normalizes and transforms event stream using decorator pattern")
+
+    Container(cl_chain, "Event Multiplexer", "C++ (ClChain)", "Broadcasts events to multiple parallel consumers")
+
+    Container(cl_easy, "ClEasy Orchestrator", "C++ (ClEasy)", "Extends ClStorageBuilder to build IR, run pre-analysis passes, and invoke external analyzers")
+
+    ContainerDb(code_storage, "CodeStorage IR", "In-Memory Model", "Normalized IR: functions, CFG, types, variables, call graph, points-to data")
+
+    Container(analysis_passes, "Analysis Passes", "C++ (CodeStorage namespace)", "Call graph builder, loop scanner, points-to analysis, variable killer")
+
+    Boundary(optional_outputs, "Optional Output Listeners") {
+        Container(pretty_printer, "Pretty Printer", "C++ (ClPrettyPrint)", "Converts event stream to human-readable linearized code with syntax highlighting")
+
+        Container(dot_generator, "DOT Generator", "C++ (ClDotGen)", "Generates GraphViz DOT files for CFG visualization, one per function + global call graph")
+
+        Container(type_graph_gen, "Type Graph Generator", "C++ (ClTypeDot)", "Analyzes type dependencies and generates DOT graph showing type relationships")
+
+        Container(locator, "Locator", "C++ (ClLocator)", "Emits debug traces showing source file:line:column locations during event stream traversal")
+    }
+}
+
+Rel(developer, build_system, "Builds project via", "GNU Make and CMake")
+Rel(build_system, gcc, "Invokes GCC to compile code", "gcc -fplugin=libsl.so ...")
+Rel(build_system, llvm, "Invokes Clang to compile code", "clang -Xclang -load -Xclang libsl.so ...")
+
+Rel(gcc, gcc_frontend, "Invokes during compilation", "Plugin callbacks on each function")
+Rel(llvm, llvm_frontend, "Invokes during compilation", "CLPass::runOnModule()")
+
+Rel(gcc_frontend, core_api, "Emits events via", "file_open(), fnc_open(), insn(), etc.")
+Rel(llvm_frontend, core_api, "Emits events via", "ICodeListener interface")
+
+Rel(core_api, filter_pipeline, "Pipes events through", "Sequential filters")
+Rel(filter_pipeline, cl_chain, "Forwards normalized events to", "Multiplexer")
+
+Rel(cl_chain, cl_easy, "Broadcasts to", "Primary consumer")
+Rel(cl_chain, optional_outputs, "Broadcasts to", "Optional consumers")
+
+Rel(cl_easy, code_storage, "Builds incrementally", "During event stream via ClStorageBuilder")
+Rel(cl_easy, analysis_passes, "Runs after storage complete", "In sequence")
+Rel(analysis_passes, code_storage, "Annotates with metadata", "Call graph, loop edges, points-to info")
+
+Rel(pretty_printer, developer, "Outputs to", "Linearized code (stdout/file)")
+Rel(dot_generator, developer, "Outputs to", "CFG graphs (*.dot files)")
+Rel(type_graph_gen, developer, "Outputs to", "Type graphs (*.dot files)")
+Rel(locator, developer, "Outputs to", "Location traces (stderr)")
+
+Rel(cl_easy, predator, "Invokes external analyzer via", "clEasyRun(Storage&, config)")
+Rel(dot_generator, graphviz, "DOT files rendered by", "dot -Tpng")
+Rel(type_graph_gen, graphviz, "DOT files rendered by", "dot -Tpng")
+Rel(predator, developer, "Reports verification results to", "Error logs, warnings, memory leak alerts")
+
+SHOW_LEGEND()
+@enduml
