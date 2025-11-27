@@ -7,7 +7,20 @@
 \chapter{Introduction}
 \label{introduction}
 
-introduction
+With the ever-increasing complexity of software systems and the growing demand for high-quality and secure code, formal verification methods have become essential in some parts of the software development industry \cite{qualitxinc}.
+Formal verification methods are a set of mathematical techniques used to prove the correctness of software systems, going beyond traditional testing and debugging methods, which only test a finite number of inputs, allowing potentially critical errors to go undetected \cite{galois}.
+The implementation of such formal methods is not straightforward, as it requires a deep understanding of both the verified software and the application of formal methods, typically necessitating specialized domain knowledge.
+Formal verification tools, such as Predator, utilize static analysis to verify code written by developers.
+In Predator's case, this involves verifying sequential C programs for memory safety while operating with pointers and linked lists \cite{predator}.
+Predator is built on top of the Code Listener infrastructure \cite{code_listener}, which provides an application programming interface (API) foundation for creating such static analyzers.
+However, the majority of the Code Listener infrastructure was written nearly fifteen years ago, which has led to certain challenges in continuing its development and maintenance in its current form.
+To address these challenges, this bachelor's thesis focuses on refactoring the Code Listener infrastructure into a modern GCC \cite{gcc} plugin.
+
+% TODO: motivation (why the refactor and the need for a new plugin, ...)
+
+% TODO: solution approach (modularity, new C++ version, json, visualization, ...)
+
+% TODO: end of introduction (structure of the thesis)
 
 \chapter{Preliminaries}
 \label{preliminaries}
