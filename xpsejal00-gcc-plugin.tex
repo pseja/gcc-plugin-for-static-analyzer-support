@@ -11,11 +11,11 @@
 % zpracování / processing: make, make pdf, make clean
 %==============================================================================
 % Soubory, které je nutné upravit nebo smazat: / Files which have to be edited or deleted:
-%   projekt-20-literatura-bibliography.bib - literatura / bibliography
-%   projekt-01-kapitoly-chapters.tex - obsah práce / the thesis content
-%   projekt-01-kapitoly-chapters-en.tex - obsah práce v angličtině / the thesis content in English
-%   projekt-30-prilohy-appendices.tex - přílohy / appendices
-%   projekt-30-prilohy-appendices-en.tex - přílohy v angličtině / appendices in English
+%   xpsejal00-gcc-plugin-20-literatura-bibliography.bib - literatura / bibliography
+%   xpsejal00-gcc-plugin-01-kapitoly-chapters.tex - obsah práce / the thesis content
+%   xpsejal00-gcc-plugin-01-kapitoly-chapters-en.tex - obsah práce v angličtině / the thesis content in English
+%   xpsejal00-gcc-plugin-30-prilohy-appendices.tex - přílohy / appendices
+%   xpsejal00-gcc-plugin-30-prilohy-appendices-en.tex - přílohy v angličtině / appendices in English
 %==============================================================================
 % \documentclass[]{fitthesis} % bez zadání - pro začátek práce, aby nebyl problém s překladem
 % \documentclass[english]{fitthesis} % without assignment - for the work start to avoid compilation problem
@@ -277,9 +277,9 @@ Při tvorbě odevzdaného programového kódu jsem využíval nástroj Github Co
   % Text prace / Thesis text
   % ----------------------------------------------
   \ifenglish
-    \input{projekt-01-kapitoly-chapters-en}
+    \input{xpsejal00-gcc-plugin-01-kapitoly-chapters-en}
   \else
-    \input{projekt-01-kapitoly-chapters}
+    \input{xpsejal00-gcc-plugin-01-kapitoly-chapters}
   \fi
   
   % Kompilace po částech (viz výše, nutno odkomentovat a zakomentovat input výše)
@@ -310,7 +310,7 @@ Při tvorbě odevzdaného programového kódu jsem využíval nástroj Github Co
   \fi
 \fi
   \begin{flushleft}
-  \bibliography{projekt-20-literatura-bibliography}
+  \bibliography{xpsejal00-gcc-plugin-20-literatura-bibliography}
   \end{flushleft}
 
   % vynechani stranky v oboustrannem rezimu
@@ -370,13 +370,13 @@ Při tvorbě odevzdaného programového kódu jsem využíval nástroj Github Co
   
   % Přílohy / Appendices
   \ifenglish
-    \input{projekt-30-prilohy-appendices-en}
+    \input{xpsejal00-gcc-plugin-30-prilohy-appendices-en}
   \else
-    \input{projekt-30-prilohy-appendices}
+    \input{xpsejal00-gcc-plugin-30-prilohy-appendices}
   \fi
   
   % Kompilace po částech (viz výše, nutno odkomentovat)
   % Compilation piecewise (see above, it is necessary to uncomment it)
-  %\subfile{projekt-30-prilohy-appendices}
+  %\subfile{xpsejal00-gcc-plugin-30-prilohy-appendices}
   
 \end{document}
