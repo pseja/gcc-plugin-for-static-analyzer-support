@@ -7,20 +7,27 @@
 \chapter{Introduction}
 \label{introduction}
 
+% FIXME: introduction to the topic (formal verification, static analysis, predator, code listener, gcc plugins, ...)
 With the ever-increasing complexity of software systems and the growing demand for high-quality and secure code, formal verification methods have become essential in some parts of the software development industry \cite{qualitxinc}.
 Formal verification methods are a set of mathematical techniques used to prove the correctness of software systems, going beyond traditional testing and debugging methods, which only test a finite number of inputs, allowing potentially critical errors to go undetected \cite{galois}.
 The implementation of such formal methods is not straightforward, as it requires a deep understanding of both the verified software and the application of formal methods, typically necessitating specialized domain knowledge.
-Formal verification tools, such as Predator, utilize static analysis to verify code written by developers.
+Formal verification tools, such as Predator or Forester \cite{predator, forester}, utilize static analysis to verify code written by developers.
 In Predator's case, this involves verifying sequential C programs for memory safety while operating with pointers and linked lists \cite{predator}.
 Predator is built on top of the Code Listener infrastructure \cite{code_listener}, which provides an application programming interface (API) foundation for creating such static analyzers.
-However, the majority of the Code Listener infrastructure was written nearly fifteen years ago, which has led to certain challenges in continuing its development and maintenance in its current form.
-To address these challenges, this bachelor's thesis focuses on refactoring the Code Listener infrastructure into a modern GCC \cite{gcc} plugin.
 
-% TODO: motivation (why the refactor and the need for a new plugin, ...)
+% FIXME: motivation (why the refactor and the need for a new plugin, ...)
+However, the core of the Code Listener infrastructure was implemented nearly fifteen years ago as a part of Predator, which has led to certain challenges in continuing its development and maintenance in its current form.
+Consequently, the codebase relies on outdated programming practices and lacks the expressiveness, safety, and efficiency offered by modern C++ standards.
+Moreover, this legacy technical debt, combined with the complexity of the existing codebase, hinders further development and makes maintenance and adaptation to newer GCC versions more difficult, as well as limits the potential for reusability in other static analysis tools.
 
-% TODO: solution approach (modularity, new C++ version, json, visualization, ...)
+% FIXME: solution approach (modularity, new C++ version, json, visualization, ...)
+To address these challenges, this bachelor's thesis focuses on refactoring the Code Listener infrastructure into a standalone, modern GCC plugin \cite{gcc}.
+The primary objective is to design and implement a new architecture that serves as a robust alternative to the existing solution.
+By leveraging the capabilities of modern C++ standards, targeting C++23, the new implementation aims to simplify the internal structure, unify the API, and ensure overall long-term maintainability.
+Furthermore, the modernized structure will allow for easier integration of new functionality, specifically the support for data structure visualization and export to JSON format.
 
-% TODO: end of introduction (structure of the thesis)
+% FIXME: end of introduction (structure of the thesis)
+The thesis is structured as follows. Chapter \ref{preliminaries} provides an overview of the necessary background information, % TODO: including static analysis, GCC, GCC plugins, Predator, and the Code Listener infrastructure.
 
 \chapter{Preliminaries}
 \label{preliminaries}
