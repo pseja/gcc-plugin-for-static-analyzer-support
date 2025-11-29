@@ -13,7 +13,7 @@ Formal verification methods are a set of mathematical techniques used to prove t
 The implementation of such formal methods is not straightforward, as it requires a deep understanding of both the verified software and the application of formal methods, typically necessitating specialized domain knowledge.
 Formal verification tools, such as Predator or Forester \cite{predator, forester}, utilize static analysis to verify code written by developers.
 In Predator's case, this involves verifying sequential C programs for memory safety while operating with pointers and linked lists \cite{predator}.
-Predator is built on top of the Code Listener infrastructure \cite{code_listener}, which provides an application programming interface (API) foundation for creating such static analyzers.
+Predator is built on top of the Code Listener infrastructure \cite{code_listener_web}, which provides an application programming interface (API) foundation for creating such static analyzers.
 
 % FIXME: motivation (why the refactor and the need for a new plugin, ...)
 However, the core of the Code Listener infrastructure was implemented nearly fifteen years ago as a part of Predator, which has led to certain challenges in continuing its development and maintenance in its current form.
@@ -64,11 +64,63 @@ GCC plugins
 Predator (expand later)
 % TODO: expand later
 
-\section{Code Listener and its analysis}
-\label{code_listener_and_its_analysis}
+\section{Control Flow Graph}
+\label{control_flow_graph}
 
-% TODO: asap
-Code Listener and its analysis
+Control Flow Graph
+
+\section{Three Address Code}
+\label{three_address_code}
+
+Three Address Code
+
+\section{The Code Listener Infrastructure}
+\label{code_listener_infrastructure}
+
+The Code Listener infrastructure was designed to help with the implementation of static analyzers for C programs.
+The main purpose of the Code Listener is to communicate with GCC during the compilation process, this allows it to handle everything that GCC does while compiling a program \cite{code_listener_web}, 
+    translate the internal representation of the program being compiled, normalize it, 
+    and provide it to the static analyzer for further analysis in the form of an API called Code Storage 
+    or optional outputs, more on them later in this section.
+This is visualized in figure 
+% TODO: \ref{c4_scd} on page \pageref{c4_scd}.
+
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=0.3\textwidth]{diagrams/CodeListener/c4_scd.png}
+	\caption{Code Listener system context diagram}
+	\label{c4_scd}
+\end{figure}
+
+The Code Listener infrastructure consists of several components visualized in figure 
+% TODO: \ref{cl_infrastructure} on page \pageref{cl_infrastructure}
+, that work together to achieve the aforementioned goals.
+
+\textit{Adapters} are the boxes that are embedded into the code parsers (e.g., GCC or Sparse) and are responsible for translating the internal representation (IR) of the specific code parser into a normalized format, which provides a consistent way to represent the compiled program regardless of the code parser used.
+
+The \textit{code parser interface}, which represents the API used for communication between GCC or other code parsers such as Sparse (boxes on the left) and Code Listener during the compilation process.
+The API is based on callbacks which the adapters use to emit constructs of the intermediate code during traversal of the parsers§ internal data structures.
+Behind it, there are the \textit{filters} and \textit{listeners}.
+
+Filters are reponsible for making transformations of the intermediate code emitted by the adapters, such as normalization or optimization and emit it to the code storage.
+The \textit{switch to if} filter is an example of such a filter, which transforms switch statements intermediate code \texttt{SWITCH} into a sequence of if-else intermediate code \texttt{COND} instructions.
+
+In contrast to filters, listeners use the API only as an input, install handlers for specific callbacks and process the intermediate code inside them.
+Some examples of listeners are the optional outputs, such as \textit{control flow graph (CFG) plotter}, debug location tracer, pretty printer for three address code or type dependency graph visualizer.
+
+Finally, there is the \textit{code storage}, which builds the persistent object model of the intermediate code emitted by the adapters and transformed by the filters.
+When the whole object is built, it can be queried by the static analyzer for further analysis 
+% TODO: \cite{code_listener}.
+
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=1.0\textwidth]{diagrams/CodeListener/structure.png}
+	\caption{Code Listener infrastructure}
+    % FIXME: \footnote{Taken from \cite{code_listener_web}}
+	\label{cl_infrastructure}
+\end{figure}
+
+This is what this thesis focuses on modernizing and refactoring into a standalone, modern GCC plugin.
 
 \section{Modern C++ Practices}
 \label{modern_cpp_practices}

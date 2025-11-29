@@ -1,7 +1,7 @@
 @startuml c4_scd
 !include <C4/C4_Container>
 
-title CodeListener System Context Diagram (C4 Level 1)
+title CodeListener System Context Diagram
 
 Person(developer, "C/C++ Developer", "Writes system-level C code that manipulates pointers, linked lists, and low-level memory")
 
