@@ -69,21 +69,19 @@ Predator (expand later)
 
 Control Flow Graph
 
-\section{Three Address Code}
+\section{Three-Address Code}
 \label{three_address_code}
 
-Three Address Code
+Three-Address Code
 
 \section{The Code Listener Infrastructure}
 \label{code_listener_infrastructure}
 
-The Code Listener infrastructure was designed to help with the implementation of static analyzers for C programs.
-The main purpose of the Code Listener is to communicate with GCC during the compilation process, this allows it to handle everything that GCC does while compiling a program \cite{code_listener_web}, 
-    translate the internal representation of the program being compiled, normalize it, 
-    and provide it to the static analyzer for further analysis in the form of an API called Code Storage 
-    or optional outputs, more on them later in this section.
-This is visualized in figure 
-% TODO: \ref{c4_scd} on page \pageref{c4_scd}.
+The Code Listener infrastructure was designed to simplify the implementation of static analyzers for C programs.
+Its primary purpose is to abstract the communication with the compiler (specifically GCC) during the compilation process.
+This allows the infrastructure to process any source code accepted by the compiler \cite{code_listener_web}.
+The infrastructure translates the compiler's internal representation into a normalized format and provides it to the static analyzer via an object-oriented API called Code Storage or through various optional output modules.
+The high-level context is visualized in figure \ref{c4_scd} on page \pageref{c4_scd}.
 
 \begin{figure}[hbt]
 	\centering
@@ -92,35 +90,56 @@ This is visualized in figure
 	\label{c4_scd}
 \end{figure}
 
-The Code Listener infrastructure consists of several components visualized in figure 
-% TODO: \ref{cl_infrastructure} on page \pageref{cl_infrastructure}
-, that work together to achieve the aforementioned goals.
+The Code Listener infrastructure consists of several components visualized in figure \ref{cl_infrastructure} on page \pageref{cl_infrastructure}, that work together to achieve the aforementioned goals.
 
-\textit{Adapters} are the boxes that are embedded into the code parsers (e.g., GCC or Sparse) and are responsible for translating the internal representation (IR) of the specific code parser into a normalized format, which provides a consistent way to represent the compiled program regardless of the code parser used.
+\textit{Adapters} are the components that are embedded into the code parsers (e.g., GCC or Sparse \footnote{\url{https://sparse.docs.kernel.org/}}) and are responsible for translating the internal representation (IR) of the specific code parser into a normalized format, which provides a consistent way to represent the compiled program regardless of the code parser used.
 
-The \textit{code parser interface}, which represents the API used for communication between GCC or other code parsers such as Sparse (boxes on the left) and Code Listener during the compilation process.
-The API is based on callbacks which the adapters use to emit constructs of the intermediate code during traversal of the parsers§ internal data structures.
-Behind it, there are the \textit{filters} and \textit{listeners}.
+The \textit{code parser interface} represents the API used for communication between GCC or other code parsers and Code Listener during the compilation process.
+This API relies on a callback mechanism, where the adapter emits events for constructs of the intermediate code while traversing the parser's internal data structures.
+These callbacks are then processed by \textit{filters} and \textit{listeners}.
 
-Filters are reponsible for making transformations of the intermediate code emitted by the adapters, such as normalization or optimization and emit it to the code storage.
-The \textit{switch to if} filter is an example of such a filter, which transforms switch statements intermediate code \texttt{SWITCH} into a sequence of if-else intermediate code \texttt{COND} instructions.
+The data flowing through this interface represents the program as a \textit{Control Flow Graph (CFG)}.
+The CFG consists of basic blocks containing a sequence of instructions.
+The infrastructure simplifies the complex GIMPLE representation into a concise instruction set, distinguishing between \textit{terminal instructions} (e.g., jumps, returns) and \textit{non-terminal instructions} (e.g., assignments, calls) \cite{code_listener}.
 
-In contrast to filters, listeners use the API only as an input, install handlers for specific callbacks and process the intermediate code inside them.
-Some examples of listeners are the optional outputs, such as \textit{control flow graph (CFG) plotter}, debug location tracer, pretty printer for three address code or type dependency graph visualizer.
+\begin{figure}[hbt]
+	\centering
+	\includegraphics[width=1.0\textwidth]{diagrams/CodeListener/cfg_bbs.png}
+	\caption{Control Flow Graph basic blocks\protect\footnotemark}
+	\label{cfg_bbs}
+\end{figure}
+\footnotetext{Taken from \cite{code_listener}.}
 
-Finally, there is the \textit{code storage}, which builds the persistent object model of the intermediate code emitted by the adapters and transformed by the filters.
-When the whole object is built, it can be queried by the static analyzer for further analysis 
-% TODO: \cite{code_listener}.
+\textit{Filters} enable the transformation of the intermediate code emitted by the adapters.
+They operate as a middleware layer that can normalize or optimize the instruction stream before it reaches the storage.
+A notable example is the \textit{switch to if} filter, which transforms \texttt{SWITCH} instructions into a sequence of conditional \texttt{COND} jumps, simplifying the analysis for downstream tools \cite{code_listener}.
+
+In contrast to filters, \textit{listeners} are consumers of the API. 
+They register handlers for specific callbacks to process the intermediate code.
+Standard listeners included in the infrastructure serve primarily as diagnostic tools, such as the \textit{CFG plotter}, which generates graph visualizations, or the code dumper for the three-address code representation \cite{code_listener}.
+
+Finally, the \textit{Code Storage} component builds a persistent, in-memory object model of the program from the stream of callbacks.
+Unlike the transient nature of callbacks, Code Storage allows the static analyzer to perform random-access queries on the program structure, types, variables, and functions once the object model is fully constructed \cite{code_listener}.
 
 \begin{figure}[hbt]
 	\centering
 	\includegraphics[width=1.0\textwidth]{diagrams/CodeListener/structure.png}
-	\caption{Code Listener infrastructure}
-    % FIXME: \footnote{Taken from \cite{code_listener_web}}
+	\caption{Code Listener infrastructure\protect\footnotemark}
 	\label{cl_infrastructure}
 \end{figure}
+\footnotetext{Taken from \cite{code_listener_web}.}
 
-This is what this thesis focuses on modernizing and refactoring into a standalone, modern GCC plugin.
+\subsection{Legacy Implementation Analysis}
+\label{legacy_implementation_analysis}
+
+The existing infrastructure is implemented using the C++03 standard.
+Consequently, it lacks many features and safety improvements introduced in modern C++ revisions.
+The object model relies heavily on raw pointers and C-style structures, which are exposed directly to the C interface, thereby ignoring modern encapsulation principles.
+Memory management is largely manual or implicit, lacking the guarantees provided by modern smart pointers (RAII idiom).
+This technical debt makes the codebase prone to memory leaks and difficult to extend or maintain in the context of rapidly evolving GCC versions.
+
+This thesis aims to address these challenges by refactoring the infrastructure into a standalone, modern GCC plugin.
+The new implementation utilizes C++23 features to ensure type safety, robust resource management, and long-term maintainability.
 
 \section{Modern C++ Practices}
 \label{modern_cpp_practices}
