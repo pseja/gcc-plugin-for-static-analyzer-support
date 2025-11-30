@@ -27,9 +27,9 @@ By leveraging the capabilities of modern C++ standards, targeting C++23, the new
 Furthermore, the modernized structure will allow for easier integration of new functionality, specifically the support for data structure visualization and export to JSON format.
 
 % FIXME: end of introduction (structure of the thesis)
-The thesis is structured as follows. Chapter \ref{preliminaries} provides an overview of the necessary background information, % TODO: including static program analysis, GCC, GCC compilation process, GCC plugins, Predator, and the Code Listener infrastructure and modern C++ practices.
+The thesis is structured as follows. Chapter \ref{preliminaries} provides an overview of the necessary background information, including TODO: names of the chapters % static program analysis, GCC, GCC compilation process, GCC plugins, Predator, and the Code Listener infrastructure and modern C++ practices.
 
-\chapter{Preliminaries} % TODO: Theoretical Background ?
+\chapter{Preliminaries}
 \label{preliminaries}
 
 To understand the work presented in this thesis, it is essential to have a foundational understanding of several key concepts described in this chapter.
@@ -37,42 +37,85 @@ To understand the work presented in this thesis, it is essential to have a found
 \section{Static program analysis}
 \label{static_program_analysis}
 
-Static program analysis (expand later) % TODO: (static analysis or SPA in short) is a process of analyzing the correctness of computer programs without the need to execute them with specific inputs.
-% TODO: expand later
+TODO: Static program analysis
 
-\section{GCC}
+\section{Intermediate Representation}
+\label{intermediate_representation}
+
+TODO: Intermediate Representation
+
+\subsection{Three-Address Code}
+\label{three_address_code}
+
+TODO: Three-Address Codend later
+
+\subsection{Static Single Assignment (SSA)}
+\label{ssa}
+
+TODO: Static Single Assignment (SSA)
+
+\section{GNU Compiler Collection}
 \label{gcc}
 
-% TODO: asap
-GCC
+The GNU Compiler Collection (GCC) is a compiler developed by the Free Software Foundation, Inc. (FSF) under the GNU General Public License (GPL), initially written for the GNU operating system, also developed by the FSF.
+It has since become a widely used compiler for various operating systems, platforms \footnote{The list of supported platforms is available here: \url{https://gcc.gnu.org/install/specific.html}} and programming languages, such as C, C++, Objective C, Objective C++, Fortran, Ada, Go, D, Modula-2, Rust, and Cobol.
+GCC is developed and maintained by a large community of contributors worldwide, with major decisions about GCC being made by the steering committee \cite{gcc}.
 
-\subsection{GCC Compilation Process}
-\label{gcc_compilation_process}
+\subsection{Internal Structure}
+\label{gcc_internal_structure}
 
-% TODO: asap
-GCC Compilation Process
+The internal structure of GCC is designed with a strong emphasis on retargetability, allowing the compiler to support multiple input languages and target diverse hardware architectures without requiring a complete rewrite of the entire codebase \cite{gcc_conceptual_structure}.
+To achieve this, GCC is divided into three main components that communicate through intermediate code.
 
-\subsection{GCC plugins}
+TODO: draw a graph here?
+
+\subsubsection{Front-End}
+\label{gcc_front_end}
+
+The Front-End is responsible for processing the source code written in a specific high-level language.
+What a high-level language is is subjective, but in this thesis, we consider languages that abstract away low-level hardware details and provide constructs that are more human-readable, such as C or C++.
+
+Its primary tasks include lexical analysis, syntax analysis, semantic analysis, and the generation of an intermediate code.
+The output of the Front-End is a language-independent representation called \textit{GENERIC}.
+GENERIC is a tree-based structure that preserves the high-level constructs of the original code but abstracts away the syntactic specifics of the source language \cite{gcc_front_end}.
+
+This abstraction allows the subsequent phases of the compiler to be language-agnostic.
+
+\subsubsection{Middle-End}
+\label{gcc_middle_end}
+
+The Middle-End serves as the core machine-independent optimization engine of GCC.
+It works on an intermediate representation called \textit{GIMPLE} derived from GENERIC.
+GIMPLE has two kinds: \textit{High-level GIMPLE} and \textit{Low-level GIMPLE}. The derivation process involves lowering the GENERIC representation into High-level GIMPLE.
+High-level GIMPLE is converted into low-level GIMPLE by linearizing complex control flow constructs into simpler forms, such as nested functions, exception handling, and loops.
+Lastly, the Low-level GIMPLE is rewritten into SSA form for further optimizations \cite{gcc_middle_end}.
+
+The plugin developed in this thesis operates at this level.
+
+\subsubsection{Back-End}
+\label{gcc_back_end}
+
+The Back-End translates the optimized SSA GIMPLE representation into a Lisp-like language called the \textit{Register Transfer Language (RTL)}.
+RTL is a low-level intermediate representation that is closely aligned with the assembly language of the target architecture.
+The Back-End performs target-specific optimizations, including but not limited to instruction scheduling and register allocation, before finally emitting the assembly code for the specific hardware \cite{gcc_back_end}.
+
+% TODO: this methodology would be very good for the new plugin
+This modular structure ensures that adding support for a new programming language requires implementing only a new Front-End, while supporting a new processor architecture requires implementing only a new Back-End, leaving the Middle-End unchanged.
+
+\subsection{Plugins}
 \label{gcc_plugins}
 
-% TODO: asap
-GCC plugins
+TODO: GCC plugins
 
 \section{Predator}
 \label{predator}
 
-Predator (expand later)
-% TODO: expand later
+TODO: Predator
 
 \section{Control Flow Graph}
 \label{control_flow_graph}
 
-Control Flow Graph
-
-\section{Three-Address Code}
-\label{three_address_code}
-
-Three-Address Code
+TODO: Control Flow Graph
 
 \section{The Code Listener Infrastructure}
 \label{code_listener_infrastructure}
@@ -145,28 +188,28 @@ The new implementation utilizes C++23 features to ensure type safety, robust res
 \label{modern_cpp_practices}
 
 % TODO: expand when writing the plugin
-Modern C++ Practices
+TODO: Modern C++ Practices
 
 \chapter{Design}
 \label{design}
 
 % TODO: when done with code listener and gcc
-design
+TODO: design
 
 \chapter{Implementation}
 \label{implementation}
 
-implementation
+TODO: implementation
 
 \chapter{Testing}
 \label{testing}
 
-testing
+TODO: testing
 
 \chapter{Conclusion}
 \label{conclusion}
 
-conclusion
+TODO: conclusion
 
 %=========================================================================
 
