@@ -42,3 +42,7 @@
 
 # build directory
 build/
+
+.cache/
+
+.clang-format
