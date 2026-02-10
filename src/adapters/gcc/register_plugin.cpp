@@ -2,6 +2,9 @@
 #include <iostream>         // std::cout
 #include <plugin-version.h> // gcc_version
 
+#include "PluginArgs.hpp"
+#include "register_plugin.hpp"
+
 // required by GCC to indicate that the plugin is GPL compatible
 int plugin_is_GPL_compatible;
 
@@ -40,6 +43,10 @@ int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
 
         return 1;
     }
+
+    CodeListener::GCC_ADAPTER::PluginArgs plugin_args(plugin_info);
+
+    plugin_args.print();
 
     return 0;
 }
