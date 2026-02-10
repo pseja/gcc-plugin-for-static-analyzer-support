@@ -2,7 +2,7 @@
 #include <iostream>         // std::cout
 #include <plugin-version.h> // gcc_version
 
-#include "PluginArgs.hpp"
+#include "PluginContext.hpp"
 #include "register_plugin.hpp"
 
 // required by GCC to indicate that the plugin is GPL compatible
@@ -19,7 +19,6 @@ void print_info(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
         std::cout << "arg " << i << ": key=" << plugin_info->argv[i].key << ", value=" << plugin_info->argv[i].value
                   << "\n";
     }
-    // TODO: create plugin_info struct (these are provided by plugin)
     // std::cout << "plugin version: " << plugin_info->version << "\n";
     // std::cout << "plugin help: " << plugin_info->help << "\n";
 
@@ -33,7 +32,7 @@ void print_info(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
 
 int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version *version)
 {
-    print_info(plugin_info, version);
+    // print_info(plugin_info, version);
 
     // FIXME: old cl had less strict version check for predator
     if (!plugin_default_version_check(version, &gcc_version))
@@ -44,9 +43,8 @@ int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
         return 1;
     }
 
-    CodeListener::GCC_ADAPTER::PluginArgs plugin_args(plugin_info);
-
-    plugin_args.print();
+    CodeListener::GCC_ADAPTER::PluginContext &context = CodeListener::GCC_ADAPTER::PluginContext::getInstance();
+    context.initialize(plugin_info, version);
 
     return 0;
 }

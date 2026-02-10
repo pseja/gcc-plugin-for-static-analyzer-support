@@ -24,9 +24,9 @@ void PluginArgs::print() const
     std::cout << "  Base name: '" << base_name << "'\n";
     std::cout << "  Full name: '" << full_name << "'\n";
     std::cout << "  Arguments:\n";
-    for (const auto &arg : args)
+    for (const auto &[key, value] : args)
     {
-        std::cout << "    Key: '" << arg.first << "', Value: '" << arg.second << "'\n";
+        std::cout << "    Key: '" << key << "', Value: '" << value << "'\n";
     }
 }
 
