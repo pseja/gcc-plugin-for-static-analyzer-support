@@ -1,5 +1,9 @@
-#include <iostream> // std::cout
+#include <gcc-plugin.h>
+#include <context.h>
+#include <iostream>
+#include <tree-pass.h>
 
+#include "Pass.hpp"
 #include "PluginContext.hpp"
 
 namespace CodeListener
@@ -28,6 +32,11 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
 
     // metadata
     register_callback(plugin_info->base_name, PLUGIN_INFO, nullptr, &PluginContext::plugin_info);
+
+    Pass p = Pass(g);
+    static struct register_pass_info cl_plugin_pass = {
+        .pass = &p, .reference_pass_name = "codelistener_pass", .ref_pass_instance_number = 0, .pos_op = PASS_POS_INSERT_AFTER};
+    register_callback(plugin_info->base_name, PLUGIN_PASS_MANAGER_SETUP, nullptr, &cl_plugin_pass);
 
     // TODO: register callbacks
 

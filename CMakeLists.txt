@@ -25,6 +25,7 @@ set(SOURCES
     src/adapters/gcc/register_plugin.cpp
     src/adapters/gcc/PluginContext.cpp
     src/adapters/gcc/PluginArgs.cpp
+    src/adapters/gcc/Pass.cpp
 )
 
 add_library(cl SHARED ${SOURCES})
