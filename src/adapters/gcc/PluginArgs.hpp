@@ -1,8 +1,9 @@
 #pragma once
 
-#include <gcc-plugin.h> // plugin_name_args
 #include <string>       // string
 #include <vector>       // vector, pair
+
+#include <gcc-plugin.h> // plugin_name_args
 
 namespace CodeListener
 {

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <gcc-plugin.h>
 #include <memory>      // unique_ptr
+
+#include <gcc-plugin.h>
 #include <tree-pass.h> // register_pass_info
 
 #include "PluginArgs.hpp"

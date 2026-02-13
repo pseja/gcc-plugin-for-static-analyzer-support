@@ -1,5 +1,6 @@
-#include <gcc-plugin.h>     // plugin_init, plugin_is_GPL_compatible
 #include <iostream>         // std::cout
+
+#include <gcc-plugin.h>     // plugin_init, plugin_is_GPL_compatible
 #include <plugin-version.h> // gcc_version
 
 #include "PluginContext.hpp"

@@ -1,5 +1,6 @@
-#include <gcc-plugin.h> // plugin_name_args
 #include <iostream>     // std::cout
+
+#include <gcc-plugin.h> // plugin_name_args
 
 #include "PluginArgs.hpp"
 
