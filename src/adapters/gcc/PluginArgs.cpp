@@ -7,7 +7,7 @@
 namespace CodeListener
 {
 
-namespace GCC_ADAPTER
+namespace CompilerAbstractionLayer
 {
 
 PluginArgs::PluginArgs(const plugin_name_args *plugin_info)
@@ -31,6 +31,6 @@ void PluginArgs::print() const
     }
 }
 
-} // namespace GCC_ADAPTER
+} // namespace CompilerAbstractionLayer
 
 } // namespace CodeListener

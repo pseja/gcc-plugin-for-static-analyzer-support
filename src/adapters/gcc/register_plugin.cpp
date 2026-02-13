@@ -6,6 +6,8 @@
 #include "PluginContext.hpp"
 #include "register_plugin.hpp"
 
+// TODO: add namespaces
+
 // required by GCC to indicate that the plugin is GPL compatible
 int plugin_is_GPL_compatible;
 
@@ -44,7 +46,7 @@ int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
         return 1;
     }
 
-    CodeListener::GCC_ADAPTER::PluginContext &context = CodeListener::GCC_ADAPTER::PluginContext::getInstance();
+    CodeListener::CompilerAbstractionLayer::PluginContext &context = CodeListener::CompilerAbstractionLayer::PluginContext::getInstance();
     context.initialize(plugin_info, version);
 
     return 0;

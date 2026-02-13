@@ -12,7 +12,7 @@
 namespace CodeListener
 {
 
-namespace GCC_ADAPTER
+namespace CompilerAbstractionLayer
 {
 
 // Meyers' Singleton
@@ -48,6 +48,6 @@ class PluginContext
     static void on_plugin_finish(void *gcc_data, void *user_data);
 };
 
-} // namespace GCC_ADAPTER
+} // namespace CompilerAbstractionLayer
 
 } // namespace CodeListener

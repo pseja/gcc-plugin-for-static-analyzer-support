@@ -10,7 +10,7 @@
 namespace CodeListener
 {
 
-namespace GCC_ADAPTER
+namespace CompilerAbstractionLayer
 {
 
 // TODO: plugin arguments?
@@ -40,9 +40,20 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     register_callback(plugin_info->base_name, PLUGIN_PASS_MANAGER_SETUP, nullptr, &cl_plugin_pass);
 
     // TODO: register callbacks
+    // register_callback(plugin_info->base_name, PLUGIN_START_UNIT, on_start_unit, nullptr);
+
+    // register_callback(plugin_info->base_name, PLUGIN_START_PARSE_FUNCTION, on_start_function, nullptr);
+
+    // register_callback(plugin_info->base_name, PLUGIN_FINISH_TYPE, on_finish_type, nullptr);
+
+    // register_callback(plugin_info->base_name, PLUGIN_FINISH_PARSE_FUNCTION, on_finish_function, nullptr);
+
+    // register_callback(plugin_info->base_name, PLUGIN_FINISH_UNIT, on_finish_unit, nullptr);
 
     // cleanup
     register_callback(plugin_info->base_name, PLUGIN_FINISH, on_plugin_finish, this);
+
+    std::cout << "Code Listener GCC plugin initialized\n";
 }
 
 void PluginContext::init_print(const plugin_gcc_version *version)
@@ -64,6 +75,6 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     std::cout << "Code Listener GCC plugin finished\n";
 }
 
-} // namespace GCC_ADAPTER
+} // namespace CompilerAbstractionLayer
 
 } // namespace CodeListener

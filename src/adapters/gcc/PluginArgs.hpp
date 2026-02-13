@@ -8,7 +8,7 @@
 namespace CodeListener
 {
 
-namespace GCC_ADAPTER
+namespace CompilerAbstractionLayer
 {
 
 struct PluginArgs
@@ -22,6 +22,6 @@ struct PluginArgs
     void print() const;
 };
 
-} // namespace GCC_ADAPTER
+} // namespace CompilerAbstractionLayer
 
 } // namespace CodeListener

@@ -6,7 +6,7 @@
 namespace CodeListener
 {
 
-namespace GCC_ADAPTER
+namespace CompilerAbstractionLayer
 {
 
 Pass::Pass(gcc::context *ctx) : opt_pass(pass_metadata, ctx)
@@ -38,6 +38,6 @@ const struct pass_data Pass::pass_metadata = {
     .todo_flags_finish = 0,
 };
 
-} // namespace GCC_ADAPTER
+} // namespace CompilerAbstractionLayer
 
 } // namespace CodeListener

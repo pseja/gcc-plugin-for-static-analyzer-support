@@ -10,7 +10,7 @@
 namespace CodeListener
 {
 
-namespace GCC_ADAPTER
+namespace CompilerAbstractionLayer
 {
 
 class GCCDiagnosticReporter : public Core::DiagnosticReporter
@@ -22,6 +22,6 @@ class GCCDiagnosticReporter : public Core::DiagnosticReporter
                 const std::source_location &source_location = std::source_location::current()) override;
 };
 
-} // namespace GCC_ADAPTER
+} // namespace CompilerAbstractionLayer
 
 } // namespace CodeListener

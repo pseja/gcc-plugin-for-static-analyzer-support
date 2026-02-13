@@ -8,7 +8,7 @@
 namespace CodeListener
 {
 
-namespace GCC_ADAPTER
+namespace CompilerAbstractionLayer
 {
 
 static std::string getProjectRelativePath(const std::string &path)
@@ -94,6 +94,6 @@ void GCCDiagnosticReporter::report(CodeListener::Core::DiagnosticLevel level, co
     }
 }
 
-} // namespace GCC_ADAPTER
+} // namespace CompilerAbstractionLayer
 
 } // namespace CodeListener

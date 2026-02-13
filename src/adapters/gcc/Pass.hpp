@@ -7,7 +7,7 @@
 namespace CodeListener
 {
 
-namespace GCC_ADAPTER
+namespace CompilerAbstractionLayer
 {
 
 // TODO: rename to something more specific
@@ -18,12 +18,13 @@ class Pass : public opt_pass
 
     unsigned int execute(function *fun) override final;
 
+    // FIXME: maybe not needed
     opt_pass *clone() override final;
 
   private:
     static const struct pass_data pass_metadata;
 };
 
-} // namespace GCC_ADAPTER
+} // namespace CompilerAbstractionLayer
 
 } // namespace CodeListener
