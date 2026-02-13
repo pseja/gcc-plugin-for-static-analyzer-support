@@ -1,10 +1,12 @@
 #pragma once
 
-#include <memory>      // unique_ptr
+#include <memory> // unique_ptr
 
 #include <gcc-plugin.h>
 #include <tree-pass.h> // register_pass_info
 
+#include "../../core/DiagnosticReporter.hpp"
+#include "GCCDiagnosticReporter.hpp"
 #include "PluginArgs.hpp"
 
 namespace CodeListener
@@ -29,8 +31,14 @@ class PluginContext
         return args.get();
     }
 
+    Core::DiagnosticReporter &getDiagnosticReporter()
+    {
+        return reporter;
+    }
+
   private:
     std::unique_ptr<PluginArgs> args;
+    GCCDiagnosticReporter reporter;
     static struct plugin_info plugin_info;
 
     PluginContext() = default;

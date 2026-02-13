@@ -26,11 +26,12 @@ set(SOURCES
     src/adapters/gcc/PluginContext.cpp
     src/adapters/gcc/PluginArgs.cpp
     src/adapters/gcc/Pass.cpp
+    src/adapters/gcc/GCCDiagnosticReporter.cpp
 )
 
 add_library(cl SHARED ${SOURCES})
 
-target_include_directories(cl PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc)
+target_include_directories(cl PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc src/core)
 
 target_compile_options(cl PRIVATE -Wall -Wextra -Werror -pedantic -fno-rtti)
 

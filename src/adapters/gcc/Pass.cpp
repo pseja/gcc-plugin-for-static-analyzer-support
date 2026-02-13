@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "Pass.hpp"
+#include "PluginContext.hpp"
 
 namespace CodeListener
 {
@@ -14,7 +15,8 @@ Pass::Pass(gcc::context *ctx) : opt_pass(pass_metadata, ctx)
 
 unsigned int Pass::execute(function *fun)
 {
-    std::cout << "[CodeListener] Executing on function: " << function_name(fun) << "\n";
+    PluginContext::getInstance().getDiagnosticReporter().report(
+        Core::DiagnosticLevel::Debug, std::string("Processing function: ") + function_name(fun));
 
     return 0;
 }

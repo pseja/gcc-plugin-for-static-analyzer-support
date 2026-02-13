@@ -1,4 +1,4 @@
-#include <iostream>         // std::cout
+#include <iostream> // std::cout
 
 #include <gcc-plugin.h>     // plugin_init, plugin_is_GPL_compatible
 #include <plugin-version.h> // gcc_version

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>       // string
-#include <vector>       // vector, pair
+#include <string> // string
+#include <vector> // vector, pair
 
 #include <gcc-plugin.h> // plugin_name_args
 

@@ -1,4 +1,4 @@
-#include <iostream>     // std::cout
+#include <iostream> // std::cout
 
 #include <gcc-plugin.h> // plugin_name_args
 
