@@ -3,6 +3,7 @@
 #include <source_location>
 #include <string>
 
+#include "DiagnosticLevel.hpp"
 #include "SourceLocation.hpp"
 
 namespace CodeListener
@@ -10,15 +11,6 @@ namespace CodeListener
 
 namespace Core
 {
-
-enum class DiagnosticLevel
-{
-    Debug,
-    Info,
-    Warning,
-    Error,
-    Fatal
-};
 
 class DiagnosticReporter
 {
