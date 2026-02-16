@@ -16,7 +16,7 @@ struct SourceLocation
     int column;
     void *native_handle = nullptr;
 
-    SourceLocation() : line(0), column(0), native_handle(nullptr)
+    SourceLocation() : file("<unknown>"), function("<unknown>"), line(0), column(0), native_handle(nullptr)
     {
     }
     SourceLocation(std::string file, std::string func, int line, int column, void *native_handle = nullptr)
