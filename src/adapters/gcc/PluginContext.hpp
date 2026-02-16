@@ -5,7 +5,7 @@
 #include <gcc-plugin.h>
 #include <tree-pass.h> // register_pass_info
 
-#include "../../core/DiagnosticReporter.hpp"
+#include "DiagnosticReporter.hpp"
 #include "GCCDiagnosticReporter.hpp"
 #include "PluginArgs.hpp"
 

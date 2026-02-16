@@ -5,7 +5,7 @@
 #include <gcc-plugin.h>
 #include <line-map.h>
 
-#include "../../core/DiagnosticReporter.hpp"
+#include "DiagnosticReporter.hpp"
 
 namespace CodeListener
 {

@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "Pass.hpp"
 #include "PluginContext.hpp"
 
