@@ -31,7 +31,7 @@ set(SOURCES
 
 add_library(cl SHARED ${SOURCES})
 
-target_include_directories(cl PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc src/core)
+target_include_directories(cl PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc src/core src/annotation_services)
 
 target_compile_options(cl PRIVATE -Wall -Wextra -Werror -pedantic -fno-rtti)
 
