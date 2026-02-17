@@ -5,6 +5,7 @@
 #include <gcc-plugin.h>
 #include <tree-pass.h> // register_pass_info
 
+#include "CodeModel.hpp"
 #include "DiagnosticReporter.hpp"
 #include "GCCDiagnosticReporter.hpp"
 #include "PluginArgs.hpp"
@@ -36,9 +37,15 @@ class PluginContext
         return reporter;
     }
 
+    Core::CodeModel &getCodeModel()
+    {
+        return model;
+    }
+
   private:
     std::unique_ptr<PluginArgs> args;
     GCCDiagnosticReporter reporter;
+    Core::CodeModel model;
     static struct plugin_info plugin_info;
 
     PluginContext() = default;

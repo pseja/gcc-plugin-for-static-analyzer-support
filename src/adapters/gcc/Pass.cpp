@@ -1,4 +1,6 @@
 #include "Pass.hpp"
+#include "CodeModel.hpp"
+#include "GCCAdapter.hpp"
 #include "PluginContext.hpp"
 
 namespace CodeListener
@@ -15,6 +17,8 @@ unsigned int Pass::execute(function *fun)
 {
     PluginContext::getInstance().getDiagnosticReporter().report(
         Core::DiagnosticLevel::Debug, std::string("Processing function: ") + function_name(fun));
+
+    Core::CodeModel &my_model = PluginContext::getInstance().getCodeModel();
 
     return 0;
 }
