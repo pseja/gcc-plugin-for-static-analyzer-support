@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace CodeListener
 {
 
@@ -16,12 +18,44 @@ enum class TypeKind
     ARRAY,
     FUNCTION,
     INTEGER,
-    CHAR, // TODO: not used by the old gcc plugin
     BOOL,
     ENUM,
-    REAL,   // TODO: does float/double exist?
-    STRING, // TODO: for constants (cl_cst)
+    REAL,
+    COMPLEX,
 };
+
+inline std::string toString(TypeKind kind)
+{
+    switch (kind)
+    {
+    case TypeKind::UNKNOWN:
+        return "UNKNOWN";
+    case TypeKind::VOID:
+        return "VOID";
+    case TypeKind::POINTER:
+        return "POINTER";
+    case TypeKind::STRUCT:
+        return "STRUCT";
+    case TypeKind::UNION:
+        return "UNION";
+    case TypeKind::ARRAY:
+        return "ARRAY";
+    case TypeKind::FUNCTION:
+        return "FUNCTION";
+    case TypeKind::INTEGER:
+        return "INTEGER";
+    case TypeKind::BOOL:
+        return "BOOL";
+    case TypeKind::ENUM:
+        return "ENUM";
+    case TypeKind::REAL:
+        return "REAL";
+    case TypeKind::COMPLEX:
+        return "COMPLEX";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 } // namespace Core
 
