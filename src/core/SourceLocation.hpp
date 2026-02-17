@@ -29,6 +29,12 @@ struct SourceLocation
     }
 };
 
+inline std::string toString(const SourceLocation &loc)
+{
+    return "SourceLocation(" + loc.file + ":" + loc.function + ":" + std::to_string(loc.line) + ":" +
+           std::to_string(loc.column) + ")";
+}
+
 } // namespace Core
 
 } // namespace CodeListener
