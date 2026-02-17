@@ -27,6 +27,7 @@ set(SOURCES
     src/adapters/gcc/PluginArgs.cpp
     src/adapters/gcc/Pass.cpp
     src/adapters/gcc/GCCDiagnosticReporter.cpp
+    src/adapters/gcc/GCCAdapter.cpp
 )
 
 add_library(cl SHARED ${SOURCES})
