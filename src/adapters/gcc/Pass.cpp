@@ -20,6 +20,10 @@ unsigned int Pass::execute(function *fun)
 
     Core::CodeModel &my_model = PluginContext::getInstance().getCodeModel();
 
+    Core::GCCAdapter adapter(my_model);
+
+    adapter.processFunction(fun);
+
     return 0;
 }
 
