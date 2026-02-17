@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace CodeListener
 {
 
@@ -12,6 +14,21 @@ enum class Scope
     STATIC,
     FUNCTION,
 };
+
+inline std::string toString(Scope scope)
+{
+    switch (scope)
+    {
+    case Scope::GLOBAL:
+        return "GLOBAL";
+    case Scope::STATIC:
+        return "STATIC";
+    case Scope::FUNCTION:
+        return "FUNCTION";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 } // namespace Core
 
