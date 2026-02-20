@@ -2,7 +2,7 @@ CC := gcc-12
 FILE := test.c
 BUILD_DIR := build
 
-.PHONY: all
+.PHONY: all dump
 
 all:
 	cmake -S . -B $(BUILD_DIR)
@@ -10,4 +10,6 @@ all:
 	$(CC) -fplugin=$(BUILD_DIR)/libcl.so -fplugin-arg-libcl-verbose=1 $(FILE)
 
 dump:
-	$(CC) -O0 -fdump-tree-all-raw -fdump-tree-cfg-graph -fdump-lang-all $(FILE)
+	rm -rf dump
+	mkdir -p dump
+	$(CC) -O0 -fdump-tree-all-raw -fdump-tree-cfg-graph -fdump-lang-all -dumpdir dump/ $(FILE)
