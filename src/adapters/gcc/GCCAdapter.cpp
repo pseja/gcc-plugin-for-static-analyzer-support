@@ -667,6 +667,25 @@ void GCCAdapter::processFunction(function *fun)
             CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
                 DiagnosticLevel::Debug, "Processed instruction with opcode: " + instruction_node.opcode_name);
 
+            // try to enhance location if missing (for labels and returns)
+            location_t loc = gimple_location(stmt);
+            if (gcode == GIMPLE_LABEL && (loc == UNKNOWN_LOCATION || loc <= BUILTINS_LOCATION))
+            {
+                tree label = gimple_label_label(as_a<glabel *>(stmt));
+                if (label && DECL_SOURCE_LOCATION(label) != UNKNOWN_LOCATION)
+                {
+                    loc = DECL_SOURCE_LOCATION(label);
+                }
+            }
+            if (gcode == GIMPLE_RETURN && (loc == UNKNOWN_LOCATION || loc <= BUILTINS_LOCATION))
+            {
+                if (fun && fun->function_end_locus != UNKNOWN_LOCATION)
+                {
+                    loc = fun->function_end_locus;
+                }
+            }
+            instruction_node.source_location = getSourceLocation(loc);
+
             CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
                 DiagnosticLevel::Debug,
                 "Instruction node source location: " + toString(instruction_node.source_location));
