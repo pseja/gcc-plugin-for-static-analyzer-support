@@ -789,6 +789,13 @@ void GCCAdapter::processFunction(function *fun)
                 // label targets are implicit in CFG edges usually
                 break;
             }
+            case GIMPLE_SWITCH: {
+                instruction_node.kind = InstructionKind::SWITCH;
+                gswitch *switch_stmt = as_a<gswitch *>(stmt);
+                instruction_node.operands.push_back(parseOperand(gimple_switch_index(switch_stmt)));
+                instruction_node.is_terminator = true;
+                break;
+            }
             block_node.instruction_ids.push_back(instruction_node.id);
         }
 
