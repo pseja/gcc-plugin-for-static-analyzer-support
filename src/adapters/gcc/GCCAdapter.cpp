@@ -90,6 +90,7 @@ NodeId GCCAdapter::getOrCreateType(tree type_tree)
     {
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
             DiagnosticLevel::Warning, "Encountered a type without a tree representation");
+
         return NodeId::INVALID;
     }
 
@@ -108,48 +109,120 @@ NodeId GCCAdapter::getOrCreateType(tree type_tree)
         DiagnosticLevel::Debug, "Actually processing type tree...");
 
     Type type_node;
-    // FIXME: replace with proper ID generation
     type_node.id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(type_tree));
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Type node ID: " + toString(type_node.id));
+
+    // pre-insert into cache to handle recursive types
+    type_cache[type_tree] = type_node.id;
+
+    if (TYPE_NAME(type_tree) && TREE_CODE(TYPE_NAME(type_tree)) == TYPE_DECL)
+    {
+        if (DECL_NAME(TYPE_NAME(type_tree)))
+        {
+            type_node.name = IDENTIFIER_POINTER(DECL_NAME(TYPE_NAME(type_tree)));
+        }
+    }
 
     type_node.kind = mapTypeTreeToTypeKind(type_tree);
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Mapped type tree to TypeKind: " + toString(type_node.kind));
 
-    if (TYPE_SIZE_UNIT(type_tree) && tree_fits_uhwi_p(TYPE_SIZE_UNIT(type_tree)))
+    type_node.is_const = TYPE_READONLY(type_tree);
+    type_node.is_volatile = TYPE_VOLATILE(type_tree);
+    type_node.is_atomic = TYPE_ATOMIC(type_tree);
+    type_node.is_restrict = TYPE_RESTRICT(type_tree);
+
+    if (TYPE_SIZE(type_tree) && tree_fits_uhwi_p(TYPE_SIZE(type_tree)))
     {
         // FIXME: converting unsigned long to int
-        type_node.size = tree_to_uhwi(TYPE_SIZE_UNIT(type_tree));
+        type_node.size_bits = tree_to_uhwi(TYPE_SIZE(type_tree));
+        type_node.size_bytes = type_node.size_bits / 8;
     }
     else
     {
         // unknown size
-        type_node.size = 0;
+        type_node.size_bits = 0;
+        type_node.size_bytes = 0;
     }
+    type_node.alignment = TYPE_ALIGN_UNIT(type_tree);
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Determined type size: " + std::to_string(type_node.size) + "B");
-
-    // recursively process nested types
-    if (POINTER_TYPE_P(type_tree))
+    switch (TREE_CODE(type_tree))
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Processing pointer type, getting pointee type...");
+    case INTEGER_TYPE:
+        type_node.is_unsigned = TYPE_UNSIGNED(type_tree);
+        break;
 
+    case POINTER_TYPE:
+    case REFERENCE_TYPE: {
         NodeId inner = getOrCreateType(TREE_TYPE(type_tree));
         type_node.nested_type_ids.push_back(inner);
+    }
+    break;
 
+    case ARRAY_TYPE: {
+        NodeId element_type = getOrCreateType(TREE_TYPE(type_tree));
+        type_node.nested_type_ids.push_back(element_type);
+
+        if (TYPE_DOMAIN(type_tree))
+        {
+            tree max = TYPE_MAX_VALUE(TYPE_DOMAIN(type_tree));
+            if (max && tree_fits_uhwi_p(max))
+            {
+                type_node.array_element_count = tree_to_uhwi(max) + 1;
+            }
+        }
+    }
+    break;
+
+    case RECORD_TYPE:
+    case UNION_TYPE: {
+        type_node.is_struct = (TREE_CODE(type_tree) == RECORD_TYPE);
+        type_node.is_union = (TREE_CODE(type_tree) == UNION_TYPE);
+
+        for (tree field = TYPE_FIELDS(type_tree); field; field = DECL_CHAIN(field))
+        {
+            if (TREE_CODE(field) == FIELD_DECL)
+            {
+                NodeId field_id = getOrCreateVariable(field);
+                type_node.nested_type_ids.push_back(field_id);
+            }
+        }
+    }
+    break;
+
+    case FUNCTION_TYPE:
+    case METHOD_TYPE: {
+        type_node.nested_type_ids.push_back(getOrCreateType(TREE_TYPE(type_tree)));
+
+        for (tree arg = TYPE_ARG_TYPES(type_tree); arg; arg = TREE_CHAIN(arg))
+        {
+            if (TREE_VALUE(arg) == void_type_node)
+                break;
+            type_node.nested_type_ids.push_back(getOrCreateType(TREE_VALUE(arg)));
+        }
+    }
+    break;
+
+    case VOID_TYPE:
+        // FIXME: does this need to be handled specially?
+        break;
+
+    default:
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Pointer type has pointee type with ID: " + toString(inner));
+            DiagnosticLevel::Debug, "Unhandled type tree code: " + std::to_string(TREE_CODE(type_tree)));
+
+        break;
     }
 
     CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Final type node ID: " + toString(type_node.id));
+        DiagnosticLevel::Debug,
+        "Processed type node with id: " + toString(type_node.id) + ", name: " + type_node.name +
+            ", kind: " + toString(type_node.kind) + ", size: " + std::to_string(type_node.size_bytes) +
+            "B, alignment: " + std::to_string(type_node.alignment) +
+            "B, qualifiers: " + (type_node.is_const ? "const " : "") + (type_node.is_volatile ? "volatile " : "") +
+            (type_node.is_atomic ? "atomic " : "") + (type_node.is_restrict ? "restrict " : "") +
+            (type_node.is_unsigned ? "unsigned " : "") + (type_node.is_struct ? "struct " : "") +
+            (type_node.is_union ? "union " : "") + ", and " + std::to_string(type_node.nested_type_ids.size()) +
+            " nested types with constant array element count of " + std::to_string(type_node.array_element_count));
 
-    // FIXME: uncomment after implementing the method
-    // model.addType(type_node);
-    type_cache[type_tree] = type_node.id;
+    model.addType(type_node);
 
     return type_node.id;
 }
