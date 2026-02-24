@@ -781,6 +781,14 @@ void GCCAdapter::processFunction(function *fun)
                 instruction_node.is_terminator = true;
                 break;
             }
+            case GIMPLE_COND: {
+                instruction_node.kind = InstructionKind::COND;
+                instruction_node.opcode = mapTreeCodeToOpCode(gimple_cond_code(stmt));
+                instruction_node.operands.push_back(parseOperand(gimple_cond_lhs(stmt)));
+                instruction_node.operands.push_back(parseOperand(gimple_cond_rhs(stmt)));
+                // label targets are implicit in CFG edges usually
+                break;
+            }
             block_node.instruction_ids.push_back(instruction_node.id);
         }
 
