@@ -753,6 +753,34 @@ void GCCAdapter::processFunction(function *fun)
                 }
                 break;
             }
+            case GIMPLE_RETURN: {
+                // else if (gimple_code(stmt) == GIMPLE_RETURN)
+                // {
+                //     tree retval = gimple_return_retval(as_a<greturn *>(stmt));
+                //     if (retval)
+                //     {
+                //         instruction_node.operands.push_back(parseOperand(retval));
+                //     }
+                // }
+                // else if (gimple_code(stmt) == GIMPLE_COND)
+                // {
+                //     gcond *cond_stmt = as_a<gcond *>(stmt);
+                //     instruction_node.operands.push_back(parseOperand(gimple_cond_lhs(cond_stmt)));
+                //     instruction_node.operands.push_back(parseOperand(gimple_cond_rhs(cond_stmt)));
+                // }
+                instruction_node.kind = InstructionKind::RETURN;
+                greturn *ret_stmt = as_a<greturn *>(stmt);
+                if (ret_stmt)
+                {
+                    tree retval = gimple_return_retval(ret_stmt);
+                    if (retval)
+                    {
+                        instruction_node.operands.push_back(parseOperand(retval));
+                    }
+                }
+                instruction_node.is_terminator = true;
+                break;
+            }
             block_node.instruction_ids.push_back(instruction_node.id);
         }
 
