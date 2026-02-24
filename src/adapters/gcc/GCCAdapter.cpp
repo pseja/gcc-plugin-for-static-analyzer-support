@@ -295,12 +295,12 @@ NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
 
     if (DECL_P(variable_tree))
     {
-    variable.source_location = getSourceLocation(DECL_SOURCE_LOCATION(variable_tree));
+        variable.source_location = getSourceLocation(DECL_SOURCE_LOCATION(variable_tree));
 
-    // determine scope
-    if (is_global_var(variable_tree))
-    {
-        variable.scope = Scope::GLOBAL;
+        // determine scope
+        if (is_global_var(variable_tree))
+        {
+            variable.scope = Scope::GLOBAL;
         }
         else if (TREE_CODE(variable_tree) == PARM_DECL)
         {
@@ -479,8 +479,8 @@ Operand GCCAdapter::parseOperand(tree operand_tree)
             if (std::holds_alternative<ConstantOperand>(index_op))
             {
                 acc.index_operand_id = std::get<ConstantOperand>(index_op).id;
-    }
-    else
+            }
+            else
             {
                 acc.index_operand_id = std::get<VariableOperand>(index_op).variable_id;
             }
@@ -635,7 +635,7 @@ static OpCode mapTreeCodeToOpCode(enum tree_code code)
 
     default:
         return OpCode::NONE;
-}
+    }
 }
 
 void GCCAdapter::processFunction(function *fun)
@@ -665,21 +665,21 @@ void GCCAdapter::processFunction(function *fun)
         tree_node *return_type = TREE_TYPE(TREE_TYPE(fun->decl));
         if (return_type)
         {
-    function_node.return_type_id = getOrCreateType(return_type);
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Function return type ID: " + toString(function_node.return_type_id));
+            function_node.return_type_id = getOrCreateType(return_type);
+            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+                DiagnosticLevel::Debug, "Function return type ID: " + toString(function_node.return_type_id));
         }
     }
 
     // process parameters
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Processing function parameters...");
+    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+        DiagnosticLevel::Debug, "Processing function parameters...");
     for (tree arg = DECL_ARGUMENTS(fun->decl); arg; arg = DECL_CHAIN(arg))
     {
         NodeId param_id = getOrCreateVariable(arg);
         function_node.parameter_ids.push_back(param_id);
     }
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
         DiagnosticLevel::Debug, "Processed function parameters");
 
     // process local variables
@@ -774,11 +774,6 @@ void GCCAdapter::processFunction(function *fun)
             CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
                 DiagnosticLevel::Debug,
                 "Instruction node source location: " + toString(instruction_node.source_location));
-            // determine opcode
-            enum gimple_code gcode = gimple_code(stmt);
-            instruction_node.opcode = gimple_code_name[gcode];
-            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-                DiagnosticLevel::Debug, "Processed instruction with opcode: " + instruction_node.opcode);
 
             // map instruction kind
             switch (gcode)
@@ -808,7 +803,7 @@ void GCCAdapter::processFunction(function *fun)
                     instruction_node.operands.push_back(parseOperand(gimple_assign_rhs2(stmt)));
                 }
                 else if (rhs_class == GIMPLE_TERNARY_RHS)
-                    {
+                {
                     instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
                     instruction_node.operands.push_back(parseOperand(gimple_assign_rhs2(stmt)));
                     instruction_node.operands.push_back(parseOperand(gimple_assign_rhs3(stmt)));
@@ -825,9 +820,9 @@ void GCCAdapter::processFunction(function *fun)
                 if (lhs)
                 {
                     instruction_node.operands.push_back(parseOperand(lhs));
-            }
-            else
-            {
+                }
+                else
+                {
                     instruction_node.operands.push_back(ConstantOperand{NodeId::INVALID, "<void>"});
                 }
 
