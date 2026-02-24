@@ -796,6 +796,13 @@ void GCCAdapter::processFunction(function *fun)
                 instruction_node.is_terminator = true;
                 break;
             }
+            case GIMPLE_GOTO: {
+                instruction_node.kind = InstructionKind::GOTO;
+                ggoto *goto_stmt = as_a<ggoto *>(stmt);
+                instruction_node.operands.push_back(parseOperand(gimple_goto_dest(goto_stmt)));
+                instruction_node.is_terminator = true;
+                break;
+            }
             block_node.instruction_ids.push_back(instruction_node.id);
         }
 
