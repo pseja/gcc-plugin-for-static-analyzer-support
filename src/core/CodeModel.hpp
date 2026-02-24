@@ -27,7 +27,12 @@ class CodeModel
     const Function *getFunction(NodeId id) const;
     const Block *getBlock(NodeId id) const;
     const Instruction *getInstruction(NodeId id) const;
-    // getAllFunctions, getAllBlocks, getAllInstructions, getAllVariables, ...
+
+    const std::unordered_map<NodeId, Type> &getTypes() const;
+    const std::unordered_map<NodeId, Variable> &getVariables() const;
+    const std::unordered_map<NodeId, Function> &getFunctions() const;
+    const std::unordered_map<NodeId, Block> &getBlocks() const;
+    const std::unordered_map<NodeId, Instruction> &getInstructions() const;
 
     // Model Builder API
     void addType(Type type);
@@ -36,17 +41,8 @@ class CodeModel
     void addBlock(Block block);
     void addInstruction(Instruction instr);
 
-    template <typename T> void attachAnnotation(NodeId target_id, const std::string &key, std::unique_ptr<T> data)
-    {
-        annotations[target_id][key] = std::move(data);
-    }
-
-    template <typename T> const T *getAnnotation(NodeId target_id, const std::string &key) const
-    {
-        (void)target_id;
-        (void)key;
-        return nullptr;
-    }
+    template <typename T> void attachAnnotation(NodeId target_id, const std::string &key, std::unique_ptr<T> data);
+    template <typename T> const T *getAnnotation(NodeId target_id, const std::string &key) const;
 
   private:
     // flat storage
