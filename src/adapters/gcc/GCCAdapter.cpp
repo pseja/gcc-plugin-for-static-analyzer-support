@@ -7,15 +7,21 @@
 #include <function.h>        // function
 #include <gimple.h>          // gimple_location
 #include <gimple-iterator.h> // gimple_stmt_iterator, gsi_start_bb, gsi_end_p, gsi_next, gsi_stmt
+#include <wide-int-print.h>
+#include <print-tree.h>
 
 #pragma GCC diagnostic pop
 
+#include "ConstantOperand.hpp"
 #include "GCCAdapter.hpp"
+#include "Instruction.hpp"
 #include "NodeId.hpp"
+#include "Operand.hpp"
 #include "PluginContext.hpp"
 #include "SourceLocation.hpp"
 #include "Type.hpp"
-#include "Operand.hpp"
+#include "TypeKind.hpp"
+#include "VariableOperand.hpp"
 
 namespace CodeListener
 {
