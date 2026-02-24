@@ -555,7 +555,7 @@ Operand GCCAdapter::parseOperand(tree operand_tree)
 
 void GCCAdapter::processFunction(function *fun)
 {
-    if (!fun || DECL_NAME(fun->decl) == nullptr)
+    if (!fun || !fun->decl || DECL_NAME(fun->decl) == nullptr)
     {
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
             DiagnosticLevel::Warning, "Adapter encountered a function without a name");
@@ -569,31 +569,33 @@ void GCCAdapter::processFunction(function *fun)
     // TODO: maybe bring the function name through function arguments instead of Adapter attribute
     current_function_name = function_name(fun);
 
-    // process function declaration
-    tree function_declaration = fun->decl;
     Function function_node;
-    // FIXME: replace with proper ID generation
-    function_node.id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(function_declaration));
+    function_node.id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(fun->decl));
     CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
         DiagnosticLevel::Debug, "Function node ID: " + toString(function_node.id));
-    function_node.name = function_name(fun);
+    function_node.name = current_function_name;
 
-    tree_node *return_type = TREE_TYPE(function_declaration);
+    if (TREE_TYPE(fun->decl))
+    {
+        tree_node *return_type = TREE_TYPE(TREE_TYPE(fun->decl));
+        if (return_type)
+        {
     function_node.return_type_id = getOrCreateType(return_type);
     CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
         DiagnosticLevel::Debug, "Function return type ID: " + toString(function_node.return_type_id));
+        }
+    }
 
     // process parameters
-    for (tree arg = DECL_ARGUMENTS(function_declaration); arg; arg = DECL_CHAIN(arg))
-    {
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
             DiagnosticLevel::Debug, "Processing function parameters...");
-
-        function_node.parameter_ids.push_back(getOrCreateVariable(arg));
-
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Processed parameter with ID: " + toString(function_node.parameter_ids.back()));
+    for (tree arg = DECL_ARGUMENTS(fun->decl); arg; arg = DECL_CHAIN(arg))
+    {
+        NodeId param_id = getOrCreateVariable(arg);
+        function_node.parameter_ids.push_back(param_id);
     }
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+        DiagnosticLevel::Debug, "Processed function parameters");
 
     // process local variables
     basic_block bb;
