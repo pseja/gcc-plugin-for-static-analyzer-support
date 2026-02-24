@@ -551,6 +551,79 @@ Operand GCCAdapter::parseOperand(tree operand_tree)
 
     return ConstantOperand{NodeId::INVALID, "<unhandled_operand>"};
 }
+
+static OpCode mapTreeCodeToOpCode(enum tree_code code)
+{
+    switch (code)
+    {
+    // arithmetic
+    case PLUS_EXPR:
+        return OpCode::ADD;
+    case MINUS_EXPR:
+        return OpCode::SUB;
+    case MULT_EXPR:
+        return OpCode::MUL;
+    case TRUNC_DIV_EXPR:
+    case CEIL_DIV_EXPR:
+    case FLOOR_DIV_EXPR:
+    case ROUND_DIV_EXPR:
+    case EXACT_DIV_EXPR:
+        return OpCode::DIV;
+    case TRUNC_MOD_EXPR:
+    case CEIL_MOD_EXPR:
+    case FLOOR_MOD_EXPR:
+    case ROUND_MOD_EXPR:
+        return OpCode::MOD;
+
+    // bitwise
+    case BIT_AND_EXPR:
+        return OpCode::BIT_AND;
+    case BIT_IOR_EXPR:
+        return OpCode::BIT_OR;
+    case BIT_XOR_EXPR:
+        return OpCode::BIT_XOR;
+    case LSHIFT_EXPR:
+        return OpCode::SHL;
+    case RSHIFT_EXPR:
+        return OpCode::SHR;
+    case BIT_NOT_EXPR:
+        return OpCode::BIT_NOT;
+
+    // logic
+    case TRUTH_AND_EXPR:
+    case TRUTH_ANDIF_EXPR:
+        return OpCode::LOG_AND;
+    case TRUTH_OR_EXPR:
+    case TRUTH_ORIF_EXPR:
+        return OpCode::LOG_OR;
+    case TRUTH_NOT_EXPR:
+        return OpCode::LOG_NOT;
+
+    // comparison
+    case EQ_EXPR:
+        return OpCode::EQUAL;
+    case NE_EXPR:
+        return OpCode::NOT_EQUAL;
+    case LT_EXPR:
+        return OpCode::LESS_THAN;
+    case LE_EXPR:
+        return OpCode::LESS_EQUAL;
+    case GT_EXPR:
+        return OpCode::GREATER_THAN;
+    case GE_EXPR:
+        return OpCode::GREATER_EQUAL;
+
+    // unary and others
+    case NEGATE_EXPR:
+        return OpCode::NEGATE;
+    case ABS_EXPR:
+        return OpCode::ABS;
+    case ADDR_EXPR:
+        return OpCode::ADDRESS_OF;
+
+    default:
+        return OpCode::NONE;
+}
 }
 
 void GCCAdapter::processFunction(function *fun)
