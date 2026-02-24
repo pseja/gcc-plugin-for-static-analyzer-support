@@ -598,6 +598,27 @@ void GCCAdapter::processFunction(function *fun)
         DiagnosticLevel::Debug, "Processed function parameters");
 
     // process local variables
+    if (fun->local_decls)
+    {
+        tree var;
+        unsigned i;
+        FOR_EACH_VEC_SAFE_ELT(fun->local_decls, i, var)
+        {
+            if (TREE_CODE(var) != VAR_DECL)
+            {
+                continue;
+            }
+
+            // filter out artificial variables or those not in the source
+            if (DECL_ARTIFICIAL(var))
+            {
+                continue;
+            }
+
+            NodeId var_id = getOrCreateVariable(var);
+            function_node.local_variable_ids.push_back(var_id);
+        }
+    }
     basic_block bb;
     FOR_EACH_BB_FN(bb, fun)
     {
