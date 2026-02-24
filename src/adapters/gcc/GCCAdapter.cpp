@@ -660,7 +660,13 @@ void GCCAdapter::processFunction(function *fun)
             CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
                 DiagnosticLevel::Debug,
                 "Instruction node parent block ID: " + toString(instruction_node.parent_block_id));
-            instruction_node.source_location = getSourceLocation(gimple_location(stmt));
+
+            // determine opcode and kind
+            enum gimple_code gcode = gimple_code(stmt);
+            instruction_node.opcode_name = gimple_code_name[gcode];
+            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+                DiagnosticLevel::Debug, "Processed instruction with opcode: " + instruction_node.opcode_name);
+
             CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
                 DiagnosticLevel::Debug,
                 "Instruction node source location: " + toString(instruction_node.source_location));
