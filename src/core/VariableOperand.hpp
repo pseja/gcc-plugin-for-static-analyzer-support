@@ -1,7 +1,10 @@
 #pragma once
 
-// #include <vector>
+#include <vector>
+#include <variant>
 
+#include "Accessor.hpp"
+#include "AccessorKind.hpp"
 #include "NodeId.hpp"
 
 namespace CodeListener
@@ -14,8 +17,7 @@ struct VariableOperand
 {
     NodeId variable_id;
 
-    // TODO: x.field[0]
-    // std::vector<int> access_offsets;
+    std::vector<Accessor> access_path;
 };
 
 } // namespace Core
