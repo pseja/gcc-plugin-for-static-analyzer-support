@@ -374,48 +374,183 @@ Operand GCCAdapter::parseOperand(tree operand_tree)
 {
     if (!operand_tree)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Warning, "Encountered an operand without a tree representation");
-        return ConstantOperand{NodeId::INVALID, "<invalid>"};
+        return ConstantOperand{NodeId::INVALID, "<null>"};
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(DiagnosticLevel::Debug,
-                                                                                          "Processing operand tree...");
-
-    if (DECL_P(operand_tree) || (TREE_CODE(operand_tree) == SSA_NAME))
+    // handle constants
+    if (CONSTANT_CLASS_P(operand_tree))
     {
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Operand is a variable, processing as variable operand...");
+            DiagnosticLevel::Debug, "Processing operand as constant operand...");
 
-        // TODO: handle SSA_NAMEs properly, they can represent both variables and temporary values
-        VariableOperand variable_operand;
-        variable_operand.variable_id = getOrCreateVariable(operand_tree);
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Parsed variable operand with ID: " + toString(variable_operand.variable_id));
-
-        return variable_operand;
-    }
-    else if (CONSTANT_CLASS_P(operand_tree))
-    {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Operand is a constant, processing as constant operand...");
-
-        // FIXME: very rough way to represent constants, do proper handling for different constant types
         ConstantOperand constant_operand;
-        // FIXME: replace with proper ID generation
         constant_operand.id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(operand_tree));
-        // TODO: extract actual constant value
-        constant_operand.value = "<constant>";
+
+        if (TREE_CODE(operand_tree) == INTEGER_CST)
+        {
+            if (TYPE_UNSIGNED(TREE_TYPE(operand_tree)))
+            {
+                constant_operand.value = std::to_string(tree_to_uhwi(operand_tree));
+            }
+            else
+            {
+                constant_operand.value = std::to_string(tree_to_shwi(operand_tree));
+            }
+        }
+        else if (TREE_CODE(operand_tree) == STRING_CST)
+        {
+            constant_operand.value = std::string("\"") + TREE_STRING_POINTER(operand_tree) + "\"";
+        }
+        else if (TREE_CODE(operand_tree) == REAL_CST)
+        {
+            char buf[64];
+            real_to_decimal(buf, &TREE_REAL_CST(operand_tree), sizeof(buf), 0, 1);
+            constant_operand.value = buf;
+        }
+        else
+        {
+            constant_operand.value = "<unknown_constant>";
+        }
+
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+            DiagnosticLevel::Debug, "Parsed constant operand with value: " + constant_operand.value);
 
         return constant_operand;
     }
-    else
+
+    // handle base variables
+    if (DECL_P(operand_tree) || TREE_CODE(operand_tree) == SSA_NAME)
     {
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Warning, "Encountered an unhandled operand type in gimple statement");
+            DiagnosticLevel::Debug, "Processing operand as variable operand...");
+
+        VariableOperand var_op;
+        var_op.variable_id = getOrCreateVariable(operand_tree);
+        return var_op;
     }
 
-    return ConstantOperand(NodeId::INVALID, "<unhandled>");
+    // handle recursive access paths
+    if (TREE_CODE(operand_tree) == COMPONENT_REF)
+    {
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+            DiagnosticLevel::Debug, "Recursively parsing component reference operand...");
+
+        Operand base_op = parseOperand(TREE_OPERAND(operand_tree, 0));
+        if (std::holds_alternative<VariableOperand>(base_op))
+        {
+            VariableOperand &var_op = std::get<VariableOperand>(base_op);
+            Accessor acc;
+            acc.kind = AccessorKind::FIELD;
+            acc.target_field_id = getOrCreateVariable(TREE_OPERAND(operand_tree, 1));
+
+            var_op.access_path.push_back(acc);
+            return var_op;
+        }
+        return base_op;
+    }
+
+    if (TREE_CODE(operand_tree) == ARRAY_REF)
+    {
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+            DiagnosticLevel::Debug, "Recursively parsing array reference operand...");
+
+        Operand base_op = parseOperand(TREE_OPERAND(operand_tree, 0));
+        if (std::holds_alternative<VariableOperand>(base_op))
+        {
+            VariableOperand &var_op = std::get<VariableOperand>(base_op);
+            Accessor acc;
+            acc.kind = AccessorKind::ARRAY;
+
+            tree index = TREE_OPERAND(operand_tree, 1);
+            Operand index_op = parseOperand(index);
+
+            if (std::holds_alternative<ConstantOperand>(index_op))
+            {
+                acc.index_operand_id = std::get<ConstantOperand>(index_op).id;
+    }
+    else
+            {
+                acc.index_operand_id = std::get<VariableOperand>(index_op).variable_id;
+            }
+
+            var_op.access_path.push_back(acc);
+            return var_op;
+        }
+        return base_op;
+    }
+
+    if (TREE_CODE(operand_tree) == MEM_REF)
+    {
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+            DiagnosticLevel::Debug, "Recursively parsing memory reference operand...");
+
+        Operand ptr_op = parseOperand(TREE_OPERAND(operand_tree, 0));
+        if (std::holds_alternative<VariableOperand>(ptr_op))
+        {
+            VariableOperand &var_op = std::get<VariableOperand>(ptr_op);
+
+            tree offset_tree = TREE_OPERAND(operand_tree, 1);
+            if (offset_tree && !integer_zerop(offset_tree))
+            {
+                Accessor off_acc;
+                off_acc.kind = AccessorKind::OFFSET;
+                Operand off_op = parseOperand(offset_tree);
+                if (std::holds_alternative<ConstantOperand>(off_op))
+                {
+                    off_acc.index_operand_id = std::get<ConstantOperand>(off_op).id;
+                }
+                var_op.access_path.push_back(off_acc);
+            }
+
+            Accessor deref_acc;
+            deref_acc.kind = AccessorKind::DEREF;
+            var_op.access_path.push_back(deref_acc);
+
+            return var_op;
+        }
+        return ptr_op;
+    }
+
+    if (TREE_CODE(operand_tree) == INDIRECT_REF)
+    {
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+            DiagnosticLevel::Debug, "Recursively parsing indirect reference operand...");
+
+        Operand ptr_op = parseOperand(TREE_OPERAND(operand_tree, 0));
+        if (std::holds_alternative<VariableOperand>(ptr_op))
+        {
+            VariableOperand &var_op = std::get<VariableOperand>(ptr_op);
+            Accessor acc;
+            acc.kind = AccessorKind::DEREF;
+            var_op.access_path.push_back(acc);
+            return var_op;
+        }
+        return ptr_op;
+    }
+
+    if (TREE_CODE(operand_tree) == ADDR_EXPR)
+    {
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+            DiagnosticLevel::Debug, "Recursively parsing address of operand...");
+
+        Operand x_op = parseOperand(TREE_OPERAND(operand_tree, 0));
+        if (std::holds_alternative<VariableOperand>(x_op))
+        {
+            VariableOperand &var_op = std::get<VariableOperand>(x_op);
+            Accessor acc;
+            acc.kind = AccessorKind::ADDRESS_OF;
+            acc.target_field_id = getOrCreateType(TREE_TYPE(operand_tree));
+            var_op.access_path.push_back(acc);
+            return var_op;
+        }
+        return x_op;
+    }
+
+    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+        DiagnosticLevel::Debug, "Operand tree code not handled: " + std::to_string(TREE_CODE(operand_tree)));
+
+    return ConstantOperand{NodeId::INVALID, "<unhandled_operand>"};
+}
 }
 
 void GCCAdapter::processFunction(function *fun)
