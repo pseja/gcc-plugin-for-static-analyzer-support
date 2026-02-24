@@ -695,24 +695,41 @@ void GCCAdapter::processFunction(function *fun)
             CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
                 DiagnosticLevel::Debug, "Processed instruction with opcode: " + instruction_node.opcode);
 
-            // extract operands based on statement type
-            if (is_gimple_assign(stmt))
+            // map instruction kind
+            switch (gcode)
             {
-                tree lhs = gimple_assign_lhs(stmt);
-                tree rhs1 = gimple_assign_rhs1(stmt);
-                instruction_node.operands.push_back(parseOperand(lhs));
-                instruction_node.operands.push_back(parseOperand(rhs1));
+            case GIMPLE_ASSIGN: {
+                instruction_node.kind = InstructionKind::ASSIGN;
 
-                if (gimple_num_ops(stmt) > 2)
+                tree lhs = gimple_assign_lhs(stmt);
+                instruction_node.operands.push_back(parseOperand(lhs));
+
+                // opcode
+                enum tree_code rhs_code = gimple_assign_rhs_code(stmt);
+                instruction_node.opcode = mapTreeCodeToOpCode(rhs_code);
+
+                enum gimple_rhs_class rhs_class = gimple_assign_rhs_class(stmt);
+                if (rhs_class == GIMPLE_SINGLE_RHS)
                 {
-                    tree rhs2 = gimple_assign_rhs2(stmt);
-                    if (rhs2)
-                    {
-                        instruction_node.operands.push_back(parseOperand(rhs2));
-                    }
+                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
                 }
+                else if (rhs_class == GIMPLE_UNARY_RHS)
+                {
+                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
+                }
+                else if (rhs_class == GIMPLE_BINARY_RHS)
+                {
+                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
+                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs2(stmt)));
+                }
+                else if (rhs_class == GIMPLE_TERNARY_RHS)
+                    {
+                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
+                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs2(stmt)));
+                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs3(stmt)));
+                }
+                break;
             }
-            // TODO: handle more statement types
             else
             {
                 CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
