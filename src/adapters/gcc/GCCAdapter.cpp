@@ -730,15 +730,29 @@ void GCCAdapter::processFunction(function *fun)
                 }
                 break;
             }
+            case GIMPLE_CALL: {
+                instruction_node.kind = InstructionKind::CALL;
+                tree fn = gimple_call_fn(stmt);
+                instruction_node.operands.push_back(parseOperand(fn));
+
+                // lhs (return Value)
+                tree lhs = gimple_call_lhs(stmt);
+                if (lhs)
+                {
+                    instruction_node.operands.push_back(parseOperand(lhs));
+            }
             else
             {
-                CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-                    DiagnosticLevel::Warning,
-                    "Encountered an unhandled gimple statement type: " + instruction_node.opcode);
-            }
+                    instruction_node.operands.push_back(ConstantOperand{NodeId::INVALID, "<void>"});
+                }
 
-            // FIXME: uncomment after implementing the method
-            // model.addInstruction(instruction_node);
+                // arguments
+                for (unsigned i = 0; i < gimple_call_num_args(stmt); ++i)
+                {
+                    instruction_node.operands.push_back(parseOperand(gimple_call_arg(stmt, i)));
+                }
+                break;
+            }
             block_node.instruction_ids.push_back(instruction_node.id);
         }
 
