@@ -4,6 +4,7 @@
 #include <context.h>
 #include <tree-pass.h>
 
+#include "JSONExporter.hpp"
 #include "Pass.hpp"
 #include "PluginContext.hpp"
 
@@ -71,6 +72,10 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
 {
     (void)gcc_data;
     (void)user_data;
+
+    // TODO: run the analyzer/s here
+    CodeListener::Exporters::JSONExporter exporter(std::cout);
+    exporter.exportModel(PluginContext::getInstance().getCodeModel());
 
     std::cout << "Code Listener GCC plugin finished\n";
 }
