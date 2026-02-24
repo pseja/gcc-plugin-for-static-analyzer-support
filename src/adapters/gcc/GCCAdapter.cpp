@@ -63,7 +63,7 @@ TypeKind GCCAdapter::mapTypeTreeToTypeKind(tree &type_tree)
 
 SourceLocation GCCAdapter::getSourceLocation(location_t location)
 {
-    if (location == UNKNOWN_LOCATION)
+    if (location == UNKNOWN_LOCATION || location <= BUILTINS_LOCATION)
     {
         // FIXME: before return statement, there is a label to jump to unknown location for some reason
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
@@ -73,6 +73,13 @@ SourceLocation GCCAdapter::getSourceLocation(location_t location)
     }
 
     expanded_location eloc = expand_location(location);
+    if (eloc.file == nullptr)
+    {
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+            DiagnosticLevel::Warning, "Encountered an unknown source location");
+
+        return SourceLocation();
+    }
 
     return SourceLocation(eloc.file, current_function_name, eloc.line, eloc.column);
 }
