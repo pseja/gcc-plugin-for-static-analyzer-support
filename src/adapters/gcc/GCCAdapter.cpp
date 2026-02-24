@@ -236,9 +236,6 @@ NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
         return NodeId::INVALID;
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Maybe processing variable tree...");
-
     if (variable_cache.count(variable_tree))
     {
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
@@ -248,47 +245,127 @@ NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
     }
 
     CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Actually processing variable tree...");
+        DiagnosticLevel::Debug, "Processing a new variable...");
 
     Variable variable;
-    // FIXME: replace with proper ID generation
     variable.id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(variable_tree));
 
+    // pre-insert into cache
+    variable_cache[variable_tree] = variable.id;
+
+    // resolve name
     if (DECL_NAME(variable_tree))
     {
-        variable.name = IDENTIFIER_POINTER(DECL_NAME(variable_tree));
+        const char *name = IDENTIFIER_POINTER(DECL_NAME(variable_tree));
+        variable.name = name ? name : "<anonymous>";
+    }
+    else if (TREE_CODE(variable_tree) == SSA_NAME)
+    {
+        // for SSA names, try to get the underlying var name
+        tree var = SSA_NAME_VAR(variable_tree);
+        if (var && DECL_NAME(var))
+        {
+            const char *name = IDENTIFIER_POINTER(DECL_NAME(var));
+            variable.name =
+                std::string(name ? name : "<anonymous>") + "_" + std::to_string(SSA_NAME_VERSION(variable_tree));
+        }
+        else
+        {
+            variable.name = "ssa_" + std::to_string(SSA_NAME_VERSION(variable_tree));
+        }
     }
     else
     {
         variable.name = "<anonymous>";
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Determined variable name: " + variable.name);
-
     variable.type_id = getOrCreateType(TREE_TYPE(variable_tree));
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Determined variable type ID: " + toString(variable.type_id));
 
+    if (DECL_P(variable_tree))
+    {
     variable.source_location = getSourceLocation(DECL_SOURCE_LOCATION(variable_tree));
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Determined variable source location: " + toString(variable.source_location));
 
     // determine scope
     if (is_global_var(variable_tree))
     {
         variable.scope = Scope::GLOBAL;
+        }
+        else if (TREE_CODE(variable_tree) == PARM_DECL)
+        {
+            variable.scope = Scope::FUNCTION;
+        }
+        else
+        {
+            variable.scope = Scope::FUNCTION;
+        }
+
+        // determine storage duration and linkage
+        if (TREE_CODE(variable_tree) == PARM_DECL)
+        {
+            variable.storage_duration = StorageDuration::AUTO;
+            variable.linkage = Linkage::NONE;
+        }
+        else if (TREE_STATIC(variable_tree))
+        {
+            variable.storage_duration = StorageDuration::STATIC;
+            variable.linkage = TREE_PUBLIC(variable_tree) ? Linkage::EXTERNAL : Linkage::INTERNAL;
+        }
+        else if (DECL_EXTERNAL(variable_tree))
+        {
+            variable.storage_duration = StorageDuration::EXTERN;
+            variable.linkage = Linkage::EXTERNAL;
+        }
+        else if (DECL_REGISTER(variable_tree))
+        {
+            variable.storage_duration = StorageDuration::REGISTER;
+            variable.linkage = Linkage::NONE;
+        }
+        else
+        {
+            variable.storage_duration = StorageDuration::AUTO;
+            variable.linkage = Linkage::NONE;
+        }
+
+        // thread-local storage
+        if (DECL_THREAD_LOCAL_P(variable_tree))
+        {
+            variable.storage_duration = StorageDuration::THREAD_LOCAL;
+        }
+
+        // bitfield information for struct fields
+        if (TREE_CODE(variable_tree) == FIELD_DECL && DECL_BIT_FIELD(variable_tree))
+        {
+            variable.is_bitfield = true;
+            if (DECL_SIZE(variable_tree) && tree_fits_uhwi_p(DECL_SIZE(variable_tree)))
+            {
+                variable.bitfield_size = tree_to_uhwi(DECL_SIZE(variable_tree));
+            }
+            if (DECL_FIELD_BIT_OFFSET(variable_tree) && tree_fits_uhwi_p(DECL_FIELD_BIT_OFFSET(variable_tree)))
+            {
+                variable.bitfield_offset = tree_to_uhwi(DECL_FIELD_BIT_OFFSET(variable_tree));
+            }
+        }
     }
     else
     {
+        // for SSA names and other non-declaration variables, we may not have good source location or scope information
+        variable.source_location = SourceLocation();
         variable.scope = Scope::FUNCTION;
-    };
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        DiagnosticLevel::Debug, "Determined variable scope: " + toString(variable.scope));
+        variable.storage_duration = StorageDuration::AUTO;
+        variable.linkage = Linkage::NONE;
+    }
 
-    // FIXME: uncomment after implementing the method
-    // model.addVariable(variable);
-    variable_cache[variable_tree] = variable.id;
+    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+        DiagnosticLevel::Debug,
+        "Processed variable node with id: " + toString(variable.id) + ", name: " + variable.name +
+            ", type id: " + toString(variable.type_id) + ", source location: " + toString(variable.source_location) +
+            ", scope: " + toString(variable.scope) + ", storage duration: " + toString(variable.storage_duration) +
+            ", linkage: " + toString(variable.linkage) + ", qualifiers: " +
+            (variable.is_bitfield ? "bitfield (" + std::to_string(variable.bitfield_size) +
+                                        " bits, offset: " + std::to_string(variable.bitfield_offset) + " bits)"
+                                  : ""));
+
+    model.addVariable(variable);
 
     return variable.id;
 }
