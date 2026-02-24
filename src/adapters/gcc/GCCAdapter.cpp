@@ -37,12 +37,17 @@ GCCAdapter::GCCAdapter(CodeModel &model) : model(model)
 
 TypeKind GCCAdapter::mapTypeTreeToTypeKind(tree &type_tree)
 {
-    // FIXME: TREE_TYPE?
+    if (!type_tree)
+    {
+        return TypeKind::UNKNOWN;
+    }
+
     switch (TREE_CODE(type_tree))
     {
     case VOID_TYPE:
         return TypeKind::VOID;
     case POINTER_TYPE:
+    case REFERENCE_TYPE:
         return TypeKind::POINTER;
     case RECORD_TYPE:
         return TypeKind::STRUCT;
@@ -51,6 +56,7 @@ TypeKind GCCAdapter::mapTypeTreeToTypeKind(tree &type_tree)
     case ARRAY_TYPE:
         return TypeKind::ARRAY;
     case FUNCTION_TYPE:
+    case METHOD_TYPE:
         return TypeKind::FUNCTION;
     case INTEGER_TYPE:
         return TypeKind::INTEGER;
