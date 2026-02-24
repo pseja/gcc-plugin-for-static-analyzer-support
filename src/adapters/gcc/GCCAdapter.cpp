@@ -619,11 +619,12 @@ void GCCAdapter::processFunction(function *fun)
             function_node.local_variable_ids.push_back(var_id);
         }
     }
+
+    // process basic blocks
     basic_block bb;
     FOR_EACH_BB_FN(bb, fun)
     {
         Block block_node;
-        // FIXME: replace with proper ID generation
         block_node.id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(bb));
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
             DiagnosticLevel::Debug, "Block node ID: " + toString(block_node.id));
@@ -631,8 +632,20 @@ void GCCAdapter::processFunction(function *fun)
         CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
             DiagnosticLevel::Debug, "Block node parent function ID: " + toString(block_node.parent_function_id));
         block_node.name = "bb_" + std::to_string(bb->index);
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Block node name: " + block_node.name);
+
+        // process CFG edges
+        edge e;
+        edge_iterator ei;
+        FOR_EACH_EDGE(e, ei, bb->preds)
+        {
+            NodeId pred_id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(e->src));
+            block_node.predecesor_block_ids.push_back(pred_id);
+        }
+        FOR_EACH_EDGE(e, ei, bb->succs)
+        {
+            NodeId succ_id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(e->dest));
+            block_node.successor_block_ids.push_back(succ_id);
+        }
 
         // process instructions in the block
         for (gimple_stmt_iterator gsi = gsi_start_bb(bb); !gsi_end_p(gsi); gsi_next(&gsi))
