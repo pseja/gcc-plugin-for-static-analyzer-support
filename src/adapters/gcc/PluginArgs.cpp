@@ -1,4 +1,4 @@
-#include <iostream> // std::cout
+#include <iostream> // std::cerr
 
 #include <gcc-plugin.h> // plugin_name_args
 
@@ -21,13 +21,13 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info)
 
 void PluginArgs::print() const
 {
-    std::cout << "PluginArgs:\n";
-    std::cout << "  Base name: '" << base_name << "'\n";
-    std::cout << "  Full name: '" << full_name << "'\n";
-    std::cout << "  Arguments:\n";
+    std::cerr << "PluginArgs:\n";
+    std::cerr << "  Base name: '" << base_name << "'\n";
+    std::cerr << "  Full name: '" << full_name << "'\n";
+    std::cerr << "  Arguments:\n";
     for (const auto &[key, value] : args)
     {
-        std::cout << "    Key: '" << key << "', Value: '" << value << "'\n";
+        std::cerr << "    Key: '" << key << "', Value: '" << value << "'\n";
     }
 }
 

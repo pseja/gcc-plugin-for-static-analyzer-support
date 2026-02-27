@@ -54,13 +54,13 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     // cleanup
     register_callback(plugin_info->base_name, PLUGIN_FINISH, on_plugin_finish, this);
 
-    std::cout << "Code Listener GCC plugin initialized\n";
+    std::cerr << "Code Listener GCC plugin initialized\n";
 }
 
 void PluginContext::init_print(const plugin_gcc_version *version)
 {
-    std::cout << "Initializing Code Listener GCC plugin\n";
-    std::cout << "GCC version: " << version->basever << "\n";
+    std::cerr << "Initializing Code Listener GCC plugin\n";
+    std::cerr << "GCC version: " << version->basever << "\n";
 
     if (args)
     {
@@ -74,10 +74,10 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     (void)user_data;
 
     // TODO: run the analyzer/s here
-    CodeListener::Exporters::JSONExporter exporter(std::cout);
+    CodeListener::Exporters::JSONExporter exporter(std::cerr);
     exporter.exportModel(PluginContext::getInstance().getCodeModel());
 
-    std::cout << "Code Listener GCC plugin finished\n";
+    std::cerr << "Code Listener GCC plugin finished\n";
 }
 
 } // namespace CompilerAbstractionLayer

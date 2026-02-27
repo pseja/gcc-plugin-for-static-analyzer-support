@@ -1,4 +1,4 @@
-#include <iostream> // std::cout
+#include <iostream> // std::cerr
 
 #include <gcc-plugin.h>     // plugin_init, plugin_is_GPL_compatible
 #include <plugin-version.h> // gcc_version
@@ -13,24 +13,24 @@ int plugin_is_GPL_compatible;
 
 void print_info(struct plugin_name_args *plugin_info, struct plugin_gcc_version *version)
 {
-    std::cout << "--- plugin info ---\n";
-    std::cout << "plugin name: " << plugin_info->base_name << "\n";
-    std::cout << "full plugin name: " << plugin_info->full_name << "\n";
-    std::cout << "argument count: " << plugin_info->argc << "\n";
+    std::cerr << "--- plugin info ---\n";
+    std::cerr << "plugin name: " << plugin_info->base_name << "\n";
+    std::cerr << "full plugin name: " << plugin_info->full_name << "\n";
+    std::cerr << "argument count: " << plugin_info->argc << "\n";
     for (int i = 0; i < plugin_info->argc; ++i)
     {
-        std::cout << "arg " << i << ": key=" << plugin_info->argv[i].key << ", value=" << plugin_info->argv[i].value
+        std::cerr << "arg " << i << ": key=" << plugin_info->argv[i].key << ", value=" << plugin_info->argv[i].value
                   << "\n";
     }
-    // std::cout << "plugin version: " << plugin_info->version << "\n";
-    // std::cout << "plugin help: " << plugin_info->help << "\n";
+    // std::cerr << "plugin version: " << plugin_info->version << "\n";
+    // std::cerr << "plugin help: " << plugin_info->help << "\n";
 
-    std::cout << "\n--- GCC version info ---\n";
-    std::cout << "basever: " << version->basever << "\n";
-    std::cout << "datestamp: " << version->datestamp << "\n";
-    std::cout << "devphase: " << version->devphase << "\n";
-    std::cout << "revision: " << version->revision << "\n";
-    std::cout << "configuration arguments: " << version->configuration_arguments << "\n";
+    std::cerr << "\n--- GCC version info ---\n";
+    std::cerr << "basever: " << version->basever << "\n";
+    std::cerr << "datestamp: " << version->datestamp << "\n";
+    std::cerr << "devphase: " << version->devphase << "\n";
+    std::cerr << "revision: " << version->revision << "\n";
+    std::cerr << "configuration arguments: " << version->configuration_arguments << "\n";
 }
 
 int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version *version)
@@ -46,7 +46,8 @@ int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
         return 1;
     }
 
-    CodeListener::CompilerAbstractionLayer::PluginContext &context = CodeListener::CompilerAbstractionLayer::PluginContext::getInstance();
+    CodeListener::CompilerAbstractionLayer::PluginContext &context =
+        CodeListener::CompilerAbstractionLayer::PluginContext::getInstance();
     context.initialize(plugin_info, version);
 
     return 0;
