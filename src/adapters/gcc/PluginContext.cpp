@@ -74,7 +74,7 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     (void)user_data;
 
     // TODO: run the analyzer/s here
-    CodeListener::Exporters::JSONExporter exporter(std::cerr);
+    CodeListener::Exporters::JSONExporter exporter(std::cout);
     exporter.exportModel(PluginContext::getInstance().getCodeModel());
 
     std::cerr << "Code Listener GCC plugin finished\n";

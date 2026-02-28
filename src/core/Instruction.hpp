@@ -8,6 +8,7 @@
 #include "OpCode.hpp"
 #include "Operand.hpp"
 #include "SourceLocation.hpp"
+#include "SwitchCase.hpp"
 
 namespace CodeListener
 {
@@ -25,6 +26,7 @@ struct Instruction
     std::string opcode_name;
 
     std::vector<Operand> operands;
+    std::vector<SwitchCase> switch_cases;
     SourceLocation source_location;
 
     // ends a basic block (e.g. GOTO, RET, SWITCH, COND)

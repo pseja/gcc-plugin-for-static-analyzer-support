@@ -4,6 +4,7 @@
 
 #include <gcc-plugin.h>
 #include <tree.h>            // DECL_NAME
+#include <tree-cfg.h>        // label_to_block
 #include <function.h>        // function
 #include <gimple.h>          // gimple_location
 #include <gimple-iterator.h> // gimple_stmt_iterator, gsi_start_bb, gsi_end_p, gsi_next, gsi_stmt
@@ -19,6 +20,7 @@
 #include "Operand.hpp"
 #include "PluginContext.hpp"
 #include "SourceLocation.hpp"
+#include "SwitchCase.hpp"
 #include "Type.hpp"
 #include "TypeKind.hpp"
 #include "VariableOperand.hpp"
@@ -873,6 +875,34 @@ void GCCAdapter::processFunction(function *fun)
                 instruction_node.kind = InstructionKind::SWITCH;
                 gswitch *switch_stmt = as_a<gswitch *>(stmt);
                 instruction_node.operands.push_back(parseOperand(gimple_switch_index(switch_stmt)));
+
+                // process switch cases
+                for (unsigned i = 0; i < gimple_switch_num_labels(switch_stmt); i++)
+                {
+                    tree case_label = gimple_switch_label(switch_stmt, i);
+                    SwitchCase switch_case;
+
+                    basic_block target_bb = label_to_block(cfun, CASE_LABEL(case_label));
+                    if (target_bb)
+                    {
+                        switch_case.target_block_id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(target_bb));
+                    }
+
+                    tree low = CASE_LOW(case_label);
+                    if (low)
+                    {
+                        switch_case.low_value = parseOperand(low);
+                    }
+
+                    tree high = CASE_HIGH(case_label);
+                    if (high)
+                    {
+                        switch_case.high_value = parseOperand(high);
+                    }
+
+                    instruction_node.switch_cases.push_back(switch_case);
+                }
+
                 instruction_node.is_terminator = true;
                 break;
             }

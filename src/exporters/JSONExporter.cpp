@@ -13,6 +13,7 @@
 #include "Scope.hpp"
 #include "SourceLocation.hpp"
 #include "StorageDuration.hpp"
+#include "SwitchCase.hpp"
 #include "Type.hpp"
 #include "TypeKind.hpp"
 #include "Variable.hpp"
@@ -30,6 +31,7 @@ void to_json(json &j, const SourceLocation &loc)
 {
     j = json{{"file", loc.file}, {"line", loc.line}, {"column", loc.column}, {"function", loc.function}};
 }
+
 
 void to_json(json &j, const Variable &var)
 {
@@ -104,6 +106,43 @@ void to_json(json &j, const Operand &op)
     }
 }
 
+void to_json(json &j, const SwitchCase &sc)
+{
+    j = json{{"target_block_id", sc.target_block_id}};
+    
+    if (sc.low_value.has_value())
+    {
+        if (std::holds_alternative<ConstantOperand>(*sc.low_value))
+        {
+            const auto &co = std::get<ConstantOperand>(*sc.low_value);
+            j["low_value"] = json{{"type", "constant"}, {"id", co.id}, {"value", co.value}};
+        }
+        else if (std::holds_alternative<VariableOperand>(*sc.low_value))
+        {
+            const auto &vo = std::get<VariableOperand>(*sc.low_value);
+            j["low_value"] = json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
+        }
+    }
+    else
+    {
+        j["is_default"] = true;
+    }
+
+    if (sc.high_value.has_value())
+    {
+        if (std::holds_alternative<ConstantOperand>(*sc.high_value))
+        {
+            const auto &co = std::get<ConstantOperand>(*sc.high_value);
+            j["high_value"] = json{{"type", "constant"}, {"id", co.id}, {"value", co.value}};
+        }
+        else if (std::holds_alternative<VariableOperand>(*sc.high_value))
+        {
+            const auto &vo = std::get<VariableOperand>(*sc.high_value);
+            j["high_value"] = json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
+        }
+    }
+}
+
 void to_json(json &j, const Instruction &instr)
 {
     j = json{{"id", instr.id},
@@ -113,6 +152,11 @@ void to_json(json &j, const Instruction &instr)
              {"location", instr.source_location},
              {"operands", instr.operands},
              {"is_terminator", instr.is_terminator}};
+
+    if (!instr.switch_cases.empty())
+    {
+        j["switch_cases"] = instr.switch_cases;
+    }
 }
 
 void to_json(json &j, const Block &block)
