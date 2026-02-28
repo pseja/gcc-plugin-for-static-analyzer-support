@@ -32,7 +32,6 @@ void to_json(json &j, const SourceLocation &loc)
     j = json{{"file", loc.file}, {"line", loc.line}, {"column", loc.column}, {"function", loc.function}};
 }
 
-
 void to_json(json &j, const Variable &var)
 {
     j = json{{"id", var.id},
@@ -90,6 +89,15 @@ void to_json(json &j, const Accessor &acc)
     {
         j["index_operand_id"] = acc.index_operand_id;
     }
+    else if (acc.kind == AccessorKind::OFFSET)
+    {
+        j["index_operand_id"] = acc.index_operand_id;
+    }
+    else if (acc.kind == AccessorKind::BIT_SLICE)
+    {
+        j["bit_start"] = acc.bit_start;
+        j["bit_size"] = acc.bit_size;
+    }
 }
 
 void to_json(json &j, const Operand &op)
@@ -109,7 +117,7 @@ void to_json(json &j, const Operand &op)
 void to_json(json &j, const SwitchCase &sc)
 {
     j = json{{"target_block_id", sc.target_block_id}};
-    
+
     if (sc.low_value.has_value())
     {
         if (std::holds_alternative<ConstantOperand>(*sc.low_value))
@@ -120,7 +128,8 @@ void to_json(json &j, const SwitchCase &sc)
         else if (std::holds_alternative<VariableOperand>(*sc.low_value))
         {
             const auto &vo = std::get<VariableOperand>(*sc.low_value);
-            j["low_value"] = json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
+            j["low_value"] =
+                json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
         }
     }
     else
@@ -138,7 +147,8 @@ void to_json(json &j, const SwitchCase &sc)
         else if (std::holds_alternative<VariableOperand>(*sc.high_value))
         {
             const auto &vo = std::get<VariableOperand>(*sc.high_value);
-            j["high_value"] = json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
+            j["high_value"] =
+                json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
         }
     }
 }
