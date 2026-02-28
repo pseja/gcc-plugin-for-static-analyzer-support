@@ -21,7 +21,6 @@ class CodeModel
 {
   public:
     // Query System API
-    // TODO: chaining with C++23 ranges
     const Type *getType(NodeId id) const;
     const Variable *getVariable(NodeId id) const;
     const Function *getFunction(NodeId id) const;
@@ -44,13 +43,25 @@ class CodeModel
     template <typename T> void attachAnnotation(NodeId target_id, const std::string &key, std::unique_ptr<T> data);
     template <typename T> const T *getAnnotation(NodeId target_id, const std::string &key) const;
 
+    // flat range views
+    auto types() const;
+    auto variables() const;
+    auto functions() const;
+    auto blocks() const;
+    auto instructions() const;
+
+    auto parametersOf(const Function &func) const;
+    auto blocksOf(const Function &func) const;
+    auto instructionsOf(const Block &block) const;
+    auto instructionsOf(const Function &func) const;
+
   private:
     // flat storage
-    std::unordered_map<NodeId, Type> types;
-    std::unordered_map<NodeId, Variable> variables;
-    std::unordered_map<NodeId, Function> functions;
-    std::unordered_map<NodeId, Block> blocks;
-    std::unordered_map<NodeId, Instruction> instructions;
+    std::unordered_map<NodeId, Type> types_map;
+    std::unordered_map<NodeId, Variable> variables_map;
+    std::unordered_map<NodeId, Function> functions_map;
+    std::unordered_map<NodeId, Block> blocks_map;
+    std::unordered_map<NodeId, Instruction> instructions_map;
 
     // annotations
     std::unordered_map<NodeId, std::unordered_map<std::string, std::unique_ptr<AnnotationServices::AnnotationBase>>>
