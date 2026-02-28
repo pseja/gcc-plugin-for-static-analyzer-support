@@ -635,6 +635,30 @@ static OpCode mapTreeCodeToOpCode(enum tree_code code)
     case ADDR_EXPR:
         return OpCode::ADDRESS_OF;
 
+    case POINTER_PLUS_EXPR:
+        return OpCode::POINTER_ADD;
+    case POINTER_DIFF_EXPR:
+        return OpCode::POINTER_SUB;
+
+    // numeric
+    case MIN_EXPR:
+        return OpCode::MIN;
+    case MAX_EXPR:
+        return OpCode::MAX;
+
+    // rotation
+    case LROTATE_EXPR:
+        return OpCode::ROTATE_LEFT;
+    case RROTATE_EXPR:
+        return OpCode::ROTATE_RIGHT;
+
+    // casts
+    case NOP_EXPR:
+    case CONVERT_EXPR:
+    case FIX_TRUNC_EXPR:
+    case FLOAT_EXPR:
+        return OpCode::CAST;
+
     default:
         return OpCode::NONE;
     }

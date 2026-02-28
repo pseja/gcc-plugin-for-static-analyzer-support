@@ -45,6 +45,19 @@ enum class OpCode
 
     // memory
     ADDRESS_OF, // &x
+    POINTER_ADD, // ptr + offset
+    POINTER_SUB, // ptr - ptr (diff)
+
+    // numeric
+    MIN, // min(x, y)
+    MAX, // max(x, y)
+
+    // bitwise rotation
+    ROTATE_LEFT,  // rotate x left by y
+    ROTATE_RIGHT, // rotate x right by y
+
+    // type conversion
+    CAST, // (type)x
 };
 
 inline std::string toString(OpCode op)
@@ -99,6 +112,20 @@ inline std::string toString(OpCode op)
         return "LESS_EQUAL";
     case OpCode::ADDRESS_OF:
         return "ADDRESS_OF";
+    case OpCode::POINTER_ADD:
+        return "POINTER_ADD";
+    case OpCode::POINTER_SUB:
+        return "POINTER_SUB";
+    case OpCode::MIN:
+        return "MIN";
+    case OpCode::MAX:
+        return "MAX";
+    case OpCode::ROTATE_LEFT:
+        return "ROTATE_LEFT";
+    case OpCode::ROTATE_RIGHT:
+        return "ROTATE_RIGHT";
+    case OpCode::CAST:
+        return "CAST";
     default:
         return "UNKNOWN";
     }
