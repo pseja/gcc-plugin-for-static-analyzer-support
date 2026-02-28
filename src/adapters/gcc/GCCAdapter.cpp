@@ -836,6 +836,15 @@ void GCCAdapter::processFunction(function *fun)
             switch (gcode)
             {
             case GIMPLE_ASSIGN: {
+                if (gimple_clobber_p(stmt))
+                {
+                    instruction_node.kind = InstructionKind::CLOBBER;
+                    tree lhs = gimple_assign_lhs(stmt);
+                    instruction_node.operands.push_back(parseOperand(lhs));
+                    instruction_node.source_location = getSourceLocation(DECL_SOURCE_LOCATION(lhs));
+                    break;
+                }
+
                 instruction_node.kind = InstructionKind::ASSIGN;
 
                 tree lhs = gimple_assign_lhs(stmt);
