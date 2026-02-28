@@ -14,7 +14,8 @@ enum class AccessorKind
     ARRAY,      // ptr[index] or arr[index]
     FIELD,      // obj.field or ptr->field
     ADDRESS_OF, // &expr
-    OFFSET      // (char*)ptr + offset (pointer arithmetic)
+    OFFSET,     // (char*)ptr + offset (pointer arithmetic)
+    BIT_SLICE,  // expr[start:end] (bit field extraction)
 };
 
 inline std::string toString(AccessorKind accessor_kind)
@@ -31,6 +32,8 @@ inline std::string toString(AccessorKind accessor_kind)
         return "ADDRESS_OF";
     case AccessorKind::OFFSET:
         return "OFFSET";
+    case AccessorKind::BIT_SLICE:
+        return "BIT_SLICE";
     default:
         return "UNKNOWN";
     }

@@ -560,6 +560,37 @@ Operand GCCAdapter::parseOperand(tree operand_tree)
         return x_op;
     }
 
+    if (TREE_CODE(operand_tree) == BIT_FIELD_REF)
+    {
+        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+            DiagnosticLevel::Debug, "Recursively parsing bit field ref operand...");
+
+        Operand base_op = parseOperand(TREE_OPERAND(operand_tree, 0));
+        if (std::holds_alternative<VariableOperand>(base_op))
+        {
+            VariableOperand &var_op = std::get<VariableOperand>(base_op);
+            Accessor acc;
+            acc.kind = AccessorKind::BIT_SLICE;
+
+            tree size_tree = TREE_OPERAND(operand_tree, 1);
+            tree pos_tree = TREE_OPERAND(operand_tree, 2);
+
+            if (size_tree && tree_fits_uhwi_p(size_tree))
+            {
+                acc.bit_size = tree_to_uhwi(size_tree);
+            }
+
+            if (pos_tree && tree_fits_uhwi_p(pos_tree))
+            {
+                acc.bit_start = tree_to_uhwi(pos_tree);
+            }
+
+            var_op.access_path.push_back(acc);
+            return var_op;
+        }
+        return base_op;
+    }
+
     CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
         DiagnosticLevel::Debug, "Operand tree code not handled: " + std::to_string(TREE_CODE(operand_tree)));
 
