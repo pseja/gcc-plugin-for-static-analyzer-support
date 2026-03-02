@@ -29,6 +29,7 @@ enum class InstructionKind
     // GIMPLE_PREDICT, // branch prediction hint
     CLOBBER,     // variable lifetime end
     UNREACHABLE, // control flow dead end
+    ABORT,       // abort/trap/unreachable
 
     // C extensions (GCC specific)
     // GIMPLE_TRY, // __attribute__((cleanup))

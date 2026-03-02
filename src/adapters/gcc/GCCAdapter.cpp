@@ -297,6 +297,7 @@ NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
 
     if (DECL_P(variable_tree))
     {
+        variable.artificial = DECL_ARTIFICIAL(variable_tree);
         variable.source_location = getSourceLocation(DECL_SOURCE_LOCATION(variable_tree));
 
         // determine scope
@@ -938,6 +939,19 @@ void GCCAdapter::processBlock(basic_block bb, NodeId function_id)
             }
             case GIMPLE_CALL: {
                 instruction_node.kind = InstructionKind::CALL;
+
+                tree fndecl = gimple_call_fndecl(stmt);
+                if (fndecl && DECL_BUILT_IN_CLASS(fndecl) == BUILT_IN_NORMAL)
+                {
+                    enum built_in_function code = DECL_FUNCTION_CODE(fndecl);
+                    if (code == BUILT_IN_ABORT || code == BUILT_IN_TRAP || code == BUILT_IN_UNREACHABLE)
+                    {
+                        instruction_node.kind = InstructionKind::ABORT;
+                        instruction_node.opcode_name = "ABORT";
+                        instruction_node.is_terminator = true;
+                    }
+                }
+
                 tree fn = gimple_call_fn(stmt);
                 instruction_node.operands.push_back(parseOperand(fn));
 
