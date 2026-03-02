@@ -66,6 +66,8 @@ inline std::string toString(InstructionKind kind)
         return "CLOBBER";
     case InstructionKind::UNREACHABLE:
         return "UNREACHABLE";
+    case InstructionKind::ABORT:
+        return "ABORT";
     default:
         return "UNKNOWN";
     }

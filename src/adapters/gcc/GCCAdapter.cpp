@@ -347,6 +347,34 @@ NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
             variable.storage_duration = StorageDuration::THREAD_LOCAL;
         }
 
+        // initializer processing
+        if (VAR_P(variable_tree) && DECL_INITIAL(variable_tree))
+        {
+            tree init = DECL_INITIAL(variable_tree);
+            // handle STRING_CST
+            if (TREE_CODE(init) == STRING_CST)
+            {
+                variable.initial_value.push_back(
+                    ConstantOperand{NodeId::INVALID, std::string(TREE_STRING_POINTER(init), TREE_STRING_LENGTH(init))});
+            }
+            else if (TREE_CODE(init) == CONSTRUCTOR)
+            {
+                // FIXME: proper support for constructor
+                unsigned HOST_WIDE_INT idx;
+                tree index;
+                tree value;
+                FOR_EACH_CONSTRUCTOR_ELT(CONSTRUCTOR_ELTS(init), idx, index, value)
+                {
+                    (void)index;
+                    variable.initial_value.push_back(parseOperand(value));
+                }
+            }
+            else if (CONSTANT_CLASS_P(init))
+            {
+                variable.initial_value.push_back(parseOperand(init));
+            }
+        }
+
         // bitfield information for struct fields
         if (TREE_CODE(variable_tree) == FIELD_DECL && DECL_BIT_FIELD(variable_tree))
         {

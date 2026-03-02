@@ -1,9 +1,11 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "Linkage.hpp"
 #include "NodeId.hpp"
+#include "Operand.hpp"
 #include "Scope.hpp"
 #include "SourceLocation.hpp"
 #include "StorageDuration.hpp"
@@ -34,6 +36,9 @@ struct Variable
 
     // true for variables created by the compiler for internal purposes
     bool artificial = false;
+
+    // initializer for global/static variables
+    std::vector<Operand> initial_value;
 };
 
 } // namespace Core
