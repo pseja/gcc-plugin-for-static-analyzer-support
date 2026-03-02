@@ -763,33 +763,76 @@ void GCCAdapter::processFunction(function *fun)
     }
 
     // process basic blocks
+    // explicitly process ENTRY and EXIT blocks first
+    if (fun->cfg)
+    {
+        processBlock(ENTRY_BLOCK_PTR_FOR_FN(fun), function_node.id);
+        processBlock(EXIT_BLOCK_PTR_FOR_FN(fun), function_node.id);
+    }
+
     basic_block bb;
     FOR_EACH_BB_FN(bb, fun)
     {
-        Block block_node;
-        block_node.id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(bb));
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Block node ID: " + toString(block_node.id));
-        block_node.parent_function_id = function_node.id;
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            DiagnosticLevel::Debug, "Block node parent function ID: " + toString(block_node.parent_function_id));
+        processBlock(bb, function_node.id);
+    }
+
+    // add block IDs to function
+    if (fun->cfg)
+    {
+        function_node.block_ids.push_back(
+            static_cast<NodeId>(reinterpret_cast<uintptr_t>(ENTRY_BLOCK_PTR_FOR_FN(fun))));
+        function_node.block_ids.push_back(static_cast<NodeId>(reinterpret_cast<uintptr_t>(EXIT_BLOCK_PTR_FOR_FN(fun))));
+    }
+
+    FOR_EACH_BB_FN(bb, fun)
+    {
+        function_node.block_ids.push_back(static_cast<NodeId>(reinterpret_cast<uintptr_t>(bb)));
+    }
+
+    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+        DiagnosticLevel::Debug, "Processed function node with ID: " + toString(function_node.id));
+
+    model.addFunction(function_node);
+}
+
+void GCCAdapter::processBlock(basic_block bb, NodeId function_id)
+{
+    Block block_node;
+    block_node.id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(bb));
+    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+        DiagnosticLevel::Debug, "Block node ID: " + toString(block_node.id));
+    block_node.parent_function_id = function_id;
+
+    if (bb->index == ENTRY_BLOCK)
+    {
+        block_node.name = "ENTRY";
+    }
+    else if (bb->index == EXIT_BLOCK)
+    {
+        block_node.name = "EXIT";
+    }
+    else
+    {
         block_node.name = "bb_" + std::to_string(bb->index);
+    }
 
-        // process CFG edges
-        edge e;
-        edge_iterator ei;
-        FOR_EACH_EDGE(e, ei, bb->preds)
-        {
-            NodeId pred_id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(e->src));
-            block_node.predecesor_block_ids.push_back(pred_id);
-        }
-        FOR_EACH_EDGE(e, ei, bb->succs)
-        {
-            NodeId succ_id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(e->dest));
-            block_node.successor_block_ids.push_back(succ_id);
-        }
+    // process CFG edges
+    edge e;
+    edge_iterator ei;
+    FOR_EACH_EDGE(e, ei, bb->preds)
+    {
+        NodeId pred_id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(e->src));
+        block_node.predecesor_block_ids.push_back(pred_id);
+    }
+    FOR_EACH_EDGE(e, ei, bb->succs)
+    {
+        NodeId succ_id = static_cast<NodeId>(reinterpret_cast<uintptr_t>(e->dest));
+        block_node.successor_block_ids.push_back(succ_id);
+    }
 
-        // process instructions in the block
+    // process instructions in the block
+    if (bb->index != ENTRY_BLOCK && bb->index != EXIT_BLOCK)
+    {
         for (gimple_stmt_iterator gsi = gsi_start_bb(bb); !gsi_end_p(gsi); gsi_next(&gsi))
         {
             gimple *stmt = gsi_stmt(gsi);
@@ -821,9 +864,9 @@ void GCCAdapter::processFunction(function *fun)
             }
             if (gcode == GIMPLE_RETURN && (loc == UNKNOWN_LOCATION || loc <= BUILTINS_LOCATION))
             {
-                if (fun && fun->function_end_locus != UNKNOWN_LOCATION)
+                if (cfun && cfun->function_end_locus != UNKNOWN_LOCATION)
                 {
-                    loc = fun->function_end_locus;
+                    loc = cfun->function_end_locus;
                 }
             }
             instruction_node.source_location = getSourceLocation(loc);
@@ -1007,12 +1050,9 @@ void GCCAdapter::processFunction(function *fun)
             model.addInstruction(instruction_node);
             block_node.instruction_ids.push_back(instruction_node.id);
         }
-
-        model.addBlock(block_node);
-        function_node.block_ids.push_back(block_node.id);
     }
 
-    model.addFunction(function_node);
+    model.addBlock(block_node);
 }
 
 } // namespace Core
