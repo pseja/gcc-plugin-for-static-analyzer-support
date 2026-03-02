@@ -35,6 +35,8 @@ class GCCAdapter
     SourceLocation getSourceLocation(location_t location);
 
     TypeKind mapTypeTreeToTypeKind(tree &type_tree);
+
+    void processBlock(basic_block bb, NodeId function_id);
 };
 
 } // namespace Core

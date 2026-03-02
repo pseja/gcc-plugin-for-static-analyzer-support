@@ -363,6 +363,23 @@ NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
     else
     {
         // for SSA names and other non-declaration variables, we may not have good source location or scope information
+        if (TREE_CODE(variable_tree) == SSA_NAME)
+        {
+            tree var = SSA_NAME_VAR(variable_tree);
+            if (var && DECL_P(var))
+            {
+                variable.artificial = DECL_ARTIFICIAL(var);
+            }
+            else
+            {
+                variable.artificial = true;
+            }
+        }
+        else
+        {
+            variable.artificial = true;
+        }
+
         variable.source_location = SourceLocation();
         variable.scope = Scope::FUNCTION;
         variable.storage_duration = StorageDuration::AUTO;

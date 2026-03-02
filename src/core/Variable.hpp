@@ -31,6 +31,9 @@ struct Variable
     bool is_bitfield = false;
     int bitfield_size = 0;   // in bits
     int bitfield_offset = 0; // in bits from the start of the storage unit
+
+    // true for variables created by the compiler for internal purposes
+    bool artificial = false;
 };
 
 } // namespace Core

@@ -32,23 +32,6 @@ void to_json(json &j, const SourceLocation &loc)
     j = json{{"file", loc.file}, {"line", loc.line}, {"column", loc.column}, {"function", loc.function}};
 }
 
-void to_json(json &j, const Variable &var)
-{
-    j = json{{"id", var.id},
-             {"name", var.name},
-             {"type_id", var.type_id},
-             {"location", var.source_location},
-             {"scope", toString(var.scope)},
-             {"storage_duration", toString(var.storage_duration)},
-             {"linkage", toString(var.linkage)},
-             {"is_bitfield", var.is_bitfield}};
-    if (var.is_bitfield)
-    {
-        j["bitfield_size"] = var.bitfield_size;
-        j["bitfield_offset"] = var.bitfield_offset;
-    }
-}
-
 void to_json(json &j, const Type &type)
 {
     j = json{{"id", type.id},
@@ -111,6 +94,30 @@ void to_json(json &j, const Operand &op)
     {
         const auto &vo = std::get<VariableOperand>(op);
         j = json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
+    }
+}
+
+void to_json(json &j, const Variable &var)
+{
+    j = json{{"id", var.id},
+             {"name", var.name},
+             {"type_id", var.type_id},
+             {"location", var.source_location},
+             {"scope", toString(var.scope)},
+             {"storage_duration", toString(var.storage_duration)},
+             {"linkage", toString(var.linkage)},
+             {"is_bitfield", var.is_bitfield},
+             {"artificial", var.artificial}};
+
+    if (!var.initial_value.empty())
+    {
+        j["initial_value"] = var.initial_value;
+    }
+
+    if (var.is_bitfield)
+    {
+        j["bitfield_size"] = var.bitfield_size;
+        j["bitfield_offset"] = var.bitfield_offset;
     }
 }
 
