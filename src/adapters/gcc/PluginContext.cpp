@@ -1,9 +1,12 @@
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
 
 #include <gcc-plugin.h>
 #include <context.h>
 #include <tree-pass.h>
 
+#include "DOTExporter.hpp"
 #include "JSONExporter.hpp"
 #include "Pass.hpp"
 #include "PluginContext.hpp"
@@ -74,8 +77,37 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     (void)user_data;
 
     // TODO: run the analyzer/s here
-    CodeListener::Exporters::JSONExporter exporter(std::cout);
-    exporter.exportModel(PluginContext::getInstance().getCodeModel());
+
+    // TODO: export the model based on arguments
+    if (const char *dot_file = std::getenv("CL_JSON_FILE"))
+    {
+        std::ofstream json_out(dot_file);
+        if (json_out.is_open())
+        {
+            CodeListener::Exporters::JSONExporter exporter(json_out);
+            exporter.exportModel(PluginContext::getInstance().getCodeModel());
+            std::cerr << "Exported JSON to " << dot_file << "\n";
+        }
+        else
+        {
+            std::cerr << "Failed to open JSON file: " << dot_file << "\n";
+        }
+    }
+
+    if (const char *dot_file = std::getenv("CL_DOT_FILE"))
+    {
+        std::ofstream dot_out(dot_file);
+        if (dot_out.is_open())
+        {
+            CodeListener::Exporters::DOTExporter dot_exporter(dot_out);
+            dot_exporter.exportModel(PluginContext::getInstance().getCodeModel());
+            std::cerr << "Exported DOT to " << dot_file << "\n";
+        }
+        else
+        {
+            std::cerr << "Failed to open DOT file: " << dot_file << "\n";
+        }
+    }
 
     std::cerr << "Code Listener GCC plugin finished\n";
 }
