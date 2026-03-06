@@ -1,5 +1,6 @@
 CC := gcc-12
-FILE := test.c
+FILENAME := test
+FILE := $(FILENAME).c
 BUILD_DIR := build
 
 .PHONY: all dump
@@ -7,7 +8,7 @@ BUILD_DIR := build
 all:
 	cmake -S . -B $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) -j
-	$(CC) -fplugin=$(BUILD_DIR)/libcl.so -fplugin-arg-libcl-verbose=1 $(FILE)
+	CL_DOT_FILE=$(FILENAME).dot CL_JSON_FILE=$(FILENAME).json $(CC) -fplugin=$(BUILD_DIR)/libcl.so -fplugin-arg-libcl-verbose=1 $(FILE)
 
 dump:
 	rm -rf dump

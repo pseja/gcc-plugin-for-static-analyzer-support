@@ -3,11 +3,12 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
 
 #include <gcc-plugin.h>
-#include <tree.h>            // DECL_NAME
-#include <tree-cfg.h>        // label_to_block
-#include <function.h>        // function
-#include <gimple.h>          // gimple_location
-#include <gimple-iterator.h> // gimple_stmt_iterator, gsi_start_bb, gsi_end_p, gsi_next, gsi_stmt
+#include <tree.h>                // DECL_NAME
+#include <tree-cfg.h>            // label_to_block
+#include <function.h>            // function
+#include <gimple.h>              // gimple_location
+#include <gimple-iterator.h>     // gimple_stmt_iterator, gsi_start_bb, gsi_end_p, gsi_next, gsi_stmt
+#include <gimple-pretty-print.h> // debug_gimple_stmt
 #include <wide-int-print.h>
 #include <print-tree.h>
 

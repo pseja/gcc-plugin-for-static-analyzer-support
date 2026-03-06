@@ -36,7 +36,9 @@ set(SOURCES
     src/adapters/gcc/GCCDiagnosticReporter.cpp
     src/adapters/gcc/GCCAdapter.cpp
     src/core/CodeModel.cpp
+    src/core/SourceLocation.cpp
     src/exporters/JSONExporter.cpp
+    src/exporters/DOTExporter.cpp
 )
 
 add_library(cl SHARED ${SOURCES})
