@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 
 namespace CodeListener
@@ -13,6 +14,12 @@ enum class NodeId : uint32_t
 {
     INVALID = 0,
 };
+
+inline std::ostream &operator<<(std::ostream &os, NodeId id)
+{
+    os << static_cast<uint32_t>(id);
+    return os;
+}
 
 inline std::string toString(NodeId id)
 {
