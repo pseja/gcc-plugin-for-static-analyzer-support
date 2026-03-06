@@ -10,23 +10,15 @@ namespace Core
 
 struct SourceLocation
 {
-    std::string file;
-    std::string function;
-    int line;
-    int column;
-    void *native_handle = nullptr;
+    std::string file{"<unknown>"};
+    std::string function{"<unknown>"};
+    int line{0};
+    int column{0};
+    void *native_handle{nullptr};
 
-    SourceLocation() : file("<unknown>"), function("<unknown>"), line(0), column(0), native_handle(nullptr)
-    {
-    }
-    SourceLocation(std::string file, std::string func, int line, int column, void *native_handle = nullptr)
-        : file(std::move(file)), function(std::move(func)), line(line), column(column), native_handle(native_handle)
-    {
-    }
-    SourceLocation(std::string file, int line, int column, void *native_handle = nullptr)
-        : file(std::move(file)), line(line), column(column), native_handle(native_handle)
-    {
-    }
+    SourceLocation() = default;
+    SourceLocation(std::string file, std::string func, int line, int column, void *native_handle = nullptr);
+    SourceLocation(std::string file, int line, int column, void *native_handle = nullptr);
 };
 
 inline std::string toString(const SourceLocation &loc)
