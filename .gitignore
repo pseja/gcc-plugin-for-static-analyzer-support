@@ -43,6 +43,13 @@
 # build directory
 build/
 
+# cache directory
 .cache/
 
+# clang-format configuration file
 .clang-format
+
+# generated files
+*.dot
+*.json
+*.png
