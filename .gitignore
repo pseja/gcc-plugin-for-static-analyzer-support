@@ -53,3 +53,6 @@ build/
 *.dot
 *.json
 *.png
+
+# gcc dump directory
+dump/
