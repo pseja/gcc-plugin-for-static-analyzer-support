@@ -399,24 +399,22 @@ std::string DOTExporter::formatInstructionText(const Core::CodeModel &model, con
 
     case Core::InstructionKind::CALL: {
         std::string res;
-        size_t start_idx = 0;
 
-        if (!ops.empty() && std::holds_alternative<Core::VariableOperand>(instr.operands[0]))
+        if (ops.size() > 1 && std::holds_alternative<Core::VariableOperand>(instr.operands[1]))
         {
-            std::string ret_type = getOperandTypeString(model, instr.operands[0]);
+            std::string ret_type = getOperandTypeString(model, instr.operands[1]);
             if (!ret_type.empty())
             {
-                res += "<b><font color=\"#2e7d32\">" + ret_type + "</font> " + ops[0] + "</b> = ";
+                res += "<b><font color=\"#2e7d32\">" + ret_type + "</font> " + ops[1] + "</b> = ";
             }
             else
             {
-                res += "<b>" + ops[0] + "</b> = ";
+                res += "<b>" + ops[1] + "</b> = ";
             }
-            start_idx = 1;
         }
 
-        res += "<b>call</b> " + (start_idx < ops.size() ? ops[start_idx] : "??") + "(";
-        for (size_t i = start_idx + 1; i < ops.size(); ++i)
+        res += "<b>call</b> " + (ops.empty() ? "??" : ops[0]) + "(";
+        for (size_t i = 2; i < ops.size(); ++i)
         {
             res += ops[i] + (i + 1 == ops.size() ? "" : ", ");
         }
