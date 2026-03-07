@@ -4,10 +4,7 @@
 #include <ostream>
 #include <string>
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 enum class NodeId : uint32_t
@@ -30,6 +27,4 @@ inline std::string toString(NodeId id)
     return "NodeId(" + std::to_string(static_cast<uint32_t>(id)) + ")";
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

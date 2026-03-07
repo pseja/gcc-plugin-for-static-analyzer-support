@@ -4,10 +4,7 @@
 
 #include "PluginArgs.hpp"
 
-namespace CodeListener
-{
-
-namespace CompilerAbstractionLayer
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 PluginArgs::PluginArgs(const plugin_name_args *plugin_info)
@@ -31,6 +28,4 @@ void PluginArgs::print() const
     }
 }
 
-} // namespace CompilerAbstractionLayer
-
-} // namespace CodeListener
+} // namespace CodeListener::CompilerAbstractionLayer

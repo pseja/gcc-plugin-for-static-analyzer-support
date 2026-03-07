@@ -1,13 +1,10 @@
 #pragma once
 
 #include <gcc-plugin.h>
-#include <function.h> // function
+#include <function.h>  // function
 #include <tree-pass.h> // opt_pass, gcc::context, pass_data
 
-namespace CodeListener
-{
-
-namespace CompilerAbstractionLayer
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 // TODO: rename to something more specific
@@ -25,6 +22,4 @@ class Pass : public opt_pass
     static const struct pass_data pass_metadata;
 };
 
-} // namespace CompilerAbstractionLayer
-
-} // namespace CodeListener
+} // namespace CodeListener::CompilerAbstractionLayer

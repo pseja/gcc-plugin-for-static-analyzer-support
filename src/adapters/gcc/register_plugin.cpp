@@ -6,10 +6,11 @@
 #include "PluginContext.hpp"
 #include "register_plugin.hpp"
 
-// TODO: add namespaces
-
 // required by GCC to indicate that the plugin is GPL compatible
 int plugin_is_GPL_compatible;
+
+namespace CodeListener::CompilerAbstractionLayer
+{
 
 void print_info(struct plugin_name_args *plugin_info, struct plugin_gcc_version *version)
 {
@@ -33,9 +34,11 @@ void print_info(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
     std::cerr << "configuration arguments: " << version->configuration_arguments << "\n";
 }
 
+} // namespace CodeListener::CompilerAbstractionLayer
+
 int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version *version)
 {
-    // print_info(plugin_info, version);
+    // CodeListener::CompilerAbstractionLayer::print_info(plugin_info, version);
 
     // FIXME: old cl had less strict version check for predator
     if (!plugin_default_version_check(version, &gcc_version))

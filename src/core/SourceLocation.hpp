@@ -2,10 +2,7 @@
 
 #include <string>
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct SourceLocation
@@ -27,6 +24,4 @@ inline std::string toString(const SourceLocation &loc)
            std::to_string(loc.column) + ")";
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

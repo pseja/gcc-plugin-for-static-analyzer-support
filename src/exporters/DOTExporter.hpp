@@ -6,10 +6,7 @@
 
 #include "Exporter.hpp"
 
-namespace CodeListener
-{
-
-namespace Exporters
+namespace CodeListener::Exporters
 {
 
 class DOTExporter : public Exporter
@@ -35,6 +32,4 @@ class DOTExporter : public Exporter
     std::string getOperandTypeString(const Core::CodeModel &model, const Core::Operand &op);
 };
 
-} // namespace Exporters
-
-} // namespace CodeListener
+} // namespace CodeListener::Exporters

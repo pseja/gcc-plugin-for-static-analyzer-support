@@ -3,10 +3,7 @@
 #include "GCCAdapter.hpp"
 #include "PluginContext.hpp"
 
-namespace CodeListener
-{
-
-namespace CompilerAbstractionLayer
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 Pass::Pass(gcc::context *ctx) : opt_pass(pass_metadata, ctx)
@@ -44,6 +41,4 @@ const struct pass_data Pass::pass_metadata = {
     .todo_flags_finish = 0,
 };
 
-} // namespace CompilerAbstractionLayer
-
-} // namespace CodeListener
+} // namespace CodeListener::CompilerAbstractionLayer

@@ -11,10 +11,7 @@
 #include "Pass.hpp"
 #include "PluginContext.hpp"
 
-namespace CodeListener
-{
-
-namespace CompilerAbstractionLayer
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 // TODO: plugin arguments?
@@ -112,6 +109,4 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     std::cerr << "Code Listener GCC plugin finished\n";
 }
 
-} // namespace CompilerAbstractionLayer
-
-} // namespace CodeListener
+} // namespace CodeListener::CompilerAbstractionLayer

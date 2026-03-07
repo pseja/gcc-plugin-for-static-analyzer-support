@@ -10,10 +10,7 @@
 #include "GCCDiagnosticReporter.hpp"
 #include "PluginArgs.hpp"
 
-namespace CodeListener
-{
-
-namespace CompilerAbstractionLayer
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 // Meyers' Singleton
@@ -55,6 +52,4 @@ class PluginContext
     static void on_plugin_finish(void *gcc_data, void *user_data);
 };
 
-} // namespace CompilerAbstractionLayer
-
-} // namespace CodeListener
+} // namespace CodeListener::CompilerAbstractionLayer

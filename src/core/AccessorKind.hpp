@@ -2,10 +2,7 @@
 
 #include <string>
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 enum class AccessorKind
@@ -39,6 +36,4 @@ inline std::string toString(AccessorKind accessor_kind)
     }
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

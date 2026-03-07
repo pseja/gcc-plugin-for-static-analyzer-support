@@ -2,10 +2,7 @@
 
 #include <string>
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 enum class TypeKind
@@ -57,6 +54,4 @@ inline std::string toString(TypeKind kind)
     }
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

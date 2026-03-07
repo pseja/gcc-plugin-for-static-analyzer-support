@@ -2,10 +2,7 @@
 
 #include "DOTExporter.hpp"
 
-namespace CodeListener
-{
-
-namespace Exporters
+namespace CodeListener::Exporters
 {
 
 DOTExporter::DOTExporter(std::ostream &os) : os(os)
@@ -489,6 +486,4 @@ std::string DOTExporter::getOperandTypeString(const Core::CodeModel &model, cons
     return "";
 }
 
-} // namespace Exporters
-
-} // namespace CodeListener
+} // namespace CodeListener::Exporters

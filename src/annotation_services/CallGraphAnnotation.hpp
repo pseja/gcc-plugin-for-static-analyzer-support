@@ -5,10 +5,7 @@
 #include "AnnotationBase.hpp"
 #include "NodeId.hpp"
 
-namespace CodeListener
-{
-
-namespace AnnotationServices
+namespace CodeListener::AnnotationServices
 {
 
 // TODO: very basic for now
@@ -18,6 +15,4 @@ struct CallGraphAnnotation : public AnnotationBase
     std::vector<Core::NodeId> callees;
 };
 
-} // namespace AnnotationServices
-
-} // namespace CodeListener
+} // namespace CodeListener::AnnotationServices

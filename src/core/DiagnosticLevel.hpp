@@ -1,9 +1,6 @@
 #pragma once
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 enum class DiagnosticLevel
@@ -15,6 +12,4 @@ enum class DiagnosticLevel
     Fatal
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

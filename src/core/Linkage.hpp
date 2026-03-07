@@ -2,10 +2,7 @@
 
 #include <string>
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 enum class Linkage
@@ -30,6 +27,4 @@ inline std::string toString(Linkage linkage)
     }
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

@@ -10,10 +10,7 @@
 #include "SourceLocation.hpp"
 #include "StorageDuration.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct Variable
@@ -41,6 +38,4 @@ struct Variable
     std::vector<Operand> initial_value;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

@@ -7,10 +7,7 @@
 
 #include "DiagnosticReporter.hpp"
 
-namespace CodeListener
-{
-
-namespace CompilerAbstractionLayer
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 class GCCDiagnosticReporter : public Core::DiagnosticReporter
@@ -22,6 +19,4 @@ class GCCDiagnosticReporter : public Core::DiagnosticReporter
                 const std::source_location &source_location = std::source_location::current()) override;
 };
 
-} // namespace CompilerAbstractionLayer
-
-} // namespace CodeListener
+} // namespace CodeListener::CompilerAbstractionLayer

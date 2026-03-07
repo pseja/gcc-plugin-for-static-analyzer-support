@@ -5,10 +5,7 @@
 
 #include "GCCDiagnosticReporter.hpp"
 
-namespace CodeListener
-{
-
-namespace CompilerAbstractionLayer
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 static std::string getProjectRelativePath(const std::string &path)
@@ -94,6 +91,4 @@ void GCCDiagnosticReporter::report(CodeListener::Core::DiagnosticLevel level, co
     }
 }
 
-} // namespace CompilerAbstractionLayer
-
-} // namespace CodeListener
+} // namespace CodeListener::CompilerAbstractionLayer

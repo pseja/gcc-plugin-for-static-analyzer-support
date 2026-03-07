@@ -5,10 +5,7 @@
 #include "NodeId.hpp"
 #include "Operand.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct SwitchCase
@@ -21,6 +18,4 @@ struct SwitchCase
     NodeId target_block_id = NodeId::INVALID;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

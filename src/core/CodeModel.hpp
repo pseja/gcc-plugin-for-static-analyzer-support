@@ -11,10 +11,7 @@
 #include "Type.hpp"
 #include "Variable.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 class CodeModel
@@ -69,5 +66,3 @@ class CodeModel
 };
 
 } // namespace Core
-
-} // namespace CodeListener

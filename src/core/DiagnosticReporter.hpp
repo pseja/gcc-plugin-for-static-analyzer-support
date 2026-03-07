@@ -6,10 +6,7 @@
 #include "DiagnosticLevel.hpp"
 #include "SourceLocation.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 class DiagnosticReporter
@@ -22,6 +19,4 @@ class DiagnosticReporter
                         const std::source_location &loc = std::source_location::current()) = 0;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

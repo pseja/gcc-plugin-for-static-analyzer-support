@@ -5,10 +5,7 @@
 
 #include <gcc-plugin.h> // plugin_name_args
 
-namespace CodeListener
-{
-
-namespace CompilerAbstractionLayer
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 struct PluginArgs
@@ -22,6 +19,4 @@ struct PluginArgs
     void print() const;
 };
 
-} // namespace CompilerAbstractionLayer
-
-} // namespace CodeListener
+} // namespace CodeListener::CompilerAbstractionLayer

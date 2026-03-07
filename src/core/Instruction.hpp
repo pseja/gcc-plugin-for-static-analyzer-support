@@ -10,10 +10,7 @@
 #include "SourceLocation.hpp"
 #include "SwitchCase.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct Instruction
@@ -33,6 +30,4 @@ struct Instruction
     bool is_terminator = false;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

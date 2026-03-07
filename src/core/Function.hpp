@@ -5,10 +5,7 @@
 
 #include "NodeId.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct Function
@@ -25,6 +22,4 @@ struct Function
     std::vector<NodeId> block_ids;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

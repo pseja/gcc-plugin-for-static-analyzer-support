@@ -2,10 +2,7 @@
 
 #include <string>
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 enum class OpCode
@@ -44,7 +41,7 @@ enum class OpCode
     LESS_EQUAL,    // x <= y
 
     // memory
-    ADDRESS_OF, // &x
+    ADDRESS_OF,  // &x
     POINTER_ADD, // ptr + offset
     POINTER_SUB, // ptr - ptr (diff)
 
@@ -131,6 +128,4 @@ inline std::string toString(OpCode op)
     }
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

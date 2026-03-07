@@ -2,10 +2,7 @@
 
 #include "SourceLocation.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 SourceLocation::SourceLocation(std::string file, std::string func, int line, int column, void *native_handle)
@@ -17,6 +14,4 @@ SourceLocation::SourceLocation(std::string file, int line, int column, void *nat
 {
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

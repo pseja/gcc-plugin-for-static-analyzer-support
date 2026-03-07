@@ -2,10 +2,7 @@
 
 #include "CodeModel.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 const Type *CodeModel::getType(NodeId id) const
@@ -137,6 +134,4 @@ auto CodeModel::instructionsOf(const Function &func) const
            std::views::join;
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

@@ -3,10 +3,7 @@
 #include "NodeId.hpp"
 #include "AccessorKind.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct Accessor
@@ -22,6 +19,4 @@ struct Accessor
     unsigned bit_size = 0;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

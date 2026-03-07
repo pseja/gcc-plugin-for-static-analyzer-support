@@ -7,10 +7,7 @@
 #include "Exporter.hpp"
 #include "../../core/CodeModel.hpp"
 
-namespace CodeListener
-{
-
-namespace Exporters
+namespace CodeListener::Exporters
 {
 
 class JSONExporter : public Exporter
@@ -26,6 +23,4 @@ class JSONExporter : public Exporter
     std::ostream &os;
 };
 
-} // namespace Exporters
-
-} // namespace CodeListener
+} // namespace CodeListener::Exporters

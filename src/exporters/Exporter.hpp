@@ -2,10 +2,7 @@
 
 #include "CodeModel.hpp"
 
-namespace CodeListener
-{
-
-namespace Exporters
+namespace CodeListener::Exporters
 {
 
 class Exporter
@@ -16,6 +13,4 @@ class Exporter
     virtual void exportModel(const Core::CodeModel &model) = 0;
 };
 
-} // namespace Exporters
-
-} // namespace CodeListener
+} // namespace CodeListener::Exporters

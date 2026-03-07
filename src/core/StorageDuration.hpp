@@ -2,10 +2,7 @@
 
 #include <string>
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 enum class StorageDuration
@@ -36,6 +33,4 @@ inline std::string toString(StorageDuration storage_duration)
     }
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

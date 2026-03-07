@@ -1,9 +1,6 @@
 #pragma once
 
-namespace CodeListener
-{
-
-namespace AnnotationServices
+namespace CodeListener::AnnotationServices
 {
 
 struct AnnotationBase
@@ -11,6 +8,4 @@ struct AnnotationBase
     virtual ~AnnotationBase() = default;
 };
 
-} // namespace AnnotationServices
-
-} // namespace CodeListener
+} // namespace CodeListener::AnnotationServices

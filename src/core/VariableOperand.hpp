@@ -5,10 +5,7 @@
 #include "Accessor.hpp"
 #include "NodeId.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct VariableOperand
@@ -18,6 +15,4 @@ struct VariableOperand
     std::vector<Accessor> access_path;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

@@ -6,10 +6,7 @@
 #include "NodeId.hpp"
 #include "TypeKind.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct Type
@@ -44,6 +41,4 @@ struct Type
     std::vector<NodeId> nested_type_ids;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

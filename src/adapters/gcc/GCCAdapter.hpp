@@ -8,10 +8,7 @@
 #include "NodeId.hpp"
 #include "SourceLocation.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 class GCCAdapter
@@ -39,6 +36,4 @@ class GCCAdapter
     void processBlock(basic_block bb, NodeId function_id);
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

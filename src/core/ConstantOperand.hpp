@@ -4,10 +4,7 @@
 
 #include "NodeId.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 struct ConstantOperand
@@ -16,6 +13,4 @@ struct ConstantOperand
     std::string value;
 };
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

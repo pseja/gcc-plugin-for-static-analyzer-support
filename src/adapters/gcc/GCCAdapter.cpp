@@ -26,10 +26,7 @@
 #include "TypeKind.hpp"
 #include "VariableOperand.hpp"
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 GCCAdapter::GCCAdapter(CodeModel &model) : model(model)
@@ -1115,6 +1112,4 @@ void GCCAdapter::processBlock(basic_block bb, NodeId function_id)
     model.addBlock(block_node);
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core

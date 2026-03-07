@@ -3,10 +3,7 @@
 
 #include <string>
 
-namespace CodeListener
-{
-
-namespace Core
+namespace CodeListener::Core
 {
 
 enum class InstructionKind
@@ -73,6 +70,4 @@ inline std::string toString(InstructionKind kind)
     }
 }
 
-} // namespace Core
-
-} // namespace CodeListener
+} // namespace CodeListener::Core
