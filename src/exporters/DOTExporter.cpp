@@ -47,38 +47,36 @@ void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Funct
     for (auto block_id : func.block_ids)
     {
         const auto &block = model.getBlock(block_id);
-        if (block->instruction_ids.empty())
-        {
-            continue;
-        }
-
         auto src_id = static_cast<uint32_t>(block->id);
         bool handled_edges = false;
 
-        const auto &last_instr = model.getInstruction(block->instruction_ids.back());
-        if (last_instr->kind == Core::InstructionKind::SWITCH)
+        if (!block->instruction_ids.empty())
         {
-            for (const auto &sw_case : last_instr->switch_cases)
+            const auto &last_instr = model.getInstruction(block->instruction_ids.back());
+            if (last_instr->kind == Core::InstructionKind::SWITCH)
             {
-                if (sw_case.target_block_id != Core::NodeId::INVALID)
+                for (const auto &sw_case : last_instr->switch_cases)
                 {
-                    std::string label =
-                        sw_case.low_value.has_value() ? formatOperand(model, *sw_case.low_value) : "default";
-                    os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(sw_case.target_block_id)
-                       << " [label=\"" << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
+                    if (sw_case.target_block_id != Core::NodeId::INVALID)
+                    {
+                        std::string label =
+                            sw_case.low_value.has_value() ? formatOperand(model, *sw_case.low_value) : "default";
+                        os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(sw_case.target_block_id)
+                           << " [label=\"" << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
+                    }
                 }
-            }
-            handled_edges = true;
-        }
-        else if (last_instr->kind == Core::InstructionKind::COND)
-        {
-            if (block->successor_block_ids.size() >= 2)
-            {
-                os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(block->successor_block_ids[0])
-                   << " [label=\"true\", color=\"#2e7d32\", fontcolor=\"#2e7d32\"];\n"; // Green
-                os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(block->successor_block_ids[1])
-                   << " [label=\"false\", color=\"#c62828\", fontcolor=\"#c62828\"];\n"; // Red
                 handled_edges = true;
+            }
+            else if (last_instr->kind == Core::InstructionKind::COND)
+            {
+                if (block->successor_block_ids.size() >= 2)
+                {
+                    os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(block->successor_block_ids[0])
+                       << " [label=\"true\", color=\"#2e7d32\", fontcolor=\"#2e7d32\"];\n"; // Green
+                    os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(block->successor_block_ids[1])
+                       << " [label=\"false\", color=\"#c62828\", fontcolor=\"#c62828\"];\n"; // Red
+                    handled_edges = true;
+                }
             }
         }
 
