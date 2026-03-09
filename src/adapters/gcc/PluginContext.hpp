@@ -7,6 +7,7 @@
 
 #include "CodeModel.hpp"
 #include "DiagnosticReporter.hpp"
+#include "GCCAdapter.hpp"
 #include "GCCDiagnosticReporter.hpp"
 #include "PluginArgs.hpp"
 
@@ -24,23 +25,14 @@ class PluginContext
 
     void initialize(const plugin_name_args *plugin_info, const plugin_gcc_version *version);
 
-    const PluginArgs *getArgs() const
-    {
-        return args.get();
-    }
-
-    Core::DiagnosticReporter &getDiagnosticReporter()
-    {
-        return reporter;
-    }
-
-    Core::CodeModel &getCodeModel()
-    {
-        return model;
-    }
+    const PluginArgs *getArgs() const;
+    Core::DiagnosticReporter &getDiagnosticReporter();
+    Core::CodeModel &getCodeModel();
+    GCCAdapter *getAdapter();
 
   private:
     std::unique_ptr<PluginArgs> args;
+    std::unique_ptr<GCCAdapter> adapter;
     GCCDiagnosticReporter reporter;
     Core::CodeModel model;
     static struct plugin_info plugin_info;

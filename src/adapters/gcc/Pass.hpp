@@ -4,6 +4,8 @@
 #include <function.h>  // function
 #include <tree-pass.h> // gimple_opt_pass, gcc::context, pass_data
 
+#include "GCCAdapter.hpp"
+
 namespace CodeListener::CompilerAbstractionLayer
 {
 
@@ -11,14 +13,14 @@ namespace CodeListener::CompilerAbstractionLayer
 class Pass : public gimple_opt_pass
 {
   public:
-    Pass(gcc::context *ctx);
+    Pass(gcc::context *ctx, GCCAdapter &adapter);
 
     unsigned int execute(function *fun) override final;
 
-    // FIXME: maybe not needed
     opt_pass *clone() override final;
 
   private:
+    GCCAdapter &adapter;
     static const struct pass_data pass_metadata;
 };
 

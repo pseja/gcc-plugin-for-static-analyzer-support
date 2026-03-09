@@ -1,13 +1,12 @@
-#include "CodeModel.hpp"
+#include "Pass.hpp"
 #include "DiagnosticReporter.hpp"
 #include "GCCAdapter.hpp"
-#include "Pass.hpp"
 #include "PluginContext.hpp"
 
 namespace CodeListener::CompilerAbstractionLayer
 {
 
-Pass::Pass(gcc::context *ctx) : gimple_opt_pass(pass_metadata, ctx)
+Pass::Pass(gcc::context *ctx, GCCAdapter &adapter) : gimple_opt_pass(pass_metadata, ctx), adapter(adapter)
 {
 }
 
@@ -16,17 +15,11 @@ unsigned int Pass::execute(function *fun)
     PluginContext::getInstance().getDiagnosticReporter().report(
         Core::DiagnosticLevel::Debug, std::string("Processing function: ") + function_name(fun));
 
-    Core::CodeModel &my_model = PluginContext::getInstance().getCodeModel();
-    Core::DiagnosticReporter &reporter = PluginContext::getInstance().getDiagnosticReporter();
-
-    // FIXME: adapter should be created once and reused, not created for each function
-    GCCAdapter adapter(my_model, reporter);
     adapter.processFunction(fun);
 
     return 0;
 }
 
-// FIXME: not using this, but it has to be implemented
 opt_pass *Pass::clone()
 {
     return new Pass(*this);

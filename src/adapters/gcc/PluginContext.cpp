@@ -29,13 +29,14 @@ PluginContext &PluginContext::getInstance()
 void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin_gcc_version *version)
 {
     args = std::make_unique<PluginArgs>(plugin_info);
+    adapter = std::make_unique<GCCAdapter>(model, reporter);
 
     init_print(version);
 
     // metadata
     register_callback(plugin_info->base_name, PLUGIN_INFO, nullptr, &PluginContext::plugin_info);
 
-    Pass *p = new Pass(g);
+    Pass *p = new Pass(g, *adapter);
     static struct register_pass_info cl_plugin_pass = {
         .pass = p, .reference_pass_name = "cfg", .ref_pass_instance_number = 0, .pos_op = PASS_POS_INSERT_AFTER};
     register_callback(plugin_info->base_name, PLUGIN_PASS_MANAGER_SETUP, nullptr, &cl_plugin_pass);
@@ -55,6 +56,26 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     register_callback(plugin_info->base_name, PLUGIN_FINISH, on_plugin_finish, this);
 
     std::cerr << "Code Listener GCC plugin initialized\n";
+}
+
+const PluginArgs *PluginContext::getArgs() const
+{
+    return args.get();
+}
+
+Core::DiagnosticReporter &PluginContext::getDiagnosticReporter()
+{
+    return reporter;
+}
+
+Core::CodeModel &PluginContext::getCodeModel()
+{
+    return model;
+}
+
+GCCAdapter *PluginContext::getAdapter()
+{
+    return adapter.get();
 }
 
 void PluginContext::init_print(const plugin_gcc_version *version)
