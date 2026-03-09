@@ -5,6 +5,7 @@
 #include <unordered_map> // std::unordered_map
 
 #include "CodeModel.hpp"
+#include "DiagnosticReporter.hpp"
 #include "NodeId.hpp"
 #include "SourceLocation.hpp"
 
@@ -14,12 +15,13 @@ namespace CodeListener::CompilerAbstractionLayer
 class GCCAdapter
 {
   public:
-    GCCAdapter(Core::CodeModel &model);
+    GCCAdapter(Core::CodeModel &model, Core::DiagnosticReporter &reporter);
 
     void processFunction(function *fun);
 
   private:
     Core::CodeModel &model;
+    Core::DiagnosticReporter &reporter;
 
     std::string current_function_name;
     std::unordered_map<tree, Core::NodeId> variable_cache;

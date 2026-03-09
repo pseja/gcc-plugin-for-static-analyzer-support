@@ -19,7 +19,6 @@
 #include "Instruction.hpp"
 #include "NodeId.hpp"
 #include "Operand.hpp"
-#include "PluginContext.hpp"
 #include "SourceLocation.hpp"
 #include "SwitchCase.hpp"
 #include "Type.hpp"
@@ -29,10 +28,9 @@
 namespace CodeListener::CompilerAbstractionLayer
 {
 
-GCCAdapter::GCCAdapter(Core::CodeModel &model) : model(model)
+GCCAdapter::GCCAdapter(Core::CodeModel &model, Core::DiagnosticReporter &reporter) : model(model), reporter(reporter)
 {
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, std::string("Initialized GCCAdapter"));
+    reporter.report(Core::DiagnosticLevel::Debug, std::string("Initialized GCCAdapter"));
 }
 
 Core::TypeKind GCCAdapter::mapTypeTreeToTypeKind(tree &type_tree)
@@ -78,8 +76,7 @@ Core::SourceLocation GCCAdapter::getSourceLocation(location_t location)
     if (location == UNKNOWN_LOCATION || location <= BUILTINS_LOCATION)
     {
         // FIXME: before return statement, there is a label to jump to unknown location for some reason
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Warning, "Encountered an unknown source location");
+        reporter.report(Core::DiagnosticLevel::Warning, "Encountered an unknown source location");
 
         return Core::SourceLocation();
     }
@@ -87,8 +84,7 @@ Core::SourceLocation GCCAdapter::getSourceLocation(location_t location)
     expanded_location eloc = expand_location(location);
     if (eloc.file == nullptr)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Warning, "Encountered an unknown source location");
+        reporter.report(Core::DiagnosticLevel::Warning, "Encountered an unknown source location");
 
         return Core::SourceLocation();
     }
@@ -100,25 +96,21 @@ Core::NodeId GCCAdapter::getOrCreateType(tree type_tree)
 {
     if (!type_tree)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Warning, "Encountered a type without a tree representation");
+        reporter.report(Core::DiagnosticLevel::Warning, "Encountered a type without a tree representation");
 
         return Core::NodeId::INVALID;
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Maybe processing type tree...");
+    reporter.report(Core::DiagnosticLevel::Debug, "Maybe processing type tree...");
 
     if (type_cache.count(type_tree))
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Type already processed, reusing existing node");
+        reporter.report(Core::DiagnosticLevel::Debug, "Type already processed, reusing existing node");
 
         return type_cache[type_tree];
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Actually processing type tree...");
+    reporter.report(Core::DiagnosticLevel::Debug, "Actually processing type tree...");
 
     Core::Type type_node;
     type_node.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(type_tree));
@@ -217,13 +209,13 @@ Core::NodeId GCCAdapter::getOrCreateType(tree type_tree)
         break;
 
     default:
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Unhandled type tree code: " + std::to_string(TREE_CODE(type_tree)));
+        reporter.report(Core::DiagnosticLevel::Debug,
+                        "Unhandled type tree code: " + std::to_string(TREE_CODE(type_tree)));
 
         break;
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+    reporter.report(
         Core::DiagnosticLevel::Debug,
         "Processed type node with id: " + toString(type_node.id) + ", name: " + type_node.name +
             ", kind: " + toString(type_node.kind) + ", size: " + std::to_string(type_node.size_bytes) +
@@ -243,21 +235,18 @@ Core::NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
 {
     if (!variable_tree)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Warning, "Encountered a variable without a tree representation");
+        reporter.report(Core::DiagnosticLevel::Warning, "Encountered a variable without a tree representation");
         return Core::NodeId::INVALID;
     }
 
     if (variable_cache.count(variable_tree))
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Variable already processed, reusing existing node");
+        reporter.report(Core::DiagnosticLevel::Debug, "Variable already processed, reusing existing node");
 
         return variable_cache[variable_tree];
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Processing a new variable...");
+    reporter.report(Core::DiagnosticLevel::Debug, "Processing a new variable...");
 
     Core::Variable variable;
     variable.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(variable_tree));
@@ -413,7 +402,7 @@ Core::NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
         variable.linkage = Core::Linkage::NONE;
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
+    reporter.report(
         Core::DiagnosticLevel::Debug,
         "Processed variable node with id: " + toString(variable.id) + ", name: " + variable.name +
             ", type id: " + toString(variable.type_id) + ", source location: " + toString(variable.source_location) +
@@ -438,8 +427,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
     // handle constants
     if (CONSTANT_CLASS_P(operand_tree))
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Processing operand as constant operand...");
+        reporter.report(Core::DiagnosticLevel::Debug, "Processing operand as constant operand...");
 
         Core::ConstantOperand constant_operand;
         constant_operand.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(operand_tree));
@@ -470,8 +458,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             constant_operand.value = "<unknown_constant>";
         }
 
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Parsed constant operand with value: " + constant_operand.value);
+        reporter.report(Core::DiagnosticLevel::Debug, "Parsed constant operand with value: " + constant_operand.value);
 
         return constant_operand;
     }
@@ -479,8 +466,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
     // handle base variables
     if (DECL_P(operand_tree) || TREE_CODE(operand_tree) == SSA_NAME)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Processing operand as variable operand...");
+        reporter.report(Core::DiagnosticLevel::Debug, "Processing operand as variable operand...");
 
         Core::VariableOperand var_op;
         var_op.variable_id = getOrCreateVariable(operand_tree);
@@ -490,8 +476,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
     // handle recursive access paths
     if (TREE_CODE(operand_tree) == COMPONENT_REF)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Recursively parsing component reference operand...");
+        reporter.report(Core::DiagnosticLevel::Debug, "Recursively parsing component reference operand...");
 
         Core::Operand base_op = parseOperand(TREE_OPERAND(operand_tree, 0));
         if (std::holds_alternative<Core::VariableOperand>(base_op))
@@ -509,8 +494,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
 
     if (TREE_CODE(operand_tree) == ARRAY_REF)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Recursively parsing array reference operand...");
+        reporter.report(Core::DiagnosticLevel::Debug, "Recursively parsing array reference operand...");
 
         Core::Operand base_op = parseOperand(TREE_OPERAND(operand_tree, 0));
         if (std::holds_alternative<Core::VariableOperand>(base_op))
@@ -539,8 +523,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
 
     if (TREE_CODE(operand_tree) == MEM_REF)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Recursively parsing memory reference operand...");
+        reporter.report(Core::DiagnosticLevel::Debug, "Recursively parsing memory reference operand...");
 
         Core::Operand ptr_op = parseOperand(TREE_OPERAND(operand_tree, 0));
         if (std::holds_alternative<Core::VariableOperand>(ptr_op))
@@ -571,8 +554,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
 
     if (TREE_CODE(operand_tree) == INDIRECT_REF)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Recursively parsing indirect reference operand...");
+        reporter.report(Core::DiagnosticLevel::Debug, "Recursively parsing indirect reference operand...");
 
         Core::Operand ptr_op = parseOperand(TREE_OPERAND(operand_tree, 0));
         if (std::holds_alternative<Core::VariableOperand>(ptr_op))
@@ -588,8 +570,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
 
     if (TREE_CODE(operand_tree) == ADDR_EXPR)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Recursively parsing address of operand...");
+        reporter.report(Core::DiagnosticLevel::Debug, "Recursively parsing address of operand...");
 
         Core::Operand x_op = parseOperand(TREE_OPERAND(operand_tree, 0));
         if (std::holds_alternative<Core::VariableOperand>(x_op))
@@ -606,8 +587,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
 
     if (TREE_CODE(operand_tree) == BIT_FIELD_REF)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Debug, "Recursively parsing bit field ref operand...");
+        reporter.report(Core::DiagnosticLevel::Debug, "Recursively parsing bit field ref operand...");
 
         Core::Operand base_op = parseOperand(TREE_OPERAND(operand_tree, 0));
         if (std::holds_alternative<Core::VariableOperand>(base_op))
@@ -635,8 +615,8 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
         return base_op;
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Operand tree code not handled: " + std::to_string(TREE_CODE(operand_tree)));
+    reporter.report(Core::DiagnosticLevel::Debug,
+                    "Operand tree code not handled: " + std::to_string(TREE_CODE(operand_tree)));
 
     return Core::ConstantOperand{Core::NodeId::INVALID, "<unhandled_operand>"};
 }
@@ -743,13 +723,11 @@ void GCCAdapter::processFunction(function *fun)
 {
     if (!fun || !fun->decl || DECL_NAME(fun->decl) == nullptr)
     {
-        CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-            Core::DiagnosticLevel::Warning, "Adapter encountered a function without a name");
+        reporter.report(Core::DiagnosticLevel::Warning, "Adapter encountered a function without a name");
         return;
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, std::string("Adapter processing function: ") + function_name(fun));
+    reporter.report(Core::DiagnosticLevel::Debug, std::string("Adapter processing function: ") + function_name(fun));
 
     // save the current function name for source location tracking
     // TODO: maybe bring the function name through function arguments instead of Adapter attribute
@@ -757,8 +735,7 @@ void GCCAdapter::processFunction(function *fun)
 
     Core::Function function_node;
     function_node.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(fun->decl));
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Function node ID: " + toString(function_node.id));
+    reporter.report(Core::DiagnosticLevel::Debug, "Function node ID: " + toString(function_node.id));
     function_node.name = current_function_name;
 
     if (TREE_TYPE(fun->decl))
@@ -767,21 +744,19 @@ void GCCAdapter::processFunction(function *fun)
         if (return_type)
         {
             function_node.return_type_id = getOrCreateType(return_type);
-            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-                Core::DiagnosticLevel::Debug, "Function return type ID: " + toString(function_node.return_type_id));
+            reporter.report(Core::DiagnosticLevel::Debug,
+                            "Function return type ID: " + toString(function_node.return_type_id));
         }
     }
 
     // process parameters
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Processing function parameters...");
+    reporter.report(Core::DiagnosticLevel::Debug, "Processing function parameters...");
     for (tree arg = DECL_ARGUMENTS(fun->decl); arg; arg = DECL_CHAIN(arg))
     {
         Core::NodeId param_id = getOrCreateVariable(arg);
         function_node.parameter_ids.push_back(param_id);
     }
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Processed function parameters");
+    reporter.report(Core::DiagnosticLevel::Debug, "Processed function parameters");
 
     // process local variables
     if (fun->local_decls)
@@ -834,8 +809,7 @@ void GCCAdapter::processFunction(function *fun)
         function_node.block_ids.push_back(static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(bb)));
     }
 
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Processed function node with ID: " + toString(function_node.id));
+    reporter.report(Core::DiagnosticLevel::Debug, "Processed function node with ID: " + toString(function_node.id));
 
     model.addFunction(function_node);
 }
@@ -844,8 +818,7 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
 {
     Core::Block block_node;
     block_node.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(bb));
-    CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, "Block node ID: " + toString(block_node.id));
+    reporter.report(Core::DiagnosticLevel::Debug, "Block node ID: " + toString(block_node.id));
     block_node.parent_function_id = function_id;
 
     if (bb->index == ENTRY_BLOCK)
@@ -884,18 +857,16 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
 
             Core::Instruction instruction_node;
             instruction_node.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(stmt));
-            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-                Core::DiagnosticLevel::Debug, "Instruction node ID: " + toString(instruction_node.id));
+            reporter.report(Core::DiagnosticLevel::Debug, "Instruction node ID: " + toString(instruction_node.id));
             instruction_node.parent_block_id = block_node.id;
-            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-                Core::DiagnosticLevel::Debug,
-                "Instruction node parent block ID: " + toString(instruction_node.parent_block_id));
+            reporter.report(Core::DiagnosticLevel::Debug,
+                            "Instruction node parent block ID: " + toString(instruction_node.parent_block_id));
 
             // determine opcode and kind
             enum gimple_code gcode = gimple_code(stmt);
             instruction_node.opcode_name = gimple_code_name[gcode];
-            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-                Core::DiagnosticLevel::Debug, "Processed instruction with opcode: " + instruction_node.opcode_name);
+            reporter.report(Core::DiagnosticLevel::Debug,
+                            "Processed instruction with opcode: " + instruction_node.opcode_name);
 
             // try to enhance location if missing (for labels and returns)
             location_t loc = gimple_location(stmt);
@@ -916,9 +887,8 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
             }
             instruction_node.source_location = getSourceLocation(loc);
 
-            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-                Core::DiagnosticLevel::Debug,
-                "Instruction node source location: " + toString(instruction_node.source_location));
+            reporter.report(Core::DiagnosticLevel::Debug,
+                            "Instruction node source location: " + toString(instruction_node.source_location));
 
             // map instruction kind
             switch (gcode)
@@ -1102,8 +1072,8 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
                 break;
             }
 
-            CompilerAbstractionLayer::PluginContext::getInstance().getDiagnosticReporter().report(
-                Core::DiagnosticLevel::Debug, "Processed instruction with kind: " + toString(instruction_node.kind));
+            reporter.report(Core::DiagnosticLevel::Debug,
+                            "Processed instruction with kind: " + toString(instruction_node.kind));
 
             model.addInstruction(instruction_node);
             block_node.instruction_ids.push_back(instruction_node.id);
