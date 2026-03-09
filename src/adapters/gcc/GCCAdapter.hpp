@@ -8,32 +8,32 @@
 #include "NodeId.hpp"
 #include "SourceLocation.hpp"
 
-namespace CodeListener::Core
+namespace CodeListener::CompilerAbstractionLayer
 {
 
 class GCCAdapter
 {
   public:
-    GCCAdapter(CodeModel &model);
+    GCCAdapter(Core::CodeModel &model);
 
     void processFunction(function *fun);
 
   private:
-    CodeModel &model;
+    Core::CodeModel &model;
 
     std::string current_function_name;
-    std::unordered_map<tree, NodeId> variable_cache;
-    std::unordered_map<tree, NodeId> type_cache;
+    std::unordered_map<tree, Core::NodeId> variable_cache;
+    std::unordered_map<tree, Core::NodeId> type_cache;
 
-    NodeId getOrCreateType(tree type_tree);
-    NodeId getOrCreateVariable(tree var_tree);
-    Operand parseOperand(tree operand_tree);
+    Core::NodeId getOrCreateType(tree type_tree);
+    Core::NodeId getOrCreateVariable(tree var_tree);
+    Core::Operand parseOperand(tree operand_tree);
 
-    SourceLocation getSourceLocation(location_t location);
+    Core::SourceLocation getSourceLocation(location_t location);
 
-    TypeKind mapTypeTreeToTypeKind(tree &type_tree);
+    Core::TypeKind mapTypeTreeToTypeKind(tree &type_tree);
 
-    void processBlock(basic_block bb, NodeId function_id);
+    void processBlock(basic_block bb, Core::NodeId function_id);
 };
 
-} // namespace CodeListener::Core
+} // namespace CodeListener::CompilerAbstractionLayer
