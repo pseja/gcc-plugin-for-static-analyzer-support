@@ -94,36 +94,40 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     (void)gcc_data;
     (void)user_data;
 
-    // TODO: run the analyzer/s here
-
-    // TODO: export the model based on arguments
-    if (const char *dot_file = std::getenv("CL_JSON_FILE"))
+    const PluginArgs *args = PluginContext::getInstance().getArgs();
+    if (!args)
     {
-        std::ofstream json_out(dot_file);
+        std::cerr << "Code Listener GCC plugin finished, but weren't able to retrieve arguments\n";
+        return;
+    }
+
+    if (args->gen_json_file.has_value())
+    {
+        std::ofstream json_out(args->gen_json_file.value());
         if (json_out.is_open())
         {
             CodeListener::Exporters::JSONExporter exporter(json_out);
             exporter.exportModel(PluginContext::getInstance().getCodeModel());
-            std::cerr << "Exported JSON to " << dot_file << "\n";
+            std::cerr << "Exported JSON to " << args->gen_json_file.value() << "\n";
         }
         else
         {
-            std::cerr << "Failed to open JSON file: " << dot_file << "\n";
+            std::cerr << "Failed to open JSON file: " << args->gen_json_file.value() << "\n";
         }
     }
 
-    if (const char *dot_file = std::getenv("CL_DOT_FILE"))
+    if (args->gen_dot_file.has_value())
     {
-        std::ofstream dot_out(dot_file);
+        std::ofstream dot_out(args->gen_dot_file.value());
         if (dot_out.is_open())
         {
             CodeListener::Exporters::DOTExporter dot_exporter(dot_out);
             dot_exporter.exportModel(PluginContext::getInstance().getCodeModel());
-            std::cerr << "Exported DOT to " << dot_file << "\n";
+            std::cerr << "Exported DOT to " << args->gen_dot_file.value() << "\n";
         }
         else
         {
-            std::cerr << "Failed to open DOT file: " << dot_file << "\n";
+            std::cerr << "Failed to open DOT file: " << args->gen_dot_file.value() << "\n";
         }
     }
 
