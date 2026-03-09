@@ -28,17 +28,8 @@ message(STATUS "GCC Plugin Directory: ${GCC_PLUGIN_DIR}")
 
 set(GCC_PLUGIN_INCLUDE_DIR "${GCC_PLUGIN_DIR}/include")
 
-set(SOURCES
-    src/adapters/gcc/register_plugin.cpp
-    src/adapters/gcc/PluginContext.cpp
-    src/adapters/gcc/PluginArgs.cpp
-    src/adapters/gcc/Pass.cpp
-    src/adapters/gcc/GCCDiagnosticReporter.cpp
-    src/adapters/gcc/GCCAdapter.cpp
-    src/core/CodeModel.cpp
-    src/core/SourceLocation.cpp
-    src/exporters/JSONExporter.cpp
-    src/exporters/DOTExporter.cpp
+file(GLOB_RECURSE SOURCES
+    src/*.cpp
 )
 
 add_library(cl SHARED ${SOURCES})
