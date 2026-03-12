@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Symbol.hpp"
+#include "StringRef.hpp"
 
 namespace CodeListener::Core
 {
 
-bool Symbol::operator==(const Symbol &other) const
+bool StringRef::operator==(const StringRef &other) const
 {
     return id == other.id;
 }

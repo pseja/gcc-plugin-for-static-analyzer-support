@@ -5,11 +5,11 @@
 namespace CodeListener::Core
 {
 
-struct Symbol
+struct StringRef
 {
     uint32_t id;
 
-    bool operator==(const Symbol &other) const;
+    bool operator==(const StringRef &other) const;
 };
 
 } // namespace CodeListener::Core

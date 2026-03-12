@@ -2,13 +2,13 @@
 
 #include <string_view> // std::string_view
 
-#include "Symbol.hpp"
-#include "Context.hpp"
+#include "Interner.hpp"
+#include "StringRef.hpp"
 
 namespace CodeListener::Core
 {
 
-Symbol Context::get(std::string_view string)
+StringRef Interner::get(std::string_view string)
 {
     auto it = interner.find(string);
     if (it != interner.end())
@@ -17,13 +17,13 @@ Symbol Context::get(std::string_view string)
     }
 
     std::unique_ptr<std::string> &kept_string = string_pool.emplace_back(std::make_unique<std::string>(string));
-    Symbol new_symbol{static_cast<uint32_t>(string_pool.size() - 1)};
-    interner[*kept_string] = new_symbol;
+    StringRef new_string_ref{static_cast<uint32_t>(string_pool.size() - 1)};
+    interner[*kept_string] = new_string_ref;
 
-    return new_symbol;
+    return new_string_ref;
 }
 
-std::string_view Context::view(Symbol symbol) const
+std::string_view Interner::view(StringRef symbol) const
 {
     if (symbol.id >= string_pool.size())
     {
