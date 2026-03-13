@@ -3,14 +3,14 @@
 #include <vector>
 
 #include "Accessor.hpp"
-#include "NodeId.hpp"
+#include "VariableId.hpp"
 
 namespace CodeListener::Core
 {
 
 struct VariableOperand
 {
-    NodeId variable_id;
+    VariableId id;
 
     std::vector<Accessor> access_path;
 };

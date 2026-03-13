@@ -38,7 +38,7 @@ target_include_directories(cl PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc
 
 target_link_libraries(cl PRIVATE nlohmann_json::nlohmann_json)
 
-target_compile_options(cl PRIVATE -Wall -Wextra -Werror -pedantic -fno-rtti)
+target_compile_options(cl PRIVATE -g3 -O0 -shared -fPIC -fno-rtti -Wall -Wextra -Werror -pedantic)
 
 set_target_properties(cl PROPERTIES
     CXX_STANDARD 23

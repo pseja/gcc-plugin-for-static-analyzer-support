@@ -2,14 +2,14 @@
 
 #include <string>
 
-#include "NodeId.hpp"
+#include "VariableId.hpp"
 
 namespace CodeListener::Core
 {
 
 struct ConstantOperand
 {
-    NodeId id;
+    VariableId id;
     std::string value;
 };
 

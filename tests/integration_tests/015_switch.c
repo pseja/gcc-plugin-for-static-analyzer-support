@@ -10,7 +10,7 @@ int main()
     case 1:
         x += 2;
         break;
-    case 2 .. 41:
+    case 2 ... 41:
         x += 3;
         break;
     default:

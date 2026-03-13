@@ -34,18 +34,10 @@ void to_json(json &j, const SourceLocation &loc)
 
 void to_json(json &j, const Type &type)
 {
-    j = json{{"id", type.id},
-             {"kind", toString(type.kind)},
-             {"name", type.name},
-             {"size_bits", type.size_bits},
-             {"size_bytes", type.size_bytes},
-             {"alignment", type.alignment},
-             {"is_const", type.is_const},
-             {"is_volatile", type.is_volatile},
-             {"is_restrict", type.is_restrict},
-             {"is_atomic", type.is_atomic},
-             {"is_unsigned", type.is_unsigned},
-             {"is_struct", type.is_struct},
+    j = json{{"id", std::to_string(type.id)}, {"kind", toString(type.kind)},     {"name", type.name},
+             {"size_bits", type.size_bits},   {"size_bytes", type.size_bytes},   {"alignment", type.alignment},
+             {"is_const", type.is_const},     {"is_volatile", type.is_volatile}, {"is_restrict", type.is_restrict},
+             {"is_atomic", type.is_atomic},   {"is_unsigned", type.is_unsigned}, {"is_struct", type.is_struct},
              {"is_union", type.is_union}};
 
     if (type.array_element_count > 0)
@@ -66,15 +58,15 @@ void to_json(json &j, const Accessor &acc)
     j = json{{"kind", toString(acc.kind)}};
     if (acc.kind == AccessorKind::FIELD)
     {
-        j["target_field_id"] = acc.target_field_id;
+        j["target_field_id"] = std::to_string(acc.target_field_variable_id);
     }
     else if (acc.kind == AccessorKind::ARRAY)
     {
-        j["index_operand_id"] = acc.index_operand_id;
+        j["index_operand_id"] = std::to_string(acc.index_operand_id);
     }
     else if (acc.kind == AccessorKind::OFFSET)
     {
-        j["index_operand_id"] = acc.index_operand_id;
+        j["index_operand_id"] = std::to_string(acc.index_operand_id);
     }
     else if (acc.kind == AccessorKind::BIT_SLICE)
     {
@@ -88,20 +80,20 @@ void to_json(json &j, const Operand &op)
     if (std::holds_alternative<ConstantOperand>(op))
     {
         const auto &co = std::get<ConstantOperand>(op);
-        j = json{{"type", "constant"}, {"id", co.id}, {"value", co.value}};
+        j = json{{"type", "constant"}, {"id", std::to_string(co.id)}, {"value", co.value}};
     }
     else if (std::holds_alternative<VariableOperand>(op))
     {
         const auto &vo = std::get<VariableOperand>(op);
-        j = json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
+        j = json{{"type", "variable"}, {"variable_id", std::to_string(vo.id)}, {"access_path", vo.access_path}};
     }
 }
 
 void to_json(json &j, const Variable &var)
 {
-    j = json{{"id", var.id},
+    j = json{{"id", std::to_string(var.id)},
              {"name", var.name},
-             {"type_id", var.type_id},
+             {"type_id", std::to_string(var.type_id)},
              {"location", var.source_location},
              {"scope", toString(var.scope)},
              {"storage_duration", toString(var.storage_duration)},
@@ -123,20 +115,20 @@ void to_json(json &j, const Variable &var)
 
 void to_json(json &j, const SwitchCase &sc)
 {
-    j = json{{"target_block_id", sc.target_block_id}};
+    j = json{{"target_block_id", std::to_string(sc.target_block_id)}};
 
     if (sc.low_value.has_value())
     {
         if (std::holds_alternative<ConstantOperand>(*sc.low_value))
         {
             const auto &co = std::get<ConstantOperand>(*sc.low_value);
-            j["low_value"] = json{{"type", "constant"}, {"id", co.id}, {"value", co.value}};
+            j["low_value"] = json{{"type", "constant"}, {"id", std::to_string(co.id)}, {"value", co.value}};
         }
         else if (std::holds_alternative<VariableOperand>(*sc.low_value))
         {
             const auto &vo = std::get<VariableOperand>(*sc.low_value);
             j["low_value"] =
-                json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
+                json{{"type", "variable"}, {"variable_id", std::to_string(vo.id)}, {"access_path", vo.access_path}};
         }
     }
     else
@@ -149,25 +141,22 @@ void to_json(json &j, const SwitchCase &sc)
         if (std::holds_alternative<ConstantOperand>(*sc.high_value))
         {
             const auto &co = std::get<ConstantOperand>(*sc.high_value);
-            j["high_value"] = json{{"type", "constant"}, {"id", co.id}, {"value", co.value}};
+            j["high_value"] = json{{"type", "constant"}, {"id", std::to_string(co.id)}, {"value", co.value}};
         }
         else if (std::holds_alternative<VariableOperand>(*sc.high_value))
         {
             const auto &vo = std::get<VariableOperand>(*sc.high_value);
             j["high_value"] =
-                json{{"type", "variable"}, {"variable_id", vo.variable_id}, {"access_path", vo.access_path}};
+                json{{"type", "variable"}, {"variable_id", std::to_string(vo.id)}, {"access_path", vo.access_path}};
         }
     }
 }
 
 void to_json(json &j, const Instruction &instr)
 {
-    j = json{{"id", instr.id},
-             {"kind", toString(instr.kind)},
-             {"opcode", toString(instr.opcode)},
-             {"opcode_name", instr.opcode_name},
-             {"location", instr.source_location},
-             {"operands", instr.operands},
+    j = json{{"id", std::to_string(instr.id)},      {"kind", toString(instr.kind)},
+             {"opcode", toString(instr.opcode)},    {"opcode_name", instr.opcode_name},
+             {"location", instr.source_location},   {"operands", instr.operands},
              {"is_terminator", instr.is_terminator}};
 
     if (!instr.switch_cases.empty())
@@ -192,7 +181,7 @@ void to_json(json &j, const Block &block)
         instrs.push_back((int64_t)id);
     }
 
-    j = json{{"id", block.id},
+    j = json{{"id", std::to_string(block.id)},
              {"name", block.name},
              {"predecessors", preds},
              {"successors", succs},
@@ -215,9 +204,9 @@ void to_json(json &j, const Function &func)
         blocks.push_back((int64_t)id);
     }
 
-    j = json{{"id", func.id},
+    j = json{{"id", std::to_string(func.id)},
              {"name", func.name},
-             {"return_type_id", func.return_type_id},
+             {"return_type_id", std::to_string(func.return_type_id)},
              {"parameter_ids", params},
              {"local_variable_ids", locals},
              {"block_ids", blocks}};
@@ -240,40 +229,11 @@ void JSONExporter::exportModel(const Core::CodeModel &model)
 {
     json j_model;
 
-    std::vector<Core::Type> types;
-    for (const auto &[id, t] : model.getTypes())
-    {
-        types.push_back(t);
-    }
-    j_model["types"] = types;
-
-    std::vector<Core::Variable> vars;
-    for (const auto &[id, v] : model.getVariables())
-    {
-        vars.push_back(v);
-    }
-    j_model["variables"] = vars;
-
-    std::vector<Core::Function> funcs;
-    for (const auto &[id, f] : model.getFunctions())
-    {
-        funcs.push_back(f);
-    }
-    j_model["functions"] = funcs;
-
-    std::vector<Core::Block> blocks;
-    for (const auto &[id, b] : model.getBlocks())
-    {
-        blocks.push_back(b);
-    }
-    j_model["blocks"] = blocks;
-
-    std::vector<Core::Instruction> instrs;
-    for (const auto &[id, i] : model.getInstructions())
-    {
-        instrs.push_back(i);
-    }
-    j_model["instructions"] = instrs;
+    j_model["types"] = model.getTypes();
+    j_model["variables"] = model.getVariables();
+    j_model["functions"] = model.getFunctions();
+    j_model["blocks"] = model.getBlocks();
+    j_model["instructions"] = model.getInstructions();
 
     os << j_model.dump(4) << "\n";
 }

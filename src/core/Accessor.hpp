@@ -1,7 +1,8 @@
 #pragma once
 
-#include "NodeId.hpp"
 #include "AccessorKind.hpp"
+#include "TypeId.hpp"
+#include "VariableId.hpp"
 
 namespace CodeListener::Core
 {
@@ -10,9 +11,10 @@ struct Accessor
 {
     AccessorKind kind;
     // if FIELD/COMPONENT: the id of the field declaration (variable)
-    NodeId target_field_id = NodeId::INVALID;
+    VariableId target_field_variable_id;
+    TypeId target_field_type_id;
     // if ARRAY/OFFSET: the index can be a constant (string) or a variable (NodeId)
-    NodeId index_operand_id = NodeId::INVALID;
+    VariableId index_operand_id;
 
     // for BIT_SLICE
     unsigned bit_start = 0;

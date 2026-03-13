@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "NodeId.hpp"
+#include "TypeId.hpp"
 #include "TypeKind.hpp"
 
 namespace CodeListener::Core
@@ -11,12 +11,13 @@ namespace CodeListener::Core
 
 struct Type
 {
-    NodeId id;
+    TypeId id;
     TypeKind kind;
     std::string name; // "int", "struct Foo", ...
 
     // size and memory layout
     int size_bits;  // for bitfields
+    // TODO: this can easily be derived from size_bits, and having both may lead to inconsistency
     int size_bytes; // sizeof
     int alignment;  // in bytes
 
@@ -38,7 +39,7 @@ struct Type
     // - for ptr/array: [0] is the pointee/element type
     // - for struct/union: list of field declarations (variables)
     // - for function: [0] return type, rest are parameter types
-    std::vector<NodeId> nested_type_ids;
+    std::vector<TypeId> nested_type_ids;
 };
 
 } // namespace CodeListener::Core

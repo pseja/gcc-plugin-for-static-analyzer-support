@@ -3,23 +3,26 @@
 #include <string>
 #include <vector>
 
-#include "NodeId.hpp"
+#include "BlockId.hpp"
+#include "FunctionId.hpp"
+#include "TypeId.hpp"
+#include "VariableId.hpp"
 
 namespace CodeListener::Core
 {
 
 struct Function
 {
-    NodeId id;
+    FunctionId id;
     std::string name;
-    NodeId return_type_id;
+    TypeId return_type_id;
 
-    std::vector<NodeId> parameter_ids;
+    std::vector<VariableId> parameter_ids;
 
-    std::vector<NodeId> local_variable_ids;
+    std::vector<VariableId> local_variable_ids;
 
     // ast children (blocks)
-    std::vector<NodeId> block_ids;
+    std::vector<BlockId> block_ids;
 };
 
 } // namespace CodeListener::Core

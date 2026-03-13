@@ -1,5 +1,3 @@
-#pragma once
-
 #include "StringRef.hpp"
 
 namespace CodeListener::Core

@@ -4,20 +4,21 @@
 #include <vector>
 
 #include "Linkage.hpp"
-#include "NodeId.hpp"
 #include "Operand.hpp"
 #include "Scope.hpp"
 #include "SourceLocation.hpp"
 #include "StorageDuration.hpp"
+#include "TypeId.hpp"
+#include "VariableId.hpp"
 
 namespace CodeListener::Core
 {
 
 struct Variable
 {
-    NodeId id;
+    VariableId id;
     std::string name;
-    NodeId type_id;
+    TypeId type_id;
 
     SourceLocation source_location;
     Scope scope;

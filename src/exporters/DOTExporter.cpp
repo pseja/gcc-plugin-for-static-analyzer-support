@@ -16,7 +16,7 @@ void DOTExporter::exportModel(const Core::CodeModel &model)
     os << "    edge [fontname=\"Courier New\", fontsize=9];\n";
     os << "    graph [rankdir=TB, splines=polyline];\n\n";
 
-    for (const auto &[id, func] : model.getFunctions())
+    for (const auto &func : model.getFunctions())
     {
         exportFunction(model, func);
     }
@@ -26,9 +26,7 @@ void DOTExporter::exportModel(const Core::CodeModel &model)
 
 void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Function &func)
 {
-    auto func_id = static_cast<uint32_t>(func.id);
-
-    os << "    subgraph cluster_func_" << func_id << " {\n";
+    os << "    subgraph cluster_func_" << func.id << " {\n";
     os << "        label=<<b>Function: " << escape(func.name) << "</b>>;\n";
     os << "        style=filled;\n";
     os << "        fillcolor=\"#f8f9fa\";\n";
@@ -44,7 +42,7 @@ void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Funct
     for (auto block_id : func.block_ids)
     {
         const auto &block = model.getBlock(block_id);
-        auto src_id = static_cast<uint32_t>(block->id);
+        auto src_id = block->id;
         bool handled_edges = false;
 
         if (!block->instruction_ids.empty())
@@ -54,12 +52,12 @@ void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Funct
             {
                 for (const auto &sw_case : last_instr->switch_cases)
                 {
-                    if (sw_case.target_block_id != Core::NodeId::INVALID)
+                    if (sw_case.target_block_id.isValid())
                     {
                         std::string label =
                             sw_case.low_value.has_value() ? formatOperand(model, *sw_case.low_value) : "default";
-                        os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(sw_case.target_block_id)
-                           << " [label=\"" << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
+                        os << "    block_" << src_id << " -> block_" << sw_case.target_block_id << " [label=\""
+                           << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
                     }
                 }
                 handled_edges = true;
@@ -68,9 +66,9 @@ void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Funct
             {
                 if (block->successor_block_ids.size() >= 2)
                 {
-                    os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(block->successor_block_ids[0])
+                    os << "    block_" << src_id << " -> block_" << block->successor_block_ids[0]
                        << " [label=\"true\", color=\"#2e7d32\", fontcolor=\"#2e7d32\"];\n"; // Green
-                    os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(block->successor_block_ids[1])
+                    os << "    block_" << src_id << " -> block_" << block->successor_block_ids[1]
                        << " [label=\"false\", color=\"#c62828\", fontcolor=\"#c62828\"];\n"; // Red
                     handled_edges = true;
                 }
@@ -81,8 +79,7 @@ void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Funct
         {
             for (auto succ_id : block->successor_block_ids)
             {
-                os << "    block_" << src_id << " -> block_" << static_cast<uint32_t>(succ_id)
-                   << " [color=\"#495057\"];\n";
+                os << "    block_" << src_id << " -> block_" << succ_id << " [color=\"#495057\"];\n";
             }
         }
     }
@@ -90,13 +87,11 @@ void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Funct
 
 void DOTExporter::exportBlock(const Core::CodeModel &model, const Core::Block &block)
 {
-    auto block_id = static_cast<uint32_t>(block.id);
-
-    os << "    block_" << block_id << " [label=<\n";
+    os << "    block_" << block.id << " [label=<\n";
     os << "        <table border=\"0\" cellborder=\"1\" cellspacing=\"0\" cellpadding=\"4\">\n";
 
-    os << "            <tr><td bgcolor=\"#e9ecef\" colspan=\"2\" align=\"center\">"
-       << "<b>Block " << escape(block.name) << " (" << block_id << ")</b></td></tr>\n";
+    os << "            <tr><td bgcolor=\"#e9ecef\" colspan=\"2\" align=\"center\">" << "<b>Block " << escape(block.name)
+       << " (" << block.id << ")</b></td></tr>\n";
 
     if (block.instruction_ids.empty())
     {
@@ -181,7 +176,7 @@ std::string DOTExporter::exportInstruction(const Core::CodeModel &model, const C
 
     ss << "            <tr>\n"
        << "                <td bgcolor=\"" << bgcolor << "\" align=\"right\" width=\"30\"" << tooltip_attr << ">"
-       << static_cast<uint32_t>(instr.id) << "</td>\n"
+       << instr.id << "</td>\n"
        << "                <td bgcolor=\"" << bgcolor << "\" align=\"left\"" << tooltip_attr << ">" << readable_expr
        << "</td>\n"
        << "            </tr>\n";
@@ -199,7 +194,7 @@ std::string DOTExporter::formatOperand(const Core::CodeModel &model, const Core:
     {
         const auto &varOp = std::get<Core::VariableOperand>(op);
 
-        std::string res = escape(model.getVariable(varOp.variable_id)->name);
+        std::string res = escape(model.getVariable(varOp.id)->name);
 
         for (const auto &acc : varOp.access_path)
         {
@@ -220,13 +215,12 @@ std::string DOTExporter::formatAccessor(const Core::CodeModel &model, const Core
     case Core::AccessorKind::ADDRESS_OF:
         return "&amp;(" + base + ")";
     case Core::AccessorKind::FIELD: {
-        std::string field_name = escape(model.getVariable(acc.target_field_id)->name);
+        std::string field_name = escape(model.getVariable(acc.target_field_variable_id)->name);
         return base + "." + field_name;
     }
     case Core::AccessorKind::ARRAY: {
-        std::string idx = (acc.index_operand_id != Core::NodeId::INVALID)
-                              ? escape(model.getVariable(acc.index_operand_id)->name)
-                              : "?";
+        std::string idx =
+            (acc.index_operand_id.isValid()) ? escape(model.getVariable(acc.index_operand_id)->name) : "?";
         return base + "[" + idx + "]";
     }
     case Core::AccessorKind::OFFSET:
@@ -474,10 +468,10 @@ std::string DOTExporter::getOperandTypeString(const Core::CodeModel &model, cons
 {
     if (std::holds_alternative<Core::VariableOperand>(op))
     {
-        auto var_id = std::get<Core::VariableOperand>(op).variable_id;
+        auto var_id = std::get<Core::VariableOperand>(op).id;
         auto type_id = model.getVariable(var_id)->type_id;
 
-        if (type_id != Core::NodeId::INVALID)
+        if (type_id.isValid())
         {
             std::string type_name = model.getType(type_id)->name;
             return escape(type_name);

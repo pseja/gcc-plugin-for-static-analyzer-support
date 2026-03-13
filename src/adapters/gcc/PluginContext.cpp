@@ -94,6 +94,8 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     (void)gcc_data;
     (void)user_data;
 
+    std::cerr << "Code Listener GCC plugin starting to export\n";
+
     const PluginArgs *args = PluginContext::getInstance().getArgs();
     if (!args)
     {

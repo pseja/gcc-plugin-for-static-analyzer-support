@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "NodeId.hpp"
+#include "BlockId.hpp"
 #include "Operand.hpp"
 
 namespace CodeListener::Core
@@ -15,7 +15,7 @@ struct SwitchCase
     // if high_value is present, this is a range case (low ... high)
     std::optional<Operand> high_value;
 
-    NodeId target_block_id = NodeId::INVALID;
+    BlockId target_block_id;
 };
 
 } // namespace CodeListener::Core

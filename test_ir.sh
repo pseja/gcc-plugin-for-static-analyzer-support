@@ -41,9 +41,9 @@ integration_tests() {
 	for file in $INTEGRATION_TEST_DIR/*.c; do
 		echo "  > Compiling $(basename "$file")"
 
-		output_file="$INTEGRATION_TEST_DIR/$(basename "$file" .c).json"
-		touch "$output_file"
-		CL_JSON_FILE=$output_file gcc-12 -fplugin=build/libcl.so "$file" 2>/dev/null
+		json_file="$INTEGRATION_TEST_DIR/$(basename "$file" .c).json"
+		touch "$json_file"
+		gcc-12 -fplugin=build/libcl.so -fplugin-arg-libcl-gen-json="$json_file" "$file" 2>/dev/null
 	done
 }
 
@@ -55,9 +55,10 @@ visualize_results() {
 
 		base_name="$(basename "$file" .c)"
 		dot_file="$INTEGRATION_TEST_DIR/"$base_name".dot"
+		touch "$dot_file"
 		png_file="$INTEGRATION_TEST_DIR/"$base_name".png"
 
-		CL_DOT_FILE=$dot_file gcc-12 -O2 -fplugin=build/libcl.so "$file" 2>/dev/null
+		gcc-12 -fplugin=build/libcl.so -fplugin-arg-libcl-gen-dot="$dot_file" "$file" 2>/dev/null
 
 		dot -Tpng $dot_file -o $png_file
 

@@ -15,14 +15,16 @@
 #pragma GCC diagnostic pop
 
 #include "ConstantOperand.hpp"
+#include "FunctionId.hpp"
 #include "GCCAdapter.hpp"
 #include "Instruction.hpp"
-#include "NodeId.hpp"
 #include "Operand.hpp"
 #include "SourceLocation.hpp"
 #include "SwitchCase.hpp"
 #include "Type.hpp"
+#include "TypeId.hpp"
 #include "TypeKind.hpp"
+#include "VariableId.hpp"
 #include "VariableOperand.hpp"
 
 namespace CodeListener::CompilerAbstractionLayer
@@ -92,13 +94,13 @@ Core::SourceLocation GCCAdapter::getSourceLocation(location_t location)
     return Core::SourceLocation(eloc.file, current_function_name, eloc.line, eloc.column);
 }
 
-Core::NodeId GCCAdapter::getOrCreateType(tree type_tree)
+Core::TypeId GCCAdapter::getOrCreateType(tree type_tree)
 {
     if (!type_tree)
     {
         reporter.report(Core::DiagnosticLevel::Warning, "Encountered a type without a tree representation");
 
-        return Core::NodeId::INVALID;
+        return Core::TypeId::invalid();
     }
 
     reporter.report(Core::DiagnosticLevel::Debug, "Maybe processing type tree...");
@@ -112,64 +114,63 @@ Core::NodeId GCCAdapter::getOrCreateType(tree type_tree)
 
     reporter.report(Core::DiagnosticLevel::Debug, "Actually processing type tree...");
 
-    Core::Type type_node;
-    type_node.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(type_tree));
+    Core::Type *type_node = model.createType();
 
     // pre-insert into cache to handle recursive types
-    type_cache[type_tree] = type_node.id;
+    type_cache[type_tree] = type_node->id;
 
     if (TYPE_NAME(type_tree) && TREE_CODE(TYPE_NAME(type_tree)) == TYPE_DECL)
     {
         if (DECL_NAME(TYPE_NAME(type_tree)))
         {
-            type_node.name = IDENTIFIER_POINTER(DECL_NAME(TYPE_NAME(type_tree)));
+            type_node->name = IDENTIFIER_POINTER(DECL_NAME(TYPE_NAME(type_tree)));
         }
     }
 
-    type_node.kind = mapTypeTreeToTypeKind(type_tree);
+    type_node->kind = mapTypeTreeToTypeKind(type_tree);
 
-    type_node.is_const = TYPE_READONLY(type_tree);
-    type_node.is_volatile = TYPE_VOLATILE(type_tree);
-    type_node.is_atomic = TYPE_ATOMIC(type_tree);
-    type_node.is_restrict = TYPE_RESTRICT(type_tree);
+    type_node->is_const = TYPE_READONLY(type_tree);
+    type_node->is_volatile = TYPE_VOLATILE(type_tree);
+    type_node->is_atomic = TYPE_ATOMIC(type_tree);
+    type_node->is_restrict = TYPE_RESTRICT(type_tree);
 
     if (TYPE_SIZE(type_tree) && tree_fits_uhwi_p(TYPE_SIZE(type_tree)))
     {
         // FIXME: converting unsigned long to int
-        type_node.size_bits = tree_to_uhwi(TYPE_SIZE(type_tree));
-        type_node.size_bytes = type_node.size_bits / 8;
+        type_node->size_bits = tree_to_uhwi(TYPE_SIZE(type_tree));
+        type_node->size_bytes = type_node->size_bits / 8;
     }
     else
     {
         // unknown size
-        type_node.size_bits = 0;
-        type_node.size_bytes = 0;
+        type_node->size_bits = 0;
+        type_node->size_bytes = 0;
     }
-    type_node.alignment = TYPE_ALIGN_UNIT(type_tree);
+    type_node->alignment = TYPE_ALIGN_UNIT(type_tree);
 
     switch (TREE_CODE(type_tree))
     {
     case INTEGER_TYPE:
-        type_node.is_unsigned = TYPE_UNSIGNED(type_tree);
+        type_node->is_unsigned = TYPE_UNSIGNED(type_tree);
         break;
 
     case POINTER_TYPE:
     case REFERENCE_TYPE: {
-        Core::NodeId inner = getOrCreateType(TREE_TYPE(type_tree));
-        type_node.nested_type_ids.push_back(inner);
+        Core::TypeId inner = getOrCreateType(TREE_TYPE(type_tree));
+        type_node->nested_type_ids.push_back(inner);
     }
     break;
 
     case ARRAY_TYPE: {
-        Core::NodeId element_type = getOrCreateType(TREE_TYPE(type_tree));
-        type_node.nested_type_ids.push_back(element_type);
+        Core::TypeId element_type = getOrCreateType(TREE_TYPE(type_tree));
+        type_node->nested_type_ids.push_back(element_type);
 
         if (TYPE_DOMAIN(type_tree))
         {
             tree max = TYPE_MAX_VALUE(TYPE_DOMAIN(type_tree));
             if (max && tree_fits_uhwi_p(max))
             {
-                type_node.array_element_count = tree_to_uhwi(max) + 1;
+                type_node->array_element_count = tree_to_uhwi(max) + 1;
             }
         }
     }
@@ -177,15 +178,15 @@ Core::NodeId GCCAdapter::getOrCreateType(tree type_tree)
 
     case RECORD_TYPE:
     case UNION_TYPE: {
-        type_node.is_struct = (TREE_CODE(type_tree) == RECORD_TYPE);
-        type_node.is_union = (TREE_CODE(type_tree) == UNION_TYPE);
+        type_node->is_struct = (TREE_CODE(type_tree) == RECORD_TYPE);
+        type_node->is_union = (TREE_CODE(type_tree) == UNION_TYPE);
 
         for (tree field = TYPE_FIELDS(type_tree); field; field = DECL_CHAIN(field))
         {
             if (TREE_CODE(field) == FIELD_DECL)
             {
-                Core::NodeId field_id = getOrCreateVariable(field);
-                type_node.nested_type_ids.push_back(field_id);
+                Core::TypeId field_id = getOrCreateType(TREE_TYPE(field));
+                type_node->nested_type_ids.push_back(field_id);
             }
         }
     }
@@ -193,13 +194,16 @@ Core::NodeId GCCAdapter::getOrCreateType(tree type_tree)
 
     case FUNCTION_TYPE:
     case METHOD_TYPE: {
-        type_node.nested_type_ids.push_back(getOrCreateType(TREE_TYPE(type_tree)));
+        type_node->nested_type_ids.push_back(getOrCreateType(TREE_TYPE(type_tree)));
 
         for (tree arg = TYPE_ARG_TYPES(type_tree); arg; arg = TREE_CHAIN(arg))
         {
             if (TREE_VALUE(arg) == void_type_node)
+            {
                 break;
-            type_node.nested_type_ids.push_back(getOrCreateType(TREE_VALUE(arg)));
+            }
+
+            type_node->nested_type_ids.push_back(getOrCreateType(TREE_VALUE(arg)));
         }
     }
     break;
@@ -217,26 +221,26 @@ Core::NodeId GCCAdapter::getOrCreateType(tree type_tree)
 
     reporter.report(
         Core::DiagnosticLevel::Debug,
-        "Processed type node with id: " + toString(type_node.id) + ", name: " + type_node.name +
-            ", kind: " + toString(type_node.kind) + ", size: " + std::to_string(type_node.size_bytes) +
-            "B, alignment: " + std::to_string(type_node.alignment) +
-            "B, qualifiers: " + (type_node.is_const ? "const " : "") + (type_node.is_volatile ? "volatile " : "") +
-            (type_node.is_atomic ? "atomic " : "") + (type_node.is_restrict ? "restrict " : "") +
-            (type_node.is_unsigned ? "unsigned " : "") + (type_node.is_struct ? "struct " : "") +
-            (type_node.is_union ? "union " : "") + ", and " + std::to_string(type_node.nested_type_ids.size()) +
-            " nested types with constant array element count of " + std::to_string(type_node.array_element_count));
+        "Processed type node with id: " + std::to_string(type_node->id) + ", name: " + type_node->name +
+            ", kind: " + toString(type_node->kind) + ", size: " + std::to_string(type_node->size_bytes) +
+            "B, alignment: " + std::to_string(type_node->alignment) +
+            "B, qualifiers: " + (type_node->is_const ? "const " : "") + (type_node->is_volatile ? "volatile " : "") +
+            (type_node->is_atomic ? "atomic " : "") + (type_node->is_restrict ? "restrict " : "") +
+            (type_node->is_unsigned ? "unsigned " : "") + (type_node->is_struct ? "struct " : "") +
+            (type_node->is_union ? "union " : "") + ", and " + std::to_string(type_node->nested_type_ids.size()) +
+            " nested types with constant array element count of " + std::to_string(type_node->array_element_count));
 
-    model.addType(type_node);
+    // model.addType(type_node);
 
-    return type_node.id;
+    return type_node->id;
 }
 
-Core::NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
+Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
 {
     if (!variable_tree)
     {
         reporter.report(Core::DiagnosticLevel::Warning, "Encountered a variable without a tree representation");
-        return Core::NodeId::INVALID;
+        return Core::VariableId::invalid();
     }
 
     if (variable_cache.count(variable_tree))
@@ -248,17 +252,16 @@ Core::NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
 
     reporter.report(Core::DiagnosticLevel::Debug, "Processing a new variable...");
 
-    Core::Variable variable;
-    variable.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(variable_tree));
+    Core::Variable *variable = model.createVariable();
 
     // pre-insert into cache
-    variable_cache[variable_tree] = variable.id;
+    variable_cache[variable_tree] = variable->id;
 
     // resolve name
     if (DECL_NAME(variable_tree))
     {
         const char *name = IDENTIFIER_POINTER(DECL_NAME(variable_tree));
-        variable.name = name ? name : "<anonymous>";
+        variable->name = name ? name : "<anonymous>";
     }
     else if (TREE_CODE(variable_tree) == SSA_NAME)
     {
@@ -267,71 +270,71 @@ Core::NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
         if (var && DECL_NAME(var))
         {
             const char *name = IDENTIFIER_POINTER(DECL_NAME(var));
-            variable.name =
+            variable->name =
                 std::string(name ? name : "<anonymous>") + "_" + std::to_string(SSA_NAME_VERSION(variable_tree));
         }
         else
         {
-            variable.name = "ssa_" + std::to_string(SSA_NAME_VERSION(variable_tree));
+            variable->name = "ssa_" + std::to_string(SSA_NAME_VERSION(variable_tree));
         }
     }
     else
     {
-        variable.name = "<anonymous>";
+        variable->name = "<anonymous>";
     }
 
-    variable.type_id = getOrCreateType(TREE_TYPE(variable_tree));
+    variable->type_id = getOrCreateType(TREE_TYPE(variable_tree));
 
     if (DECL_P(variable_tree))
     {
-        variable.artificial = DECL_ARTIFICIAL(variable_tree);
-        variable.source_location = getSourceLocation(DECL_SOURCE_LOCATION(variable_tree));
+        variable->artificial = DECL_ARTIFICIAL(variable_tree);
+        variable->source_location = getSourceLocation(DECL_SOURCE_LOCATION(variable_tree));
 
         // determine scope
         if (is_global_var(variable_tree))
         {
-            variable.scope = Core::Scope::GLOBAL;
+            variable->scope = Core::Scope::GLOBAL;
         }
         else if (TREE_CODE(variable_tree) == PARM_DECL)
         {
-            variable.scope = Core::Scope::FUNCTION;
+            variable->scope = Core::Scope::FUNCTION;
         }
         else
         {
-            variable.scope = Core::Scope::FUNCTION;
+            variable->scope = Core::Scope::FUNCTION;
         }
 
         // determine storage duration and linkage
         if (TREE_CODE(variable_tree) == PARM_DECL)
         {
-            variable.storage_duration = Core::StorageDuration::AUTO;
-            variable.linkage = Core::Linkage::NONE;
+            variable->storage_duration = Core::StorageDuration::AUTO;
+            variable->linkage = Core::Linkage::NONE;
         }
         else if (TREE_STATIC(variable_tree))
         {
-            variable.storage_duration = Core::StorageDuration::STATIC;
-            variable.linkage = TREE_PUBLIC(variable_tree) ? Core::Linkage::EXTERNAL : Core::Linkage::INTERNAL;
+            variable->storage_duration = Core::StorageDuration::STATIC;
+            variable->linkage = TREE_PUBLIC(variable_tree) ? Core::Linkage::EXTERNAL : Core::Linkage::INTERNAL;
         }
         else if (DECL_EXTERNAL(variable_tree))
         {
-            variable.storage_duration = Core::StorageDuration::EXTERN;
-            variable.linkage = Core::Linkage::EXTERNAL;
+            variable->storage_duration = Core::StorageDuration::EXTERN;
+            variable->linkage = Core::Linkage::EXTERNAL;
         }
         else if (DECL_REGISTER(variable_tree))
         {
-            variable.storage_duration = Core::StorageDuration::REGISTER;
-            variable.linkage = Core::Linkage::NONE;
+            variable->storage_duration = Core::StorageDuration::REGISTER;
+            variable->linkage = Core::Linkage::NONE;
         }
         else
         {
-            variable.storage_duration = Core::StorageDuration::AUTO;
-            variable.linkage = Core::Linkage::NONE;
+            variable->storage_duration = Core::StorageDuration::AUTO;
+            variable->linkage = Core::Linkage::NONE;
         }
 
         // thread-local storage
         if (DECL_THREAD_LOCAL_P(variable_tree))
         {
-            variable.storage_duration = Core::StorageDuration::THREAD_LOCAL;
+            variable->storage_duration = Core::StorageDuration::THREAD_LOCAL;
         }
 
         // initializer processing
@@ -341,8 +344,8 @@ Core::NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
             // handle STRING_CST
             if (TREE_CODE(init) == STRING_CST)
             {
-                variable.initial_value.push_back(Core::ConstantOperand{
-                    Core::NodeId::INVALID, std::string(TREE_STRING_POINTER(init), TREE_STRING_LENGTH(init))});
+                variable->initial_value.push_back(Core::ConstantOperand{
+                    Core::VariableId::invalid(), std::string(TREE_STRING_POINTER(init), TREE_STRING_LENGTH(init))});
             }
             else if (TREE_CODE(init) == CONSTRUCTOR)
             {
@@ -353,26 +356,26 @@ Core::NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
                 FOR_EACH_CONSTRUCTOR_ELT(CONSTRUCTOR_ELTS(init), idx, index, value)
                 {
                     (void)index;
-                    variable.initial_value.push_back(parseOperand(value));
+                    variable->initial_value.push_back(parseOperand(value));
                 }
             }
             else if (CONSTANT_CLASS_P(init))
             {
-                variable.initial_value.push_back(parseOperand(init));
+                variable->initial_value.push_back(parseOperand(init));
             }
         }
 
         // bitfield information for struct fields
         if (TREE_CODE(variable_tree) == FIELD_DECL && DECL_BIT_FIELD(variable_tree))
         {
-            variable.is_bitfield = true;
+            variable->is_bitfield = true;
             if (DECL_SIZE(variable_tree) && tree_fits_uhwi_p(DECL_SIZE(variable_tree)))
             {
-                variable.bitfield_size = tree_to_uhwi(DECL_SIZE(variable_tree));
+                variable->bitfield_size = tree_to_uhwi(DECL_SIZE(variable_tree));
             }
             if (DECL_FIELD_BIT_OFFSET(variable_tree) && tree_fits_uhwi_p(DECL_FIELD_BIT_OFFSET(variable_tree)))
             {
-                variable.bitfield_offset = tree_to_uhwi(DECL_FIELD_BIT_OFFSET(variable_tree));
+                variable->bitfield_offset = tree_to_uhwi(DECL_FIELD_BIT_OFFSET(variable_tree));
             }
         }
     }
@@ -384,44 +387,43 @@ Core::NodeId GCCAdapter::getOrCreateVariable(tree variable_tree)
             tree var = SSA_NAME_VAR(variable_tree);
             if (var && DECL_P(var))
             {
-                variable.artificial = DECL_ARTIFICIAL(var);
+                variable->artificial = DECL_ARTIFICIAL(var);
             }
             else
             {
-                variable.artificial = true;
+                variable->artificial = true;
             }
         }
         else
         {
-            variable.artificial = true;
+            variable->artificial = true;
         }
 
-        variable.source_location = Core::SourceLocation();
-        variable.scope = Core::Scope::FUNCTION;
-        variable.storage_duration = Core::StorageDuration::AUTO;
-        variable.linkage = Core::Linkage::NONE;
+        variable->source_location = Core::SourceLocation();
+        variable->scope = Core::Scope::FUNCTION;
+        variable->storage_duration = Core::StorageDuration::AUTO;
+        variable->linkage = Core::Linkage::NONE;
     }
 
     reporter.report(
         Core::DiagnosticLevel::Debug,
-        "Processed variable node with id: " + toString(variable.id) + ", name: " + variable.name +
-            ", type id: " + toString(variable.type_id) + ", source location: " + toString(variable.source_location) +
-            ", scope: " + toString(variable.scope) + ", storage duration: " + toString(variable.storage_duration) +
-            ", linkage: " + toString(variable.linkage) + ", qualifiers: " +
-            (variable.is_bitfield ? "bitfield (" + std::to_string(variable.bitfield_size) +
-                                        " bits, offset: " + std::to_string(variable.bitfield_offset) + " bits)"
-                                  : ""));
+        "Processed variable node with id: " + std::to_string(variable->id) + ", name: " + variable->name +
+            ", type id: " + std::to_string(variable->type_id) +
+            ", source location: " + toString(variable->source_location) + ", scope: " + toString(variable->scope) +
+            ", storage duration: " + toString(variable->storage_duration) +
+            ", linkage: " + toString(variable->linkage) + ", qualifiers: " +
+            (variable->is_bitfield ? "bitfield (" + std::to_string(variable->bitfield_size) +
+                                         " bits, offset: " + std::to_string(variable->bitfield_offset) + " bits)"
+                                   : ""));
 
-    model.addVariable(variable);
-
-    return variable.id;
+    return variable->id;
 }
 
 Core::Operand GCCAdapter::parseOperand(tree operand_tree)
 {
     if (!operand_tree)
     {
-        return Core::ConstantOperand{Core::NodeId::INVALID, "<null>"};
+        return Core::ConstantOperand{Core::VariableId::invalid(), "<null>"};
     }
 
     // handle constants
@@ -430,7 +432,8 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
         reporter.report(Core::DiagnosticLevel::Debug, "Processing operand as constant operand...");
 
         Core::ConstantOperand constant_operand;
-        constant_operand.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(operand_tree));
+        // FIXME: replace the static_cast with something else
+        constant_operand.id = static_cast<Core::VariableId>(reinterpret_cast<uintptr_t>(operand_tree));
 
         if (TREE_CODE(operand_tree) == INTEGER_CST)
         {
@@ -469,7 +472,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
         reporter.report(Core::DiagnosticLevel::Debug, "Processing operand as variable operand...");
 
         Core::VariableOperand var_op;
-        var_op.variable_id = getOrCreateVariable(operand_tree);
+        var_op.id = getOrCreateVariable(operand_tree);
         return var_op;
     }
 
@@ -484,7 +487,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             Core::VariableOperand &var_op = std::get<Core::VariableOperand>(base_op);
             Core::Accessor acc;
             acc.kind = Core::AccessorKind::FIELD;
-            acc.target_field_id = getOrCreateVariable(TREE_OPERAND(operand_tree, 1));
+            acc.target_field_variable_id = getOrCreateVariable(TREE_OPERAND(operand_tree, 1));
 
             var_op.access_path.push_back(acc);
             return var_op;
@@ -512,7 +515,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             }
             else
             {
-                acc.index_operand_id = std::get<Core::VariableOperand>(index_op).variable_id;
+                acc.index_operand_id = std::get<Core::VariableOperand>(index_op).id;
             }
 
             var_op.access_path.push_back(acc);
@@ -578,7 +581,8 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             Core::VariableOperand &var_op = std::get<Core::VariableOperand>(x_op);
             Core::Accessor acc;
             acc.kind = Core::AccessorKind::ADDRESS_OF;
-            acc.target_field_id = getOrCreateType(TREE_TYPE(operand_tree));
+            // FIXME: was target_field_variable_id
+            acc.target_field_type_id = getOrCreateType(TREE_TYPE(operand_tree));
             var_op.access_path.push_back(acc);
             return var_op;
         }
@@ -618,7 +622,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
     reporter.report(Core::DiagnosticLevel::Debug,
                     "Operand tree code not handled: " + std::to_string(TREE_CODE(operand_tree)));
 
-    return Core::ConstantOperand{Core::NodeId::INVALID, "<unhandled_operand>"};
+    return Core::ConstantOperand{Core::VariableId::invalid(), "<unhandled_operand>"};
 }
 
 static Core::OpCode mapTreeCodeToOpCode(enum tree_code code)
@@ -727,25 +731,28 @@ void GCCAdapter::processFunction(function *fun)
         return;
     }
 
-    reporter.report(Core::DiagnosticLevel::Debug, std::string("Adapter processing function: ") + function_name(fun));
-
     // save the current function name for source location tracking
     // TODO: maybe bring the function name through function arguments instead of Adapter attribute
     current_function_name = function_name(fun);
 
-    Core::Function function_node;
-    function_node.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(fun->decl));
-    reporter.report(Core::DiagnosticLevel::Debug, "Function node ID: " + toString(function_node.id));
-    function_node.name = current_function_name;
+    reporter.report(Core::DiagnosticLevel::Debug, std::string("Adapter processing function: ") + current_function_name);
 
+    // start processing function
+    Core::Function *function_node = model.createFunction();
+
+    reporter.report(Core::DiagnosticLevel::Debug, "Function node ID: " + std::to_string(function_node->id));
+
+    function_node->name = current_function_name;
+
+    // process function return type
     if (TREE_TYPE(fun->decl))
     {
         tree_node *return_type = TREE_TYPE(TREE_TYPE(fun->decl));
         if (return_type)
         {
-            function_node.return_type_id = getOrCreateType(return_type);
+            function_node->return_type_id = getOrCreateType(return_type);
             reporter.report(Core::DiagnosticLevel::Debug,
-                            "Function return type ID: " + toString(function_node.return_type_id));
+                            "Function return type ID: " + std::to_string(function_node->return_type_id));
         }
     }
 
@@ -753,8 +760,8 @@ void GCCAdapter::processFunction(function *fun)
     reporter.report(Core::DiagnosticLevel::Debug, "Processing function parameters...");
     for (tree arg = DECL_ARGUMENTS(fun->decl); arg; arg = DECL_CHAIN(arg))
     {
-        Core::NodeId param_id = getOrCreateVariable(arg);
-        function_node.parameter_ids.push_back(param_id);
+        Core::VariableId param_id = getOrCreateVariable(arg);
+        function_node->parameter_ids.push_back(param_id);
     }
     reporter.report(Core::DiagnosticLevel::Debug, "Processed function parameters");
 
@@ -776,8 +783,36 @@ void GCCAdapter::processFunction(function *fun)
                 continue;
             }
 
-            Core::NodeId var_id = getOrCreateVariable(var);
-            function_node.local_variable_ids.push_back(var_id);
+            Core::VariableId var_id = getOrCreateVariable(var);
+            function_node->local_variable_ids.push_back(var_id);
+        }
+    }
+
+    // pre-register all blocks so CFG links never resolve to invalid IDs due to cache misses
+    if (fun->cfg)
+    {
+        auto registerBlock = [this](basic_block bb) {
+            if (!bb)
+            {
+                return;
+            }
+
+            if (block_cache.find(bb) != block_cache.end())
+            {
+                return;
+            }
+
+            Core::Block *block_node = model.createBlock();
+            block_cache.emplace(bb, block_node->id);
+        };
+
+        registerBlock(ENTRY_BLOCK_PTR_FOR_FN(fun));
+        registerBlock(EXIT_BLOCK_PTR_FOR_FN(fun));
+
+        basic_block bb;
+        FOR_EACH_BB_FN(bb, fun)
+        {
+            registerBlock(bb);
         }
     }
 
@@ -785,53 +820,59 @@ void GCCAdapter::processFunction(function *fun)
     // explicitly process ENTRY and EXIT blocks first
     if (fun->cfg)
     {
-        processBlock(ENTRY_BLOCK_PTR_FOR_FN(fun), function_node.id);
-        processBlock(EXIT_BLOCK_PTR_FOR_FN(fun), function_node.id);
+        processBlock(ENTRY_BLOCK_PTR_FOR_FN(fun), function_node->id);
+        processBlock(EXIT_BLOCK_PTR_FOR_FN(fun), function_node->id);
     }
 
     basic_block bb;
     FOR_EACH_BB_FN(bb, fun)
     {
-        processBlock(bb, function_node.id);
+        processBlock(bb, function_node->id);
     }
 
     // add block IDs to function
     if (fun->cfg)
     {
-        function_node.block_ids.push_back(
-            static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(ENTRY_BLOCK_PTR_FOR_FN(fun))));
-        function_node.block_ids.push_back(
-            static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(EXIT_BLOCK_PTR_FOR_FN(fun))));
+        function_node->block_ids.push_back(block_cache[ENTRY_BLOCK_PTR_FOR_FN(fun)]);
+        function_node->block_ids.push_back(block_cache[EXIT_BLOCK_PTR_FOR_FN(fun)]);
     }
 
     FOR_EACH_BB_FN(bb, fun)
     {
-        function_node.block_ids.push_back(static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(bb)));
+        function_node->block_ids.push_back(block_cache[bb]);
     }
 
-    reporter.report(Core::DiagnosticLevel::Debug, "Processed function node with ID: " + toString(function_node.id));
-
-    model.addFunction(function_node);
+    reporter.report(Core::DiagnosticLevel::Debug,
+                    "Processed function node with ID: " + std::to_string(function_node->id));
 }
 
-void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
+void GCCAdapter::processBlock(basic_block bb, Core::FunctionId function_id)
 {
-    Core::Block block_node;
-    block_node.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(bb));
-    reporter.report(Core::DiagnosticLevel::Debug, "Block node ID: " + toString(block_node.id));
-    block_node.parent_function_id = function_id;
+    auto it = block_cache.find(bb);
+    if (it == block_cache.end())
+    {
+        reporter.report(Core::DiagnosticLevel::Warning,
+                        "Encountered a block without a pre-registered ID; creating it on demand");
+        Core::Block *new_block = model.createBlock();
+        it = block_cache.emplace(bb, new_block->id).first;
+    }
+
+    Core::Block *block_node = model.getBlockMutable(it->second);
+
+    reporter.report(Core::DiagnosticLevel::Debug, "Block node ID: " + std::to_string(block_node->id));
+    block_node->parent_function_id = function_id;
 
     if (bb->index == ENTRY_BLOCK)
     {
-        block_node.name = "ENTRY";
+        block_node->name = "ENTRY";
     }
     else if (bb->index == EXIT_BLOCK)
     {
-        block_node.name = "EXIT";
+        block_node->name = "EXIT";
     }
     else
     {
-        block_node.name = "bb_" + std::to_string(bb->index);
+        block_node->name = "bb_" + std::to_string(bb->index);
     }
 
     // process CFG edges
@@ -839,13 +880,29 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
     edge_iterator ei;
     FOR_EACH_EDGE(e, ei, bb->preds)
     {
-        Core::NodeId pred_id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(e->src));
-        block_node.predecesor_block_ids.push_back(pred_id);
+        auto pred_it = block_cache.find(e->src);
+        if (pred_it != block_cache.end())
+        {
+            block_node->predecesor_block_ids.push_back(pred_it->second);
+        }
+        else
+        {
+            reporter.report(Core::DiagnosticLevel::Warning,
+                            "Skipping predecessor edge with unresolved source block ID");
+        }
     }
     FOR_EACH_EDGE(e, ei, bb->succs)
     {
-        Core::NodeId succ_id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(e->dest));
-        block_node.successor_block_ids.push_back(succ_id);
+        auto succ_it = block_cache.find(e->dest);
+        if (succ_it != block_cache.end())
+        {
+            block_node->successor_block_ids.push_back(succ_it->second);
+        }
+        else
+        {
+            reporter.report(Core::DiagnosticLevel::Warning,
+                            "Skipping successor edge with unresolved destination block ID");
+        }
     }
 
     // process instructions in the block
@@ -855,18 +912,19 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
         {
             gimple *stmt = gsi_stmt(gsi);
 
-            Core::Instruction instruction_node;
-            instruction_node.id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(stmt));
-            reporter.report(Core::DiagnosticLevel::Debug, "Instruction node ID: " + toString(instruction_node.id));
-            instruction_node.parent_block_id = block_node.id;
+            Core::Instruction *instruction_node = model.createInstruction();
+
             reporter.report(Core::DiagnosticLevel::Debug,
-                            "Instruction node parent block ID: " + toString(instruction_node.parent_block_id));
+                            "Instruction node ID: " + std::to_string(instruction_node->id));
+            instruction_node->parent_block_id = block_node->id;
+            reporter.report(Core::DiagnosticLevel::Debug,
+                            "Instruction node parent block ID: " + std::to_string(instruction_node->parent_block_id));
 
             // determine opcode and kind
             enum gimple_code gcode = gimple_code(stmt);
-            instruction_node.opcode_name = gimple_code_name[gcode];
+            instruction_node->opcode_name = gimple_code_name[gcode];
             reporter.report(Core::DiagnosticLevel::Debug,
-                            "Processed instruction with opcode: " + instruction_node.opcode_name);
+                            "Processed instruction with opcode: " + instruction_node->opcode_name);
 
             // try to enhance location if missing (for labels and returns)
             location_t loc = gimple_location(stmt);
@@ -885,10 +943,10 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
                     loc = cfun->function_end_locus;
                 }
             }
-            instruction_node.source_location = getSourceLocation(loc);
+            instruction_node->source_location = getSourceLocation(loc);
 
             reporter.report(Core::DiagnosticLevel::Debug,
-                            "Instruction node source location: " + toString(instruction_node.source_location));
+                            "Instruction node source location: " + toString(instruction_node->source_location));
 
             // map instruction kind
             switch (gcode)
@@ -896,46 +954,46 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
             case GIMPLE_ASSIGN: {
                 if (gimple_clobber_p(stmt))
                 {
-                    instruction_node.kind = Core::InstructionKind::CLOBBER;
+                    instruction_node->kind = Core::InstructionKind::CLOBBER;
                     tree lhs = gimple_assign_lhs(stmt);
-                    instruction_node.operands.push_back(parseOperand(lhs));
-                    instruction_node.source_location = getSourceLocation(DECL_SOURCE_LOCATION(lhs));
+                    instruction_node->operands.push_back(parseOperand(lhs));
+                    instruction_node->source_location = getSourceLocation(DECL_SOURCE_LOCATION(lhs));
                     break;
                 }
 
-                instruction_node.kind = Core::InstructionKind::ASSIGN;
+                instruction_node->kind = Core::InstructionKind::ASSIGN;
 
                 tree lhs = gimple_assign_lhs(stmt);
-                instruction_node.operands.push_back(parseOperand(lhs));
+                instruction_node->operands.push_back(parseOperand(lhs));
 
                 // opcode
                 enum tree_code rhs_code = gimple_assign_rhs_code(stmt);
-                instruction_node.opcode = mapTreeCodeToOpCode(rhs_code);
+                instruction_node->opcode = mapTreeCodeToOpCode(rhs_code);
 
                 enum gimple_rhs_class rhs_class = gimple_assign_rhs_class(stmt);
                 if (rhs_class == GIMPLE_SINGLE_RHS)
                 {
-                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
+                    instruction_node->operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
                 }
                 else if (rhs_class == GIMPLE_UNARY_RHS)
                 {
-                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
+                    instruction_node->operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
                 }
                 else if (rhs_class == GIMPLE_BINARY_RHS)
                 {
-                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
-                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs2(stmt)));
+                    instruction_node->operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
+                    instruction_node->operands.push_back(parseOperand(gimple_assign_rhs2(stmt)));
                 }
                 else if (rhs_class == GIMPLE_TERNARY_RHS)
                 {
-                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
-                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs2(stmt)));
-                    instruction_node.operands.push_back(parseOperand(gimple_assign_rhs3(stmt)));
+                    instruction_node->operands.push_back(parseOperand(gimple_assign_rhs1(stmt)));
+                    instruction_node->operands.push_back(parseOperand(gimple_assign_rhs2(stmt)));
+                    instruction_node->operands.push_back(parseOperand(gimple_assign_rhs3(stmt)));
                 }
                 break;
             }
             case GIMPLE_CALL: {
-                instruction_node.kind = Core::InstructionKind::CALL;
+                instruction_node->kind = Core::InstructionKind::CALL;
 
                 tree fndecl = gimple_call_fndecl(stmt);
                 if (fndecl && DECL_BUILT_IN_CLASS(fndecl) == BUILT_IN_NORMAL)
@@ -943,30 +1001,30 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
                     enum built_in_function code = DECL_FUNCTION_CODE(fndecl);
                     if (code == BUILT_IN_ABORT || code == BUILT_IN_TRAP || code == BUILT_IN_UNREACHABLE)
                     {
-                        instruction_node.kind = Core::InstructionKind::ABORT;
-                        instruction_node.opcode_name = "ABORT";
-                        instruction_node.is_terminator = true;
+                        instruction_node->kind = Core::InstructionKind::ABORT;
+                        instruction_node->opcode_name = "ABORT";
+                        instruction_node->is_terminator = true;
                     }
                 }
 
                 tree fn = gimple_call_fn(stmt);
-                instruction_node.operands.push_back(parseOperand(fn));
+                instruction_node->operands.push_back(parseOperand(fn));
 
                 // lhs (return Value)
                 tree lhs = gimple_call_lhs(stmt);
                 if (lhs)
                 {
-                    instruction_node.operands.push_back(parseOperand(lhs));
+                    instruction_node->operands.push_back(parseOperand(lhs));
                 }
                 else
                 {
-                    instruction_node.operands.push_back(Core::ConstantOperand{Core::NodeId::INVALID, "<void>"});
+                    instruction_node->operands.push_back(Core::ConstantOperand{Core::VariableId::invalid(), "<void>"});
                 }
 
                 // arguments
                 for (unsigned i = 0; i < gimple_call_num_args(stmt); ++i)
                 {
-                    instruction_node.operands.push_back(parseOperand(gimple_call_arg(stmt, i)));
+                    instruction_node->operands.push_back(parseOperand(gimple_call_arg(stmt, i)));
                 }
                 break;
             }
@@ -976,40 +1034,40 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
                 //     tree retval = gimple_return_retval(as_a<greturn *>(stmt));
                 //     if (retval)
                 //     {
-                //         instruction_node.operands.push_back(parseOperand(retval));
+                //         instruction_node->operands.push_back(parseOperand(retval));
                 //     }
                 // }
                 // else if (gimple_code(stmt) == GIMPLE_COND)
                 // {
                 //     gcond *cond_stmt = as_a<gcond *>(stmt);
-                //     instruction_node.operands.push_back(parseOperand(gimple_cond_lhs(cond_stmt)));
-                //     instruction_node.operands.push_back(parseOperand(gimple_cond_rhs(cond_stmt)));
+                //     instruction_node->operands.push_back(parseOperand(gimple_cond_lhs(cond_stmt)));
+                //     instruction_node->operands.push_back(parseOperand(gimple_cond_rhs(cond_stmt)));
                 // }
-                instruction_node.kind = Core::InstructionKind::RETURN;
+                instruction_node->kind = Core::InstructionKind::RETURN;
                 greturn *ret_stmt = as_a<greturn *>(stmt);
                 if (ret_stmt)
                 {
                     tree retval = gimple_return_retval(ret_stmt);
                     if (retval)
                     {
-                        instruction_node.operands.push_back(parseOperand(retval));
+                        instruction_node->operands.push_back(parseOperand(retval));
                     }
                 }
-                instruction_node.is_terminator = true;
+                instruction_node->is_terminator = true;
                 break;
             }
             case GIMPLE_COND: {
-                instruction_node.kind = Core::InstructionKind::COND;
-                instruction_node.opcode = mapTreeCodeToOpCode(gimple_cond_code(stmt));
-                instruction_node.operands.push_back(parseOperand(gimple_cond_lhs(stmt)));
-                instruction_node.operands.push_back(parseOperand(gimple_cond_rhs(stmt)));
+                instruction_node->kind = Core::InstructionKind::COND;
+                instruction_node->opcode = mapTreeCodeToOpCode(gimple_cond_code(stmt));
+                instruction_node->operands.push_back(parseOperand(gimple_cond_lhs(stmt)));
+                instruction_node->operands.push_back(parseOperand(gimple_cond_rhs(stmt)));
                 // label targets are implicit in CFG edges usually
                 break;
             }
             case GIMPLE_SWITCH: {
-                instruction_node.kind = Core::InstructionKind::SWITCH;
+                instruction_node->kind = Core::InstructionKind::SWITCH;
                 gswitch *switch_stmt = as_a<gswitch *>(stmt);
-                instruction_node.operands.push_back(parseOperand(gimple_switch_index(switch_stmt)));
+                instruction_node->operands.push_back(parseOperand(gimple_switch_index(switch_stmt)));
 
                 // process switch cases
                 for (unsigned i = 0; i < gimple_switch_num_labels(switch_stmt); i++)
@@ -1020,7 +1078,11 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
                     basic_block target_bb = label_to_block(cfun, CASE_LABEL(case_label));
                     if (target_bb)
                     {
-                        switch_case.target_block_id = static_cast<Core::NodeId>(reinterpret_cast<uintptr_t>(target_bb));
+                        auto target_it = block_cache.find(target_bb);
+                        if (target_it != block_cache.end())
+                        {
+                            switch_case.target_block_id = target_it->second;
+                        }
                     }
 
                     tree low = CASE_LOW(case_label);
@@ -1035,52 +1097,49 @@ void GCCAdapter::processBlock(basic_block bb, Core::NodeId function_id)
                         switch_case.high_value = parseOperand(high);
                     }
 
-                    instruction_node.switch_cases.push_back(switch_case);
+                    instruction_node->switch_cases.push_back(switch_case);
                 }
 
-                instruction_node.is_terminator = true;
+                instruction_node->is_terminator = true;
                 break;
             }
             case GIMPLE_GOTO: {
-                instruction_node.kind = Core::InstructionKind::GOTO;
+                instruction_node->kind = Core::InstructionKind::GOTO;
                 ggoto *goto_stmt = as_a<ggoto *>(stmt);
-                instruction_node.operands.push_back(parseOperand(gimple_goto_dest(goto_stmt)));
-                instruction_node.is_terminator = true;
+                instruction_node->operands.push_back(parseOperand(gimple_goto_dest(goto_stmt)));
+                instruction_node->is_terminator = true;
                 break;
             }
             case GIMPLE_LABEL: {
-                instruction_node.kind = Core::InstructionKind::LABEL;
+                instruction_node->kind = Core::InstructionKind::LABEL;
                 glabel *label_stmt = as_a<glabel *>(stmt);
-                instruction_node.operands.push_back(parseOperand(gimple_label_label(label_stmt)));
+                instruction_node->operands.push_back(parseOperand(gimple_label_label(label_stmt)));
                 break;
             }
             case GIMPLE_ASM:
-                instruction_node.kind = Core::InstructionKind::ASM;
+                instruction_node->kind = Core::InstructionKind::ASM;
                 break;
             case GIMPLE_PHI:
-                instruction_node.kind = Core::InstructionKind::PHI;
+                instruction_node->kind = Core::InstructionKind::PHI;
                 break;
             case GIMPLE_NOP:
-                instruction_node.kind = Core::InstructionKind::NOP;
+                instruction_node->kind = Core::InstructionKind::NOP;
                 break;
             case GIMPLE_PREDICT:
                 // optimization hints generated by GCC (often from __builtin_expect or heuristics) and do not represent
                 // actual executable code or program semantics, so we can ignore them
                 continue;
             default:
-                instruction_node.kind = Core::InstructionKind::UNKNOWN;
+                instruction_node->kind = Core::InstructionKind::UNKNOWN;
                 break;
             }
 
             reporter.report(Core::DiagnosticLevel::Debug,
-                            "Processed instruction with kind: " + toString(instruction_node.kind));
+                            "Processed instruction with kind: " + toString(instruction_node->kind));
 
-            model.addInstruction(instruction_node);
-            block_node.instruction_ids.push_back(instruction_node.id);
+            block_node->instruction_ids.push_back(instruction_node->id);
         }
     }
-
-    model.addBlock(block_node);
 }
 
 } // namespace CodeListener::CompilerAbstractionLayer
