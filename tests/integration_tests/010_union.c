@@ -1,5 +1,6 @@
-union data
-{
+// Tests union type handling and memory aliasing between different members.
+
+union data {
     int i;
     char c;
     char *str;

@@ -1,3 +1,5 @@
+// Verifies structure type definitions, instantiation, and member access.
+
 struct Point
 {
     int x;

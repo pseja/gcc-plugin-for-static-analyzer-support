@@ -1,3 +1,5 @@
+// Validates loop structure for do-while loops.
+
 int main()
 {
     int x = 42;

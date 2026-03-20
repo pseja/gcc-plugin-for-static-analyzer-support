@@ -1,3 +1,5 @@
+// Verifies function call semantics, argument passing, and return value handling.
+
 float foo(int a, float b)
 {
     return a * b;

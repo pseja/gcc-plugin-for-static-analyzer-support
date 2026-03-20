@@ -1,3 +1,5 @@
+// Tests handling of recursive function calls.
+
 int factorial(int n)
 {
     if (n == 1)

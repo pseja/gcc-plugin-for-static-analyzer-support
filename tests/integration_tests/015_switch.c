@@ -1,3 +1,5 @@
+// Tests multi-way branching generation for switch statements and case labels.
+
 int main()
 {
     int x = 42;

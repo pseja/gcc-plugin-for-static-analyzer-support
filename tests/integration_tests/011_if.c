@@ -1,3 +1,5 @@
+// Validates conditional branching and control flow graphs for if statements.
+
 int main()
 {
     int x = 42;
