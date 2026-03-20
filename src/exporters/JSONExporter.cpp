@@ -1,23 +1,16 @@
 #include <nlohmann/json.hpp>
 
 #include "JSONExporter.hpp"
-#include "Accessor.hpp"
 #include "AccessorKind.hpp"
 #include "Block.hpp"
-#include "ConstantOperand.hpp"
 #include "Function.hpp"
 #include "Instruction.hpp"
-#include "InstructionKind.hpp"
-#include "Linkage.hpp"
-#include "OpCode.hpp"
-#include "Scope.hpp"
 #include "SourceLocation.hpp"
-#include "StorageDuration.hpp"
 #include "SwitchCase.hpp"
 #include "Type.hpp"
 #include "TypeKind.hpp"
+#include "utility.hpp"
 #include "Variable.hpp"
-#include "VariableOperand.hpp"
 
 using json = nlohmann::json;
 
@@ -27,6 +20,32 @@ namespace CodeListener
 namespace Core
 {
 
+template <typename T>
+void to_json(json &j, const Id<T> &id)
+{
+    if (id.isValid())
+    {
+        j = id.index;
+    }
+    else
+    {
+        j = nullptr;
+    }
+}
+
+void to_json(json &j, const SourceLocation &loc);
+void to_json(json &j, const Type &type);
+void to_json(json &j, const Accessor &acc);
+void to_json(json &j, const Operand &op);
+void to_json(json &j, const Initializer &init);
+void to_json(json &j, const Variable &var);
+void to_json(json &j, const SwitchCase &sc);
+void to_json(json &j, const PhiIncomingValue &val);
+
+void to_json(json &j, const Instruction &instr);
+void to_json(json &j, const Block &block);
+void to_json(json &j, const Function &func);
+
 void to_json(json &j, const SourceLocation &loc)
 {
     j = json{{"file", loc.file}, {"line", loc.line}, {"column", loc.column}, {"function", loc.function}};
@@ -34,182 +53,215 @@ void to_json(json &j, const SourceLocation &loc)
 
 void to_json(json &j, const Type &type)
 {
-    j = json{{"id", std::to_string(type.id)}, {"kind", toString(type.kind)},     {"name", type.name},
-             {"size_bits", type.size_bits},   {"size_bytes", type.size_bytes},   {"alignment", type.alignment},
-             {"is_const", type.is_const},     {"is_volatile", type.is_volatile}, {"is_restrict", type.is_restrict},
-             {"is_atomic", type.is_atomic},   {"is_unsigned", type.is_unsigned}, {"is_struct", type.is_struct},
-             {"is_union", type.is_union}};
+    j = json{{"id", type.id},
+             {"name", type.name},
+             {"kind", toString(type.kind)},
+             {"size_bits", type.size_bits},
+             {"alignment", type.alignment},
+             {"is_const", type.is_const},
+             {"is_volatile", type.is_volatile},
+             {"is_atomic", type.is_atomic}};
 
-    if (type.array_element_count > 0)
-    {
-        j["array_element_count"] = type.array_element_count;
-    }
-
-    std::vector<int64_t> nested_ids;
-    for (auto nid : type.nested_type_ids)
-    {
-        nested_ids.push_back((int64_t)nid);
-    }
-    j["nested_type_ids"] = nested_ids;
+    std::visit(Exporters::overloaded{[&](const UnknownType &) {}, [&](const VoidType &) {}, [&](const EnumType &) {},
+                                     [&](const FloatType &) {}, [&](const BoolType &) {},
+                                     [&](const IntegerType &i) { j["is_unsigned"] = i.is_unsigned; },
+                                     [&](const PointerType &p) {
+                                         j["pointee_type_id"] = p.pointee_type_id;
+                                         j["is_restrict"] = p.is_restrict;
+                                     },
+                                     [&](const ArrayType &a) {
+                                         j["element_type_id"] = a.element_type_id;
+                                         if (a.element_count)
+                                         {
+                                             j["element_count"] = a.element_count.value();
+                                         }
+                                     },
+                                     [&](const StructType &s) { j["fields"] = s.fields; },
+                                     [&](const UnionType &u) { j["fields"] = u.fields; },
+                                     [&](const FunctionType &f) {
+                                         j["return_type_id"] = f.return_type_id;
+                                         j["parameter_type_ids"] = f.parameter_type_ids;
+                                     }},
+               type.data);
 }
 
 void to_json(json &j, const Accessor &acc)
 {
     j = json{{"kind", toString(acc.kind)}};
-    if (acc.kind == AccessorKind::FIELD)
-    {
-        j["target_field_id"] = std::to_string(acc.target_field_variable_id);
-    }
-    else if (acc.kind == AccessorKind::ARRAY)
-    {
-        j["index_operand_id"] = std::to_string(acc.index_operand_id);
-    }
-    else if (acc.kind == AccessorKind::OFFSET)
-    {
-        j["index_operand_id"] = std::to_string(acc.index_operand_id);
-    }
-    else if (acc.kind == AccessorKind::BIT_SLICE)
-    {
-        j["bit_start"] = acc.bit_start;
-        j["bit_size"] = acc.bit_size;
-    }
+    std::visit(Exporters::overloaded{[&](const DerefAccessor &) {},
+                                     [&](const ArrayAccessor &a) { j["index"] = a.index; },
+                                     [&](const FieldAccessor &f) { j["field_id"] = f.field_id; },
+                                     [&](const AddressOfAccessor &a) { j["target_type_id"] = a.target_type_id; },
+                                     [&](const OffsetAccessor &o) { j["offset"] = o.offset; },
+                                     [&](const BitSliceAccessor &b) {
+                                         j["bit_start"] = b.bit_start;
+                                         j["bit_size"] = b.bit_size;
+                                     }},
+               acc.data);
 }
 
 void to_json(json &j, const Operand &op)
 {
-    if (std::holds_alternative<ConstantOperand>(op))
-    {
-        const auto &co = std::get<ConstantOperand>(op);
-        j = json{{"type", "constant"}, {"id", std::to_string(co.id)}, {"value", co.value}};
-    }
-    else if (std::holds_alternative<VariableOperand>(op))
-    {
-        const auto &vo = std::get<VariableOperand>(op);
-        j = json{{"type", "variable"}, {"variable_id", std::to_string(vo.id)}, {"access_path", vo.access_path}};
-    }
+    std::visit(Exporters::overloaded{
+                   [&](const ConstantOperand &co) -> void {
+                       j = json{{"type", "constant"}, {"type_id", co.type_id}, {"value", co.value}};
+                   },
+                   [&](const VariableOperand &vo) -> void {
+                       j = json{{"type", "variable"}, {"variable_id", vo.id}, {"access_path", vo.access_path}};
+                   }},
+               op);
+}
+
+void to_json(json &j, const Initializer &init)
+{
+    std::visit(Exporters::overloaded{[&](const Operand &op) -> void { j = op; },
+                                     [&](const std::shared_ptr<InitializerList> &list) -> void {
+                                         j = json::array();
+                                         if (list)
+                                         {
+                                             for (const auto &elem : list->elements)
+                                             {
+                                                 j.push_back(elem);
+                                             }
+                                         }
+                                     }},
+               init);
 }
 
 void to_json(json &j, const Variable &var)
 {
-    j = json{{"id", std::to_string(var.id)},
+    j = json{{"id", var.id},
              {"name", var.name},
-             {"type_id", std::to_string(var.type_id)},
+             {"type_id", var.type_id},
              {"location", var.source_location},
-             {"scope", toString(var.scope)},
-             {"storage_duration", toString(var.storage_duration)},
-             {"linkage", toString(var.linkage)},
-             {"is_bitfield", var.is_bitfield},
              {"artificial", var.artificial}};
 
-    if (!var.initial_value.empty())
-    {
-        j["initial_value"] = var.initial_value;
-    }
-
-    if (var.is_bitfield)
-    {
-        j["bitfield_size"] = var.bitfield_size;
-        j["bitfield_offset"] = var.bitfield_offset;
-    }
+    std::visit(Exporters::overloaded{[&](const StandardVariable &std_var) {
+                                         j["scope"] = toString(std_var.scope);
+                                         j["storage_duration"] = toString(std_var.storage_duration);
+                                         j["linkage"] = toString(std_var.linkage);
+                                         if (std_var.initial_value)
+                                         {
+                                             j["initial_value"] = std_var.initial_value.value();
+                                         }
+                                     },
+                                     [&](const FieldVariable &field_var) {
+                                         j["is_bitfield"] = true;
+                                         if (field_var.bitfield_size)
+                                         {
+                                             j["bitfield_size"] = field_var.bitfield_size.value();
+                                         }
+                                         if (field_var.bitfield_offset)
+                                         {
+                                             j["bitfield_offset"] = field_var.bitfield_offset.value();
+                                         }
+                                     }},
+               var.data);
 }
 
 void to_json(json &j, const SwitchCase &sc)
 {
-    j = json{{"target_block_id", std::to_string(sc.target_block_id)}};
-
-    if (sc.low_value.has_value())
+    j = json{{"target_block_id", sc.target_block_id}};
+    if (sc.low_value)
     {
-        if (std::holds_alternative<ConstantOperand>(*sc.low_value))
-        {
-            const auto &co = std::get<ConstantOperand>(*sc.low_value);
-            j["low_value"] = json{{"type", "constant"}, {"id", std::to_string(co.id)}, {"value", co.value}};
-        }
-        else if (std::holds_alternative<VariableOperand>(*sc.low_value))
-        {
-            const auto &vo = std::get<VariableOperand>(*sc.low_value);
-            j["low_value"] =
-                json{{"type", "variable"}, {"variable_id", std::to_string(vo.id)}, {"access_path", vo.access_path}};
-        }
+        j["low_value"] = sc.low_value.value();
     }
     else
     {
         j["is_default"] = true;
     }
-
-    if (sc.high_value.has_value())
+    if (sc.high_value)
     {
-        if (std::holds_alternative<ConstantOperand>(*sc.high_value))
-        {
-            const auto &co = std::get<ConstantOperand>(*sc.high_value);
-            j["high_value"] = json{{"type", "constant"}, {"id", std::to_string(co.id)}, {"value", co.value}};
-        }
-        else if (std::holds_alternative<VariableOperand>(*sc.high_value))
-        {
-            const auto &vo = std::get<VariableOperand>(*sc.high_value);
-            j["high_value"] =
-                json{{"type", "variable"}, {"variable_id", std::to_string(vo.id)}, {"access_path", vo.access_path}};
-        }
+        j["high_value"] = sc.high_value.value();
     }
+}
+
+void to_json(json &j, const PhiIncomingValue &val)
+{
+    j = json{{"block_id", val.block_id}, {"value", val.value}};
 }
 
 void to_json(json &j, const Instruction &instr)
 {
-    j = json{{"id", std::to_string(instr.id)},      {"kind", toString(instr.kind)},
-             {"opcode", toString(instr.opcode)},    {"opcode_name", instr.opcode_name},
-             {"location", instr.source_location},   {"operands", instr.operands},
-             {"is_terminator", instr.is_terminator}};
+    j = json{{"id", instr.id},
+             {"parent_block_id", instr.parent_block_id},
+             {"kind", toString(instr.kind)},
+             {"is_terminator", instr.is_terminator},
+             {"location", instr.source_location}};
 
-    if (!instr.switch_cases.empty())
-    {
-        j["switch_cases"] = instr.switch_cases;
-    }
+    std::visit(
+        Exporters::overloaded{[&](const std::monostate &) { j["data_kind"] = "EMPTY"; },
+                              [&](const AssignInstruction &i) {
+                                  j["opcode"] = toString(i.opcode);
+                                  j["lhs"] = i.lhs;
+                                  if (i.rhs1)
+                                  {
+                                      j["rhs1"] = i.rhs1.value();
+                                  }
+                                  if (i.rhs2)
+                                  {
+                                      j["rhs2"] = i.rhs2.value();
+                                  }
+                                  if (i.rhs3)
+                                  {
+                                      j["rhs3"] = i.rhs3.value();
+                                  }
+                              },
+                              [&](const CallInstruction &i) {
+                                  if (i.lhs)
+                                  {
+                                      j["lhs"] = i.lhs.value();
+                                  }
+                                  j["callee"] = i.callee;
+                                  j["arguments"] = i.arguments;
+                              },
+                              [&](const ReturnInstruction &i) {
+                                  if (i.return_value)
+                                  {
+                                      j["return_value"] = i.return_value.value();
+                                  }
+                              },
+                              [&](const CondInstruction &i) {
+                                  j["opcode"] = toString(i.opcode);
+                                  j["lhs"] = i.lhs;
+                                  j["rhs"] = i.rhs;
+                                  j["true_target"] = i.true_target;
+                                  j["false_target"] = i.false_target;
+                              },
+                              [&](const SwitchInstruction &i) {
+                                  j["index"] = i.index;
+                                  j["cases"] = i.cases;
+                              },
+                              [&](const GotoInstruction &i) { j["target"] = i.target; },
+                              [&](const LabelInstruction &i) { j["label"] = i.label; }, [&](const AsmInstruction &) {},
+                              [&](const PhiInstruction &i) {
+                                  j["lhs"] = i.lhs;
+                                  j["incoming_values"] = i.incoming_values;
+                              },
+                              [&](const ClobberInstruction &i) { j["clobbered_variable"] = i.clobbered_variable; },
+                              [&](const UnreachableInstruction &) {}, [&](const AbortInstruction &) {},
+                              [&](const UnknownInstruction &i) { j["description"] = i.description; }},
+        instr.data);
 }
 
 void to_json(json &j, const Block &block)
 {
-    std::vector<int64_t> preds, succs, instrs;
-    for (auto id : block.predecesor_block_ids)
-    {
-        preds.push_back((int64_t)id);
-    }
-    for (auto id : block.successor_block_ids)
-    {
-        succs.push_back((int64_t)id);
-    }
-    for (auto id : block.instruction_ids)
-    {
-        instrs.push_back((int64_t)id);
-    }
-
-    j = json{{"id", std::to_string(block.id)},
+    j = json{{"id", block.id},
+             {"parent", block.parent},
              {"name", block.name},
-             {"predecessors", preds},
-             {"successors", succs},
-             {"instruction_ids", instrs}};
+             {"predecessors", block.predecessors},
+             {"successors", block.successors},
+             {"instruction_ids", block.instruction_ids}};
 }
 
 void to_json(json &j, const Function &func)
 {
-    std::vector<int64_t> params, locals, blocks;
-    for (auto id : func.parameter_ids)
-    {
-        params.push_back((int64_t)id);
-    }
-    for (auto id : func.local_variable_ids)
-    {
-        locals.push_back((int64_t)id);
-    }
-    for (auto id : func.block_ids)
-    {
-        blocks.push_back((int64_t)id);
-    }
-
-    j = json{{"id", std::to_string(func.id)},
+    j = json{{"id", func.id},
              {"name", func.name},
-             {"return_type_id", std::to_string(func.return_type_id)},
-             {"parameter_ids", params},
-             {"local_variable_ids", locals},
-             {"block_ids", blocks}};
+             {"return_type_id", func.return_type_id},
+             {"parameter_ids", func.parameter_ids},
+             {"local_variable_ids", func.local_variable_ids},
+             {"block_ids", func.block_ids}};
 }
 
 } // namespace Core

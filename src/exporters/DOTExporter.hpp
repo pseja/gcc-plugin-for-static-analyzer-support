@@ -28,7 +28,6 @@ class DOTExporter : public Exporter
     std::string escape(const std::string &str);
 
     std::string opCodeToString(Core::OpCode opcode);
-    std::string getOperandTypeString(const Core::CodeModel &model, const Core::Operand &op);
 };
 
 } // namespace CodeListener::Exporters
