@@ -37,6 +37,8 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     register_callback(plugin_info->base_name, PLUGIN_INFO, nullptr, &PluginContext::plugin_info);
 
     Pass *p = new Pass(g, *adapter);
+    // NOTE: for PHI nodes - change reference_pass_name to "ssa", predator doesn't work with PHI nodes, but the
+    // implementation is there for future analyzers
     static struct register_pass_info cl_plugin_pass = {
         .pass = p, .reference_pass_name = "cfg", .ref_pass_instance_number = 0, .pos_op = PASS_POS_INSERT_AFTER};
     register_callback(plugin_info->base_name, PLUGIN_PASS_MANAGER_SETUP, nullptr, &cl_plugin_pass);
