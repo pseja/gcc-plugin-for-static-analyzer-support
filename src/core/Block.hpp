@@ -13,15 +13,15 @@ namespace CodeListener::Core
 struct Block
 {
     BlockId id;
-    FunctionId parent_function_id;
+    FunctionId parent;
     std::string name;
 
     // ast children
     std::vector<InstructionId> instruction_ids;
 
     // cfg edges
-    std::vector<BlockId> predecesor_block_ids;
-    std::vector<BlockId> successor_block_ids;
+    std::vector<BlockId> predecessors;
+    std::vector<BlockId> successors;
 };
 
 } // namespace CodeListener::Core
