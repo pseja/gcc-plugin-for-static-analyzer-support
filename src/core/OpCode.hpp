@@ -7,7 +7,9 @@ namespace CodeListener::Core
 
 enum class OpCode
 {
-    NONE, // not applicable (calls, returns)
+    // not applicable (calls, returns)
+    NONE,
+
     // unary
     NEGATE,  // -x
     BIT_NOT, // ~x
@@ -41,20 +43,19 @@ enum class OpCode
     LESS_EQUAL,    // x <= y
 
     // memory
-    ADDRESS_OF,  // &x
     POINTER_ADD, // ptr + offset
     POINTER_SUB, // ptr - ptr (diff)
 
     // numeric
-    MIN, // min(x, y)
-    MAX, // max(x, y)
+    MIN, // MIN(x, y)
+    MAX, // MAX(x, y)
 
     // bitwise rotation
-    ROTATE_LEFT,  // rotate x left by y
-    ROTATE_RIGHT, // rotate x right by y
+    ROTATE_LEFT,  // ROL(x, y)
+    ROTATE_RIGHT, // ROR(x, y)
 
     // type conversion
-    CAST, // (type)x
+    CAST, // (cast)x
 };
 
 inline std::string toString(OpCode op)
@@ -107,8 +108,6 @@ inline std::string toString(OpCode op)
         return "GREATER_EQUAL";
     case OpCode::LESS_EQUAL:
         return "LESS_EQUAL";
-    case OpCode::ADDRESS_OF:
-        return "ADDRESS_OF";
     case OpCode::POINTER_ADD:
         return "POINTER_ADD";
     case OpCode::POINTER_SUB:
