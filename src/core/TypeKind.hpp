@@ -7,50 +7,50 @@ namespace CodeListener::Core
 
 enum class TypeKind
 {
-    UNKNOWN,
-    VOID,
+    ENUM,
+    BOOL,
+    INTEGER,
+    REAL,
     POINTER,
+    ARRAY,
     STRUCT,
     UNION,
-    ARRAY,
+    VOID,
     FUNCTION,
-    INTEGER,
-    BOOL,
-    ENUM,
-    REAL,
     COMPLEX,
+    UNKNOWN,
 };
 
 inline std::string toString(TypeKind kind)
 {
     switch (kind)
     {
-    case TypeKind::UNKNOWN:
-        return "UNKNOWN";
-    case TypeKind::VOID:
-        return "VOID";
+    case TypeKind::ENUM:
+        return "ENUM";
+    case TypeKind::BOOL:
+        return "BOOL";
+    case TypeKind::INTEGER:
+        return "INTEGER";
+    case TypeKind::REAL:
+        return "REAL";
     case TypeKind::POINTER:
         return "POINTER";
+    case TypeKind::ARRAY:
+        return "ARRAY";
     case TypeKind::STRUCT:
         return "STRUCT";
     case TypeKind::UNION:
         return "UNION";
-    case TypeKind::ARRAY:
-        return "ARRAY";
+    case TypeKind::VOID:
+        return "VOID";
     case TypeKind::FUNCTION:
         return "FUNCTION";
-    case TypeKind::INTEGER:
-        return "INTEGER";
-    case TypeKind::BOOL:
-        return "BOOL";
-    case TypeKind::ENUM:
-        return "ENUM";
-    case TypeKind::REAL:
-        return "REAL";
     case TypeKind::COMPLEX:
         return "COMPLEX";
-    default:
+    case TypeKind::UNKNOWN:
         return "UNKNOWN";
+    default:
+        return "INVALID";
     }
 }
 
