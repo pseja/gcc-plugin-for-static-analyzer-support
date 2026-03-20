@@ -2,7 +2,7 @@
 
 // #include <memory> // std::unique_ptr
 // #include <unordered_map> // std::unordered_map
-#include <vector> // std::vector
+#include <deque> // std::deque
 
 // #include "AnnotationBase.hpp"
 #include "Block.hpp"
@@ -41,11 +41,11 @@ class CodeModel
     // Block *getBlock(BlockId id);
     // Instruction *getInstruction(InstructionId id);
 
-    const std::vector<Type> &getTypes() const;
-    const std::vector<Variable> &getVariables() const;
-    const std::vector<Function> &getFunctions() const;
-    const std::vector<Block> &getBlocks() const;
-    const std::vector<Instruction> &getInstructions() const;
+    const std::deque<Type> &getTypes() const;
+    const std::deque<Variable> &getVariables() const;
+    const std::deque<Function> &getFunctions() const;
+    const std::deque<Block> &getBlocks() const;
+    const std::deque<Instruction> &getInstructions() const;
 
     // // flat range views
     // auto types() const;
@@ -80,11 +80,11 @@ class CodeModel
 
   private:
     // flat storage
-    std::vector<Type> types_pool;
-    std::vector<Variable> variables_pool;
-    std::vector<Function> functions_pool;
-    std::vector<Block> blocks_pool;
-    std::vector<Instruction> instructions_pool;
+    std::deque<Type> types_pool;
+    std::deque<Variable> variables_pool;
+    std::deque<Function> functions_pool;
+    std::deque<Block> blocks_pool;
+    std::deque<Instruction> instructions_pool;
 
     // annotations
     // std::unordered_map<NodeId, std::unordered_map<std::string, std::unique_ptr<AnnotationServices::AnnotationBase>>>

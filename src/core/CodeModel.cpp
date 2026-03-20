@@ -52,23 +52,23 @@ Instruction *CodeModel::getInstructionMutable(InstructionId id)
     return &instructions_pool[id];
 }
 
-const std::vector<Type> &CodeModel::getTypes() const
+const std::deque<Type> &CodeModel::getTypes() const
 {
     return types_pool;
 }
-const std::vector<Variable> &CodeModel::getVariables() const
+const std::deque<Variable> &CodeModel::getVariables() const
 {
     return variables_pool;
 }
-const std::vector<Function> &CodeModel::getFunctions() const
+const std::deque<Function> &CodeModel::getFunctions() const
 {
     return functions_pool;
 }
-const std::vector<Block> &CodeModel::getBlocks() const
+const std::deque<Block> &CodeModel::getBlocks() const
 {
     return blocks_pool;
 }
-const std::vector<Instruction> &CodeModel::getInstructions() const
+const std::deque<Instruction> &CodeModel::getInstructions() const
 {
     return instructions_pool;
 }
@@ -77,35 +77,35 @@ Type *CodeModel::createType()
 {
     Type type;
     type.id = TypeId{types_pool.size()};
-    types_pool.push_back(type);
+    types_pool.push_back(std::move(type));
     return &types_pool.back();
 }
 Variable *CodeModel::createVariable()
 {
     Variable variable;
     variable.id = VariableId{variables_pool.size()};
-    variables_pool.push_back(variable);
+    variables_pool.push_back(std::move(variable));
     return &variables_pool.back();
 }
 Function *CodeModel::createFunction()
 {
     Function function;
     function.id = FunctionId{functions_pool.size()};
-    functions_pool.push_back(function);
+    functions_pool.push_back(std::move(function));
     return &functions_pool.back();
 }
 Block *CodeModel::createBlock()
 {
     Block block;
     block.id = BlockId{blocks_pool.size()};
-    blocks_pool.push_back(block);
+    blocks_pool.push_back(std::move(block));
     return &blocks_pool.back();
 }
 Instruction *CodeModel::createInstruction()
 {
     Instruction instruction;
     instruction.id = InstructionId{instructions_pool.size()};
-    instructions_pool.push_back(instruction);
+    instructions_pool.push_back(std::move(instruction));
     return &instructions_pool.back();
 }
 
