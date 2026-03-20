@@ -52,6 +52,7 @@ build/
 # generated files
 *.dot
 *.json
+*.log
 *.png
 
 # gcc dump directory
