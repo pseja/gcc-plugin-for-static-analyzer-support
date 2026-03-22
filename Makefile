@@ -2,7 +2,7 @@ CC := gcc-12
 
 MAKEFLAGS += --no-builtin-rules
 
-PLUGIN_FLAGS = -O0 -fplugin=$(BUILD_DIR)/libcl.so -fplugin-arg-libcl-gen-dot=$*.dot -fplugin-arg-libcl-gen-json=$*.json
+PLUGIN_FLAGS = -O0 -fplugin=$(BUILD_DIR)/libcl_gcc.so -fplugin-arg-libcl_gcc-gen-dot=$*.dot -fplugin-arg-libcl_gcc-gen-json=$*.json
 
 BUILD_DIR := build
 TEST_DIR := tests/integration_tests
@@ -49,10 +49,11 @@ help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
 	@echo "  all         - Builds the project (default)"
+	@echo "  build       - Builds the project"
+	@echo "  %.c 	     - Compiles the specified .c file"
+	@echo "  dump %.c    - Generates dump files for the specified .c file"
 	@echo "  test        - Runs tests"
 	@echo "  test-clean  - Cleans test artifacts"
-	@echo "  build       - Builds the project"
-	@echo "  dump %.c    - Generates dump files for the specified .c file"
 	@echo "  clean       - Cleans build artifacts"
 	@echo "  help        - Shows this help message"
 

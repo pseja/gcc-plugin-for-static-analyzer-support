@@ -28,19 +28,29 @@ message(STATUS "GCC Plugin Directory: ${GCC_PLUGIN_DIR}")
 
 set(GCC_PLUGIN_INCLUDE_DIR "${GCC_PLUGIN_DIR}/include")
 
-file(GLOB_RECURSE SOURCES
-    src/*.cpp
-)
+# shared library for pure library with no dependencies on GCC internals 
+file(GLOB_RECURSE CORE_SOURCES src/core/*.cpp src/exporters/*.cpp src/annotation_services/*.cpp)
 
-add_library(cl SHARED ${SOURCES})
+add_library(cl_core SHARED ${CORE_SOURCES})
 
-target_include_directories(cl PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc src/core src/annotation_services src/exporters)
+target_include_directories(cl_core PUBLIC src/core src/exporters src/annotation_services)
 
-target_link_libraries(cl PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(cl_core PUBLIC nlohmann_json::nlohmann_json)
 
-target_compile_options(cl PRIVATE -g3 -O0 -shared -fPIC -fno-rtti -Wall -Wextra -Werror -pedantic)
+target_compile_options(cl_core PRIVATE -g3 -O0 -shared -fPIC -fno-rtti -Wall -Wextra -Werror -pedantic)
 
-set_target_properties(cl PROPERTIES
-    CXX_STANDARD 23
-    CXX_STANDARD_REQUIRED ON
-)
+set_target_properties(cl_core PROPERTIES CXX_STANDARD 23)
+
+# shared library for the plugin itself, which depends on GCC internals
+file(GLOB_RECURSE GCC_SOURCES src/adapters/gcc/*.cpp)
+
+add_library(cl_gcc SHARED ${GCC_SOURCES})
+
+target_include_directories(cl_gcc PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc)
+
+target_link_libraries(cl_gcc PRIVATE cl_core)
+
+target_compile_options(cl_gcc PRIVATE -g3 -O0 -shared -fPIC -fno-rtti -Wall -Wextra -Werror -pedantic)
+
+# set_target_properties(cl_gcc PROPERTIES CXX_STANDARD 23 OUTPUT_NAME "cl")
+set_target_properties(cl_gcc PROPERTIES CXX_STANDARD 23)

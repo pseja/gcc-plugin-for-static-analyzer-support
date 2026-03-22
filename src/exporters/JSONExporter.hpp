@@ -4,8 +4,8 @@
 #include <fstream>
 #include <string>
 
+#include "CodeModel.hpp"
 #include "Exporter.hpp"
-#include "../../core/CodeModel.hpp"
 
 namespace CodeListener::Exporters
 {
