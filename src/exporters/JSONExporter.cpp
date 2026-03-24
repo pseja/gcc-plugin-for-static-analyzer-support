@@ -3,6 +3,7 @@
 #include "JSONExporter.hpp"
 #include "AccessorKind.hpp"
 #include "Block.hpp"
+#include "CallGraph.hpp"
 #include "Function.hpp"
 #include "Instruction.hpp"
 #include "SourceLocation.hpp"
@@ -266,14 +267,46 @@ void to_json(json &j, const Function &func)
 
 } // namespace Core
 
+namespace AnnotationServices
+{
+
+void to_json(json &j, const CallGraph &cg);
+
+void to_json(json &j, const CallGraph &cg)
+{
+    j = json::object();
+
+    j["calls"] = json::array();
+    for (const auto &[caller_id, callee_ids] : cg.calls)
+    {
+        j["calls"].push_back({
+            {"caller_id", caller_id},
+            {"callee_ids", callee_ids},
+        });
+    }
+
+    j["called_by"] = json::array();
+    for (const auto &[callee_id, caller_ids] : cg.called_by)
+    {
+        j["called_by"].push_back({
+            {"callee_id", callee_id},
+            {"caller_ids", caller_ids},
+        });
+    }
+}
+
+} // namespace AnnotationServices
+
 namespace Exporters
 {
 
-JSONExporter::JSONExporter(std::ostream &os) : os(os)
+JSONExporter::JSONExporter(std::ostream &os, AnnotationServices::AnalysisManager *manager)
+    : os(os), analysis_manager(manager)
 {
 }
 
-JSONExporter::JSONExporter(const std::string &filepath) : file_os(filepath), os(file_os)
+JSONExporter::JSONExporter(const std::string &filepath, AnnotationServices::AnalysisManager *manager)
+    : file_os(filepath), os(file_os), analysis_manager(manager)
 {
 }
 
@@ -286,6 +319,16 @@ void JSONExporter::exportModel(const Core::CodeModel &model)
     j_model["functions"] = model.getFunctions();
     j_model["blocks"] = model.getBlocks();
     j_model["instructions"] = model.getInstructions();
+
+    if (analysis_manager)
+    {
+        json j_annotations = json::object();
+
+        const auto &call_graph = analysis_manager->getAnnotation<AnnotationServices::CallGraph>(model);
+        j_annotations["call_graph"] = call_graph;
+
+        j_model["annotations"] = j_annotations;
+    }
 
     os << j_model.dump(4) << "\n";
 }

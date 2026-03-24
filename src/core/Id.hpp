@@ -1,7 +1,8 @@
 #pragma once
 
-#include <climits> // ULONG_MAX
-#include <ostream> // std::ostream
+#include <climits>    // ULONG_MAX
+#include <functional> // std::hash
+#include <ostream>    // std::ostream
 
 namespace CodeListener::Core
 {
@@ -44,3 +45,17 @@ struct Id
 };
 
 } // namespace CodeListener::Core
+
+namespace std
+{
+
+template <typename T>
+struct hash<CodeListener::Core::Id<T>>
+{
+    std::size_t operator()(const CodeListener::Core::Id<T> &id) const
+    {
+        return std::hash<unsigned long>{}(id.index);
+    }
+};
+
+} // namespace std

@@ -1,5 +1,6 @@
 #include <sstream>
 
+#include "CallGraph.hpp"
 #include "DOTExporter.hpp"
 #include "OpCode.hpp"
 #include "utility.hpp"
@@ -7,7 +8,13 @@
 namespace CodeListener::Exporters
 {
 
-DOTExporter::DOTExporter(std::ostream &os) : os(os)
+DOTExporter::DOTExporter(std::ostream &os, AnnotationServices::AnalysisManager *manager)
+    : os(os), analysis_manager(manager)
+{
+}
+
+DOTExporter::DOTExporter(const std::string &filepath, AnnotationServices::AnalysisManager *manager)
+    : file_os(filepath), os(file_os), analysis_manager(manager)
 {
 }
 
@@ -16,14 +23,41 @@ void DOTExporter::exportModel(const Core::CodeModel &model)
     os << "digraph IR {\n";
     os << "    node [shape=none, fontname=\"Courier New\", fontsize=10];\n";
     os << "    edge [fontname=\"Courier New\", fontsize=9];\n";
-    os << "    graph [rankdir=TB, splines=polyline];\n\n";
+    os << "    graph [rankdir=TB, splines=polyline, compound=true];\n\n";
 
     for (const auto &func : model.getFunctions())
     {
         exportFunction(model, func);
     }
 
-    os << "}\n";
+    if (analysis_manager)
+    {
+        const auto &cg = analysis_manager->getAnnotation<AnnotationServices::CallGraph>(model);
+
+        for (const auto &[caller_id, callee_ids] : cg.calls)
+        {
+            const auto *caller = model.getFunction(caller_id);
+            if (!caller || caller->block_ids.empty())
+            {
+                continue;
+            }
+
+            for (auto callee_id : callee_ids)
+            {
+                const auto *callee = model.getFunction(callee_id);
+                if (!callee || callee->block_ids.empty())
+                {
+                    continue;
+                }
+
+                os << "    block_" << caller->block_ids.front() << " -> block_" << callee->block_ids.front()
+                   << " [ltail=cluster_func_" << caller_id << ", lhead=cluster_func_" << callee_id
+                   << ", color=\"#6c757d\", style=dashed];\n";
+            }
+        }
+
+        os << "}\n";
+    }
 }
 
 void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Function &func)

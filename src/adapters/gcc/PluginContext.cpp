@@ -6,6 +6,7 @@
 #include <context.h>
 #include <tree-pass.h>
 
+#include "AnalysisManager.hpp"
 #include "DOTExporter.hpp"
 #include "JSONExporter.hpp"
 #include "Pass.hpp"
@@ -96,6 +97,8 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     (void)gcc_data;
     (void)user_data;
 
+    AnnotationServices::AnalysisManager analysis_manager;
+
     std::cerr << "Code Listener GCC plugin starting to export\n";
 
     const PluginArgs *args = PluginContext::getInstance().getArgs();
@@ -110,7 +113,7 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
         std::ofstream json_out(args->gen_json_file.value());
         if (json_out.is_open())
         {
-            CodeListener::Exporters::JSONExporter exporter(json_out);
+            CodeListener::Exporters::JSONExporter exporter(json_out, &analysis_manager);
             exporter.exportModel(PluginContext::getInstance().getCodeModel());
             std::cerr << "Exported JSON to " << args->gen_json_file.value() << "\n";
         }
@@ -125,7 +128,7 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
         std::ofstream dot_out(args->gen_dot_file.value());
         if (dot_out.is_open())
         {
-            CodeListener::Exporters::DOTExporter dot_exporter(dot_out);
+            CodeListener::Exporters::DOTExporter dot_exporter(dot_out, &analysis_manager);
             dot_exporter.exportModel(PluginContext::getInstance().getCodeModel());
             std::cerr << "Exported DOT to " << args->gen_dot_file.value() << "\n";
         }
