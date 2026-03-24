@@ -3,9 +3,9 @@
 namespace CodeListener::AnnotationServices
 {
 
-struct AnnotationBase
+struct Annotation
 {
-    virtual ~AnnotationBase() = default;
+    virtual ~Annotation() = default;
 };
 
 } // namespace CodeListener::AnnotationServices
