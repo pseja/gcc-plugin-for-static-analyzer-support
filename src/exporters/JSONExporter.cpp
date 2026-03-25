@@ -270,29 +270,42 @@ void to_json(json &j, const Function &func)
 namespace AnnotationServices
 {
 
+void to_json(json &j, const CallGraphEdge &edge);
+void to_json(json &j, const CallGraphNode &node);
 void to_json(json &j, const CallGraph &cg);
+
+void to_json(json &j, const CallGraphEdge &edge)
+{
+    j = json{{"call_instruction", edge.call_instruction}};
+    if (edge.callee)
+        j["callee"] = *edge.callee;
+    else
+        j["callee"] = nullptr;
+}
+
+void to_json(json &j, const CallGraphNode &node)
+{
+    j = json{{"function_id", node.function_id},
+             {"outgoing_calls", node.outgoing_calls},
+             {"incoming_calls", node.incoming_calls},
+             {"address_taken_at", node.address_taken_at}};
+}
 
 void to_json(json &j, const CallGraph &cg)
 {
     j = json::object();
 
-    j["calls"] = json::array();
-    for (const auto &[caller_id, callee_ids] : cg.calls)
+    j["nodes"] = json::array();
+    for (const auto &[func_id, node] : cg.nodes)
     {
-        j["calls"].push_back({
-            {"caller_id", caller_id},
-            {"callee_ids", callee_ids},
-        });
+        j["nodes"].push_back(node);
     }
 
-    j["called_by"] = json::array();
-    for (const auto &[callee_id, caller_ids] : cg.called_by)
-    {
-        j["called_by"].push_back({
-            {"callee_id", callee_id},
-            {"caller_ids", caller_ids},
-        });
-    }
+    j["roots"] = cg.roots;
+    j["leaves"] = cg.leaves;
+    j["topological_order"] = cg.topological_order;
+    j["has_indirect_calls"] = cg.has_indirect_calls;
+    j["has_callbacks"] = cg.has_callbacks;
 }
 
 } // namespace AnnotationServices

@@ -34,25 +34,30 @@ void DOTExporter::exportModel(const Core::CodeModel &model)
     {
         const auto &cg = analysis_manager->getAnnotation<AnnotationServices::CallGraph>(model);
 
-        for (const auto &[caller_id, callee_ids] : cg.calls)
+        for (const auto &[caller_id, node] : cg.nodes)
         {
-            const auto *caller = model.getFunction(caller_id);
-            if (!caller || caller->block_ids.empty())
+            for (const auto &edge : node.outgoing_calls)
             {
-                continue;
-            }
+                if (!edge.callee)
+                {
+                    continue;
+                }
 
-            for (auto callee_id : callee_ids)
-            {
+                auto callee_id = *edge.callee;
                 const auto *callee = model.getFunction(callee_id);
                 if (!callee || callee->block_ids.empty())
                 {
                     continue;
                 }
 
-                os << "    block_" << caller->block_ids.front() << " -> block_" << callee->block_ids.front()
-                   << " [ltail=cluster_func_" << caller_id << ", lhead=cluster_func_" << callee_id
-                   << ", color=\"#6c757d\", style=dashed];\n";
+                const auto *instr = model.getInstruction(edge.call_instruction);
+                if (!instr)
+                {
+                    continue;
+                }
+
+                os << "    block_" << instr->parent_block_id << " -> block_" << callee->block_ids.front()
+                   << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
             }
         }
 
