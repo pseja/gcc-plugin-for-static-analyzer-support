@@ -42,15 +42,20 @@ target_compile_options(cl_core PRIVATE -g3 -O0 -shared -fPIC -fno-rtti -Wall -We
 set_target_properties(cl_core PROPERTIES CXX_STANDARD 23)
 
 # shared library for the plugin itself, which depends on GCC internals
-file(GLOB_RECURSE GCC_SOURCES src/adapters/gcc/*.cpp)
+file(GLOB_RECURSE GCC_SOURCES src/adapters/gcc/*.cpp src/adapters/*.cpp)
+
+# link original predator libraries
+add_library(predator_old STATIC IMPORTED)
+set_target_properties(predator_old PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/predator/sl_build/libpredator.a)
+add_library(cl_old STATIC IMPORTED)
+set_target_properties(cl_old PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/predator/cl_build/libcl.a)
 
 add_library(cl_gcc SHARED ${GCC_SOURCES})
 
 target_include_directories(cl_gcc PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc)
 
-target_link_libraries(cl_gcc PRIVATE cl_core)
+target_link_libraries(cl_gcc PRIVATE cl_core cl_old predator_old)
 
 target_compile_options(cl_gcc PRIVATE -g3 -O0 -shared -fPIC -fno-rtti -Wall -Wextra -Werror -pedantic)
 
-# set_target_properties(cl_gcc PROPERTIES CXX_STANDARD 23 OUTPUT_NAME "cl")
 set_target_properties(cl_gcc PROPERTIES CXX_STANDARD 23)

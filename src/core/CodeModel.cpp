@@ -73,6 +73,15 @@ const std::deque<Instruction> &CodeModel::getInstructions() const
     return instructions_pool;
 }
 
+const std::string &CodeModel::getFilename() const
+{
+    return filename;
+}
+void CodeModel::setFilename(const std::string &name)
+{
+    filename = name;
+}
+
 Type *CodeModel::createType()
 {
     Type type;

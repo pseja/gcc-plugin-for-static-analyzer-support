@@ -47,6 +47,9 @@ class CodeModel
     const std::deque<Block> &getBlocks() const;
     const std::deque<Instruction> &getInstructions() const;
 
+    const std::string &getFilename() const;
+    void setFilename(const std::string &filename);
+
     // // flat range views
     // auto types() const;
     // auto variables() const;
@@ -85,6 +88,8 @@ class CodeModel
     std::deque<Function> functions_pool;
     std::deque<Block> blocks_pool;
     std::deque<Instruction> instructions_pool;
+
+    std::string filename;
 
     // annotations
     // std::unordered_map<NodeId, std::unordered_map<std::string, std::unique_ptr<AnnotationServices::AnnotationBase>>>
