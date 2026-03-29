@@ -17,19 +17,19 @@ void PredatorAdapter::emit()
 
     if (listener->file_open)
     {
-        listener->file_open(listener, persistString(model.getFilename()));
+        listener->file_open(listener, persistString(model.getFilename())); // TODO: Map main source file
     }
 
     emitFunctions();
 
-    if (listener->acknowledge)
-    {
-        listener->acknowledge(listener);
-    }
-
     if (listener->file_close)
     {
         listener->file_close(listener);
+    }
+
+    if (listener->acknowledge)
+    {
+        listener->acknowledge(listener);
     }
 }
 
@@ -49,7 +49,44 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
         {
         };
         cl_func_op.code = CL_OPERAND_CST;
-        cl_func_op.type = const_cast<struct cl_type *>(mapType(model.getType(func.return_type_id)));
+
+        static std::vector<std::unique_ptr<struct cl_type>> cl_types_pool;
+        static std::vector<std::vector<struct cl_type_item>> cl_type_items_pool;
+
+        auto cl_t = std::make_unique<struct cl_type>();
+        cl_t->code = CL_TYPE_FNC;
+        cl_t->uid = 10000 + cl_types_pool.size();
+        cl_t->name = persistString(func.name);
+
+        std::vector<struct cl_type_item> items;
+        struct cl_type_item ret_item
+        {
+        };
+        ret_item.type = mapType(model.getType(func.return_type_id));
+        ret_item.name = nullptr;
+        ret_item.offset = 0;
+        items.push_back(ret_item);
+
+        cl_type_items_pool.push_back(std::move(items));
+        cl_t->item_cnt = cl_type_items_pool.back().size();
+        cl_t->items = cl_type_items_pool.back().data();
+
+        cl_func_op.type = cl_t.get();
+        cl_types_pool.push_back(std::move(cl_t));
+
+        cl_func_op.data.cst.code = CL_TYPE_FNC;
+
+        cl_func_op.data.cst.data.cst_fnc.uid = static_cast<int>(func.id.index);
+        cl_func_op.data.cst.data.cst_fnc.name = persistString(func.name);
+        cl_func_op.data.cst.data.cst_fnc.is_extern = false;
+
+        struct cl_loc loc
+        {
+        };
+        loc.file = persistString(model.getFilename());
+        loc.line = 1;
+        loc.column = 1;
+        cl_func_op.data.cst.data.cst_fnc.loc = loc;
 
         listener->fnc_open(listener, &cl_func_op);
     }
@@ -67,20 +104,95 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
         }
     }
 
+    if (!func.block_ids.empty() && listener->insn)
+    {
+        const auto *entry_bb = model.getBlock(func.block_ids.front());
+        struct cl_insn cl_i
+        {
+        };
+        cl_i.code = CL_INSN_JMP;
+
+        struct cl_loc loc
+        {
+        };
+        loc.file = persistString(model.getFilename());
+        loc.line = 1;
+        loc.column = 1;
+
+        cl_i.loc = loc;
+        std::string target_label = entry_bb->name;
+        if (target_label == "ENTRY" && !entry_bb->successors.empty())
+        {
+            const auto *succ_bb = model.getBlock(entry_bb->successors[0]);
+            if (succ_bb)
+            {
+                target_label = succ_bb->name;
+            }
+        }
+        cl_i.data.insn_jmp.label = persistString(target_label);
+        listener->insn(listener, &cl_i);
+    }
+
     for (const auto &bbId : func.block_ids)
     {
         const auto *bb = model.getBlock(bbId);
+        if (bb->name == "ENTRY" || bb->name == "EXIT")
+        {
+            continue;
+        }
+
         if (listener->bb_open)
         {
             listener->bb_open(listener, persistString(bb->name));
         }
 
+        bool has_terminator = false;
         for (const auto &instId : bb->instruction_ids)
         {
             const auto *inst = model.getInstruction(instId);
             if (inst)
             {
                 emitInstruction(*inst);
+                if (std::holds_alternative<Core::GotoInstruction>(inst->data) ||
+                    std::holds_alternative<Core::ReturnInstruction>(inst->data) ||
+                    std::holds_alternative<Core::CondInstruction>(inst->data) ||
+                    std::holds_alternative<Core::SwitchInstruction>(inst->data))
+                {
+                    has_terminator = true;
+                }
+            }
+        }
+
+        if (!has_terminator && !bb->successors.empty())
+        {
+            const auto *succ_bb = model.getBlock(bb->successors[0]);
+            struct cl_insn cl_i
+            {
+            };
+            cl_loc loc{};
+            loc.file = persistString(model.getFilename());
+            loc.line = 1;
+            loc.column = 1;
+
+            if (succ_bb && succ_bb->name != "EXIT")
+            {
+                cl_i.code = CL_INSN_JMP;
+                cl_i.loc = loc;
+                cl_i.data.insn_jmp.label = persistString(succ_bb->name);
+                if (listener->insn)
+                {
+                    listener->insn(listener, &cl_i);
+                }
+            }
+            else if (succ_bb && succ_bb->name == "EXIT")
+            {
+                cl_i.code = CL_INSN_RET;
+                cl_i.loc = loc;
+                cl_i.data.insn_ret.src = nullptr;
+                if (listener->insn)
+                {
+                    listener->insn(listener, &cl_i);
+                }
             }
         }
     }

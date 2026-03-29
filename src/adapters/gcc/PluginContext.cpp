@@ -158,6 +158,11 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     std::cerr << "Starting Predator pipeline...\n";
 
     cl_global_init_defaults("cl_gcc_adapter", 0);
+    // "listener=\"easy\""
+    // "listener=\"dotgen\""
+    // "listener=\"typedot\" listener_args=\"types.dot\""
+    // "listener=\"pp\" listener_args=\"pp.txt\""
+    // "listener=\"pp_with_types\" listener_args=\"pp_with_types.txt\""
     struct cl_code_listener *predator_listener = cl_code_listener_create("listener=\"easy\"");
     if (predator_listener)
     {
