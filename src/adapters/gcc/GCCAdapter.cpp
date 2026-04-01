@@ -437,6 +437,17 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
     case FIELD_DECL: {
         Core::FieldVariable field_var;
 
+        unsigned offset_bits = 0;
+        if (DECL_FIELD_OFFSET(variable_tree) && tree_fits_uhwi_p(DECL_FIELD_OFFSET(variable_tree)))
+        {
+            offset_bits += tree_to_uhwi(DECL_FIELD_OFFSET(variable_tree)) * 8;
+        }
+        if (DECL_FIELD_BIT_OFFSET(variable_tree) && tree_fits_uhwi_p(DECL_FIELD_BIT_OFFSET(variable_tree)))
+        {
+            offset_bits += tree_to_uhwi(DECL_FIELD_BIT_OFFSET(variable_tree));
+        }
+        field_var.byte_offset = offset_bits / 8;
+
         if (DECL_BIT_FIELD(variable_tree))
         {
             if (DECL_SIZE(variable_tree) && tree_fits_uhwi_p(DECL_SIZE(variable_tree)))

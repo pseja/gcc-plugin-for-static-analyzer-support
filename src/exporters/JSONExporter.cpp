@@ -147,14 +147,17 @@ void to_json(json &j, const Variable &var)
                                          }
                                      },
                                      [&](const FieldVariable &field_var) {
-                                         j["is_bitfield"] = true;
+                                         j["byte_offset"] = field_var.byte_offset;
+
                                          if (field_var.bitfield_size)
                                          {
                                              j["bitfield_size"] = field_var.bitfield_size.value();
+                                             j["is_bitfield"] = true;
                                          }
                                          if (field_var.bitfield_offset)
                                          {
                                              j["bitfield_offset"] = field_var.bitfield_offset.value();
+                                             j["is_bitfield"] = true;
                                          }
                                      }},
                var.data);
