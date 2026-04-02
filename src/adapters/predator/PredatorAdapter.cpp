@@ -1,4 +1,12 @@
+#include <variant>
+#include <cstring>
+
+#include "FunctionType.hpp"
 #include "PredatorAdapter.hpp"
+#include "UnionType.hpp"
+#include "utility.hpp"
+
+using CodeListener::Exporters::overloaded;
 
 namespace CodeListener::Adapters
 {
@@ -182,33 +190,27 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
         };
         cl_func_op.code = CL_OPERAND_CST;
 
-        static std::vector<std::unique_ptr<struct cl_type>> cl_types_pool;
-        static std::vector<std::vector<struct cl_type_item>> cl_type_items_pool;
-
-        auto cl_t = std::make_unique<struct cl_type>();
+        cl_types_pool.emplace_back();
+        struct cl_type *cl_t = &cl_types_pool.back();
         cl_t->code = CL_TYPE_FNC;
-        cl_t->uid = 10000 + cl_types_pool.size();
+        // functions also end up in VarDb as cl_var operands, offsetting their IDs
+        cl_t->uid = static_cast<int>(func.id.index) + 1000000;
         cl_t->name = persistString(func.name);
 
-        std::vector<struct cl_type_item> items;
-        struct cl_type_item ret_item
-        {
-        };
-        ret_item.type = mapType(model.getType(func.return_type_id));
-        ret_item.name = nullptr;
-        ret_item.offset = 0;
-        items.push_back(ret_item);
+        cl_type_items_pool.push_back(std::vector<cl_type_item>(1));
+        struct cl_type_item *ret_item = &cl_type_items_pool.back().front();
+        ret_item->type = findType(model.getType(func.return_type_id));
+        ret_item->name = nullptr;
+        ret_item->offset = 0;
 
-        cl_type_items_pool.push_back(std::move(items));
-        cl_t->item_cnt = cl_type_items_pool.back().size();
-        cl_t->items = cl_type_items_pool.back().data();
+        cl_t->item_cnt = 1;
+        cl_t->items = ret_item;
 
-        cl_func_op.type = cl_t.get();
-        cl_types_pool.push_back(std::move(cl_t));
+        cl_func_op.type = cl_t;
 
         cl_func_op.data.cst.code = CL_TYPE_FNC;
 
-        cl_func_op.data.cst.data.cst_fnc.uid = static_cast<int>(func.id.index);
+        cl_func_op.data.cst.data.cst_fnc.uid = static_cast<int>(func.id.index) + 1000000;
         cl_func_op.data.cst.data.cst_fnc.name = persistString(func.name);
         cl_func_op.data.cst.data.cst_fnc.is_extern = false;
 
@@ -342,282 +344,253 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
     };
     cl_i.loc = mapLocation(inst.source_location);
 
-    if (auto *assign = std::get_if<Core::AssignInstruction>(&inst.data))
-    {
-        if (!assign->rhs1.has_value())
-        {
-            return;
-        }
+    std::visit(overloaded{[&](const Core::AssignInstruction &assign) {
+                              if (!assign.rhs1.has_value())
+                              {
+                                  return;
+                              }
 
-        cl_operands_pool.push_back(mapOperand(assign->lhs));
-        const struct cl_operand *dst_op = &cl_operands_pool.back();
+                              cl_operands_pool.push_back(mapOperand(assign.lhs));
+                              const struct cl_operand *dst_op = &cl_operands_pool.back();
 
-        cl_operands_pool.push_back(mapOperand(*assign->rhs1));
-        const struct cl_operand *src1_op = &cl_operands_pool.back();
+                              cl_operands_pool.push_back(mapOperand(assign.rhs1.value()));
+                              const struct cl_operand *src1_op = &cl_operands_pool.back();
 
-        const struct cl_operand *src2_op = nullptr;
-        if (assign->rhs2.has_value())
-        {
-            cl_operands_pool.push_back(mapOperand(*assign->rhs2));
-            src2_op = &cl_operands_pool.back();
-        }
+                              const struct cl_operand *src2_op = nullptr;
+                              if (assign.rhs2.has_value())
+                              {
+                                  cl_operands_pool.push_back(mapOperand(assign.rhs2.value()));
+                                  src2_op = &cl_operands_pool.back();
+                              }
 
-        bool is_unop = (!assign->rhs2.has_value() && assign->opcode != Core::OpCode::NONE) ||
-                       assign->opcode == Core::OpCode::NONE || assign->opcode == Core::OpCode::CAST ||
-                       assign->opcode == Core::OpCode::NEGATE || assign->opcode == Core::OpCode::BIT_NOT ||
-                       assign->opcode == Core::OpCode::LOG_NOT || assign->opcode == Core::OpCode::ABS;
+                              bool is_unop =
+                                  (!assign.rhs2.has_value() && assign.opcode != Core::OpCode::NONE) ||
+                                  assign.opcode == Core::OpCode::NONE || assign.opcode == Core::OpCode::CAST ||
+                                  assign.opcode == Core::OpCode::NEGATE || assign.opcode == Core::OpCode::BIT_NOT ||
+                                  assign.opcode == Core::OpCode::LOG_NOT || assign.opcode == Core::OpCode::ABS;
 
-        if (is_unop)
-        {
-            cl_i.code = CL_INSN_UNOP;
-            cl_i.data.insn_unop.dst = dst_op;
-            cl_i.data.insn_unop.src = src1_op;
+                              if (is_unop)
+                              {
+                                  cl_i.code = CL_INSN_UNOP;
+                                  cl_i.data.insn_unop.dst = dst_op;
+                                  cl_i.data.insn_unop.src = src1_op;
 
-            switch (assign->opcode)
-            {
-            case Core::OpCode::NONE:
-            case Core::OpCode::CAST:
-                cl_i.data.insn_unop.code = CL_UNOP_ASSIGN;
-                break;
-            case Core::OpCode::NEGATE:
-                cl_i.data.insn_unop.code = CL_UNOP_MINUS;
-                break;
-            case Core::OpCode::BIT_NOT:
-                cl_i.data.insn_unop.code = CL_UNOP_BIT_NOT;
-                break;
-            case Core::OpCode::LOG_NOT:
-                cl_i.data.insn_unop.code = CL_UNOP_TRUTH_NOT;
-                break;
-            case Core::OpCode::ABS:
-                cl_i.data.insn_unop.code = CL_UNOP_ABS;
-                break;
-            default:
-                cl_i.data.insn_unop.code = CL_UNOP_ASSIGN;
-                break;
-            }
-        }
-        else
-        {
-            cl_i.code = CL_INSN_BINOP;
-            cl_i.data.insn_binop.dst = dst_op;
-            cl_i.data.insn_binop.src1 = src1_op;
-            cl_i.data.insn_binop.src2 = src2_op;
+                                  switch (assign.opcode)
+                                  {
+                                  case Core::OpCode::NONE:
+                                  case Core::OpCode::CAST:
+                                      cl_i.data.insn_unop.code = CL_UNOP_ASSIGN;
+                                      break;
+                                  case Core::OpCode::NEGATE:
+                                      cl_i.data.insn_unop.code = CL_UNOP_MINUS;
+                                      break;
+                                  case Core::OpCode::BIT_NOT:
+                                      cl_i.data.insn_unop.code = CL_UNOP_BIT_NOT;
+                                      break;
+                                  case Core::OpCode::LOG_NOT:
+                                      cl_i.data.insn_unop.code = CL_UNOP_TRUTH_NOT;
+                                      break;
+                                  case Core::OpCode::ABS:
+                                      cl_i.data.insn_unop.code = CL_UNOP_ABS;
+                                      break;
+                                  default:
+                                      cl_i.data.insn_unop.code = CL_UNOP_ASSIGN;
+                                      break;
+                                  }
+                              }
+                              else
+                              {
+                                  cl_i.code = CL_INSN_BINOP;
+                                  cl_i.data.insn_binop.dst = dst_op;
+                                  cl_i.data.insn_binop.src1 = src1_op;
+                                  cl_i.data.insn_binop.src2 = src2_op;
 
-            switch (assign->opcode)
-            {
-            case Core::OpCode::ADD:
-                cl_i.data.insn_binop.code = CL_BINOP_PLUS;
-                break;
-            case Core::OpCode::SUB:
-                cl_i.data.insn_binop.code = CL_BINOP_MINUS;
-                break;
-            case Core::OpCode::MUL:
-                cl_i.data.insn_binop.code = CL_BINOP_MULT;
-                break;
-            case Core::OpCode::DIV:
-                cl_i.data.insn_binop.code = CL_BINOP_TRUNC_DIV;
-                break;
-            case Core::OpCode::MOD:
-                cl_i.data.insn_binop.code = CL_BINOP_TRUNC_MOD;
-                break;
-            case Core::OpCode::BIT_AND:
-                cl_i.data.insn_binop.code = CL_BINOP_BIT_AND;
-                break;
-            case Core::OpCode::BIT_OR:
-                cl_i.data.insn_binop.code = CL_BINOP_BIT_IOR;
-                break;
-            case Core::OpCode::BIT_XOR:
-                cl_i.data.insn_binop.code = CL_BINOP_BIT_XOR;
-                break;
-            case Core::OpCode::SHL:
-                cl_i.data.insn_binop.code = CL_BINOP_LSHIFT;
-                break;
-            case Core::OpCode::SHR:
-                cl_i.data.insn_binop.code = CL_BINOP_RSHIFT;
-                break;
-            case Core::OpCode::LOG_AND:
-                cl_i.data.insn_binop.code = CL_BINOP_TRUTH_AND;
-                break;
-            case Core::OpCode::LOG_OR:
-                cl_i.data.insn_binop.code = CL_BINOP_TRUTH_OR;
-                break;
-            case Core::OpCode::EQUAL:
-                cl_i.data.insn_binop.code = CL_BINOP_EQ;
-                break;
-            case Core::OpCode::NOT_EQUAL:
-                cl_i.data.insn_binop.code = CL_BINOP_NE;
-                break;
-            case Core::OpCode::GREATER_THAN:
-                cl_i.data.insn_binop.code = CL_BINOP_GT;
-                break;
-            case Core::OpCode::LESS_THAN:
-                cl_i.data.insn_binop.code = CL_BINOP_LT;
-                break;
-            case Core::OpCode::GREATER_EQUAL:
-                cl_i.data.insn_binop.code = CL_BINOP_GE;
-                break;
-            case Core::OpCode::LESS_EQUAL:
-                cl_i.data.insn_binop.code = CL_BINOP_LE;
-                break;
-            case Core::OpCode::POINTER_ADD:
-                cl_i.data.insn_binop.code = CL_BINOP_POINTER_PLUS;
-                break;
-            case Core::OpCode::POINTER_SUB:
-                cl_i.data.insn_binop.code = CL_BINOP_POINTER_MINUS;
-                break;
-            case Core::OpCode::MIN:
-                cl_i.data.insn_binop.code = CL_BINOP_MIN;
-                break;
-            case Core::OpCode::MAX:
-                cl_i.data.insn_binop.code = CL_BINOP_MAX;
-                break;
-            case Core::OpCode::ROTATE_LEFT:
-                cl_i.data.insn_binop.code = CL_BINOP_LROTATE;
-                break;
-            case Core::OpCode::ROTATE_RIGHT:
-                cl_i.data.insn_binop.code = CL_BINOP_RROTATE;
-                break;
-            default:
-                cl_i.data.insn_binop.code = CL_BINOP_PLUS;
-                break;
-            }
-        }
+                                  cl_i.data.insn_binop.code = mapBinOp(assign.opcode);
+                              }
 
-        if (listener->insn)
-        {
-            listener->insn(listener, &cl_i);
-        }
-    }
-    else if (auto *call = std::get_if<Core::CallInstruction>(&inst.data))
-    {
-        if (!listener->insn_call_open)
-        {
-            return;
-        }
+                              if (listener->insn)
+                              {
+                                  listener->insn(listener, &cl_i);
+                              }
+                          },
+                          [&](const Core::CallInstruction &call) {
+                              if (!listener->insn_call_open)
+                              {
+                                  return;
+                              }
 
-        cl_operands_pool.push_back(mapOperand(call->callee));
-        const struct cl_operand *fnc_op = &cl_operands_pool.back();
+                              cl_operands_pool.push_back(mapOperand(call.callee));
+                              const struct cl_operand *fnc_op = &cl_operands_pool.back();
 
-        const struct cl_operand *dst_op = nullptr;
-        if (call->lhs.has_value())
-        {
-            cl_operands_pool.push_back(mapOperand(*call->lhs));
-            dst_op = &cl_operands_pool.back();
-        }
+                              const struct cl_operand *dst_op = nullptr;
+                              if (call.lhs.has_value())
+                              {
+                                  cl_operands_pool.push_back(mapOperand(*call.lhs));
+                                  dst_op = &cl_operands_pool.back();
+                              }
 
-        listener->insn_call_open(listener, &cl_i.loc, dst_op, fnc_op);
+                              listener->insn_call_open(listener, &cl_i.loc, dst_op, fnc_op);
 
-        if (listener->insn_call_arg)
-        {
-            int arg_idx = 0;
-            for (const auto &arg : call->arguments)
-            {
-                cl_operands_pool.push_back(mapOperand(arg));
-                listener->insn_call_arg(listener, arg_idx++, &cl_operands_pool.back());
-            }
-        }
+                              if (listener->insn_call_arg)
+                              {
+                                  int arg_idx = 0;
+                                  for (const auto &arg : call.arguments)
+                                  {
+                                      cl_operands_pool.push_back(mapOperand(arg));
+                                      listener->insn_call_arg(listener, arg_idx++, &cl_operands_pool.back());
+                                  }
+                              }
 
-        if (listener->insn_call_close)
-        {
-            listener->insn_call_close(listener);
-        }
-    }
-    else if (auto *jmp = std::get_if<Core::GotoInstruction>(&inst.data))
-    {
-        cl_i.code = CL_INSN_JMP;
-        const auto *target_bb = model.getBlock(jmp->target);
-        cl_i.data.insn_jmp.label = target_bb ? persistString(target_bb->name) : nullptr;
-        if (listener->insn)
-        {
-            listener->insn(listener, &cl_i);
-        }
-    }
-    else if (auto *cond = std::get_if<Core::CondInstruction>(&inst.data))
-    {
-        cl_i.code = CL_INSN_COND;
+                              if (listener->insn_call_close)
+                              {
+                                  listener->insn_call_close(listener);
+                              }
+                          },
+                          [&](const Core::GotoInstruction &jmp) {
+                              cl_i.code = CL_INSN_JMP;
+                              const auto *target_bb = model.getBlock(jmp.target);
+                              cl_i.data.insn_jmp.label = target_bb ? persistString(target_bb->name) : nullptr;
+                              if (listener->insn)
+                              {
+                                  listener->insn(listener, &cl_i);
+                              }
+                          },
+                          [&](const Core::CondInstruction &cond) {
+                              if (cond.opcode != Core::OpCode::NONE)
+                              {
+                                  struct cl_var fake_var
+                                  {
+                                  };
+                                  fake_var.uid = next_artificial_var_uid++;
+                                  fake_var.name = nullptr;
+                                  fake_var.artificial = true;
+                                  fake_var.is_extern = false;
+                                  fake_var.initialized = true;
 
-        cl_operands_pool.push_back(mapOperand(cond->lhs));
-        cl_i.data.insn_cond.src = &cl_operands_pool.back();
+                                  cl_vars_pool.push_back(fake_var);
+                                  struct cl_var *dst_var = &cl_vars_pool.back();
 
-        const auto *true_bb = model.getBlock(cond->true_target);
-        cl_i.data.insn_cond.then_label = true_bb ? persistString(true_bb->name) : nullptr;
+                                  cl_operands_pool.push_back(mapOperand(cond.lhs));
+                                  const struct cl_operand *src1_op = &cl_operands_pool.back();
 
-        const auto *false_bb = model.getBlock(cond->false_target);
-        cl_i.data.insn_cond.else_label = false_bb ? persistString(false_bb->name) : nullptr;
+                                  cl_operands_pool.push_back(mapOperand(cond.rhs));
+                                  const struct cl_operand *src2_op = &cl_operands_pool.back();
 
-        if (listener->insn)
-        {
-            listener->insn(listener, &cl_i);
-        }
-    }
-    else if (auto *ret = std::get_if<Core::ReturnInstruction>(&inst.data))
-    {
-        cl_i.code = CL_INSN_RET;
-        if (ret->return_value)
-        {
-            cl_operands_pool.push_back(mapOperand(*ret->return_value));
-            cl_i.data.insn_ret.src = &cl_operands_pool.back();
-        }
-        else
-        {
-            cl_i.data.insn_ret.src = nullptr;
-        }
-        if (listener->insn)
-        {
-            listener->insn(listener, &cl_i);
-        }
-    }
-    else if (auto *sw = std::get_if<Core::SwitchInstruction>(&inst.data))
-    {
-        if (!listener->insn_switch_open)
-        {
-            return;
-        }
+                                  struct cl_operand dst_op
+                                  {
+                                  };
+                                  dst_op.code = CL_OPERAND_VAR;
+                                  dst_op.type = src1_op->type;
+                                  dst_op.data.var = dst_var;
 
-        cl_operands_pool.push_back(mapOperand(sw->index));
-        const struct cl_operand *src_op = &cl_operands_pool.back();
+                                  cl_operands_pool.push_back(dst_op);
+                                  const struct cl_operand *dst_op_ptr = &cl_operands_pool.back();
 
-        listener->insn_switch_open(listener, &cl_i.loc, src_op);
+                                  struct cl_insn binop_i
+                                  {
+                                  };
+                                  binop_i.loc = cl_i.loc;
+                                  binop_i.code = CL_INSN_BINOP;
+                                  binop_i.data.insn_binop.dst = dst_op_ptr;
+                                  binop_i.data.insn_binop.src1 = src1_op;
+                                  binop_i.data.insn_binop.src2 = src2_op;
+                                  binop_i.data.insn_binop.code = mapBinOp(cond.opcode);
 
-        if (listener->insn_switch_case)
-        {
-            for (const auto &c : sw->cases)
-            {
-                const struct cl_operand *val_lo = nullptr;
-                const struct cl_operand *val_hi = nullptr;
+                                  if (listener->insn)
+                                  {
+                                      listener->insn(listener, &binop_i);
+                                  }
 
-                if (c.low_value.has_value())
-                {
-                    cl_operands_pool.push_back(mapOperand(*c.low_value));
-                    val_lo = &cl_operands_pool.back();
-                }
-                if (c.high_value.has_value())
-                {
-                    cl_operands_pool.push_back(mapOperand(*c.high_value));
-                    val_hi = &cl_operands_pool.back();
-                }
+                                  cl_i.code = CL_INSN_COND;
+                                  cl_i.data.insn_cond.src = dst_op_ptr;
+                              }
+                              else
+                              {
+                                  cl_i.code = CL_INSN_COND;
+                                  cl_operands_pool.push_back(mapOperand(cond.lhs));
+                                  cl_i.data.insn_cond.src = &cl_operands_pool.back();
+                              }
 
-                const auto *target_bb = model.getBlock(c.target_block_id);
-                const char *label = target_bb ? persistString(target_bb->name) : nullptr;
+                              const auto *true_bb = model.getBlock(cond.true_target);
+                              cl_i.data.insn_cond.then_label = true_bb ? persistString(true_bb->name) : nullptr;
 
-                listener->insn_switch_case(listener, &cl_i.loc, val_lo, val_hi, label);
-            }
-        }
-        if (listener->insn_switch_close)
-        {
-            listener->insn_switch_close(listener);
-        }
-    }
-    else if (auto *clobber = std::get_if<Core::ClobberInstruction>(&inst.data))
-    {
-        cl_i.code = CL_INSN_CLOBBER;
-        cl_operands_pool.push_back(mapOperand(clobber->clobbered_variable));
-        cl_i.data.insn_clobber.var = &cl_operands_pool.back();
-        if (listener->insn)
-        {
-            listener->insn(listener, &cl_i);
-        }
-    }
+                              const auto *false_bb = model.getBlock(cond.false_target);
+                              cl_i.data.insn_cond.else_label = false_bb ? persistString(false_bb->name) : nullptr;
+
+                              if (listener->insn)
+                              {
+                                  listener->insn(listener, &cl_i);
+                              }
+                          },
+                          [&](const Core::ReturnInstruction &ret) {
+                              cl_i.code = CL_INSN_RET;
+                              if (ret.return_value)
+                              {
+                                  cl_operands_pool.push_back(mapOperand(*ret.return_value));
+                                  cl_i.data.insn_ret.src = &cl_operands_pool.back();
+                              }
+                              else
+                              {
+                                  cl_i.data.insn_ret.src = nullptr;
+                              }
+                              if (listener->insn)
+                              {
+                                  listener->insn(listener, &cl_i);
+                              }
+                          },
+                          [&](const Core::SwitchInstruction &sw) {
+                              if (!listener->insn_switch_open)
+                              {
+                                  return;
+                              }
+
+                              cl_operands_pool.push_back(mapOperand(sw.index));
+                              const struct cl_operand *src_op = &cl_operands_pool.back();
+
+                              listener->insn_switch_open(listener, &cl_i.loc, src_op);
+
+                              if (listener->insn_switch_case)
+                              {
+                                  for (const auto &c : sw.cases)
+                                  {
+                                      const struct cl_operand *val_lo = nullptr;
+                                      const struct cl_operand *val_hi = nullptr;
+
+                                      if (c.low_value.has_value())
+                                      {
+                                          cl_operands_pool.push_back(mapOperand(*c.low_value));
+                                          val_lo = &cl_operands_pool.back();
+                                      }
+                                      if (c.high_value.has_value())
+                                      {
+                                          cl_operands_pool.push_back(mapOperand(*c.high_value));
+                                          val_hi = &cl_operands_pool.back();
+                                      }
+
+                                      const auto *target_bb = model.getBlock(c.target_block_id);
+                                      const char *label = target_bb ? persistString(target_bb->name) : nullptr;
+
+                                      listener->insn_switch_case(listener, &cl_i.loc, val_lo, val_hi, label);
+                                  }
+                              }
+                              if (listener->insn_switch_close)
+                              {
+                                  listener->insn_switch_close(listener);
+                              }
+                          },
+                          [&](const Core::ClobberInstruction &clobber) {
+                              cl_i.code = CL_INSN_CLOBBER;
+                              cl_operands_pool.push_back(mapOperand(clobber.clobbered_variable));
+                              cl_i.data.insn_clobber.var = &cl_operands_pool.back();
+                              if (listener->insn)
+                              {
+                                  listener->insn(listener, &cl_i);
+                              }
+                          },
+                          [&](const auto &) {
+                              // unhandled instruction types
+                          }},
+               inst.data);
 }
 
 const char *PredatorAdapter::persistString(const std::string &str)
@@ -638,7 +611,7 @@ struct cl_loc PredatorAdapter::mapLocation(const Core::SourceLocation &loc)
     return cl_l;
 }
 
-struct cl_type *PredatorAdapter::mapType(const Core::Type *type)
+struct cl_type *PredatorAdapter::findType(const Core::Type *type)
 {
     if (!type)
     {
@@ -650,58 +623,10 @@ struct cl_type *PredatorAdapter::mapType(const Core::Type *type)
         return it->second;
     }
 
-    cl_types_pool.push_back(cl_type{});
-    struct cl_type *cl_t = &cl_types_pool.back();
-    type_map[type->id] = cl_t;
-
-    cl_t->uid = static_cast<cl_uid_t>(type->id.index);
-    cl_t->name = persistString(type->name);
-    cl_t->size = type->size_bits / 8;
-
-    switch (type->kind)
-    {
-    case Core::TypeKind::VOID:
-        cl_t->code = CL_TYPE_VOID;
-        break;
-    case Core::TypeKind::UNKNOWN:
-        cl_t->code = CL_TYPE_UNKNOWN;
-        break;
-    case Core::TypeKind::POINTER:
-        cl_t->code = CL_TYPE_PTR;
-        break;
-    case Core::TypeKind::STRUCT:
-        cl_t->code = CL_TYPE_STRUCT;
-        break;
-    case Core::TypeKind::UNION:
-        cl_t->code = CL_TYPE_UNION;
-        break;
-    case Core::TypeKind::ARRAY:
-        cl_t->code = CL_TYPE_ARRAY;
-        break;
-    case Core::TypeKind::FUNCTION:
-        cl_t->code = CL_TYPE_FNC;
-        break;
-    case Core::TypeKind::INTEGER:
-        cl_t->code = CL_TYPE_INT;
-        break;
-    case Core::TypeKind::BOOL:
-        cl_t->code = CL_TYPE_BOOL;
-        break;
-    case Core::TypeKind::ENUM:
-        cl_t->code = CL_TYPE_ENUM;
-        break;
-    case Core::TypeKind::REAL:
-        cl_t->code = CL_TYPE_REAL;
-        break;
-    default:
-        cl_t->code = CL_TYPE_UNKNOWN;
-        break;
-    }
-
-    return cl_t;
+    return nullptr;
 }
 
-struct cl_var *PredatorAdapter::mapVariable(const Core::Variable *var)
+struct cl_var *PredatorAdapter::findVariable(const Core::Variable *var)
 {
     if (!var)
     {
@@ -713,16 +638,7 @@ struct cl_var *PredatorAdapter::mapVariable(const Core::Variable *var)
         return it->second;
     }
 
-    cl_vars_pool.push_back(cl_var{});
-    struct cl_var *cl_v = &cl_vars_pool.back();
-    var_map[var->id] = cl_v;
-
-    cl_v->uid = static_cast<cl_uid_t>(var->id.index);
-    cl_v->name = persistString(var->name);
-    cl_v->artificial = var->artificial;
-    cl_v->loc = mapLocation(var->source_location);
-
-    return cl_v;
+    return nullptr;
 }
 
 struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
@@ -730,10 +646,11 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
     struct cl_operand cl_op
     {
     };
+
     if (auto *const_op = std::get_if<Core::ConstantOperand>(&op))
     {
         cl_op.code = CL_OPERAND_CST;
-        cl_op.type = mapType(model.getType(const_op->type_id));
+        cl_op.type = findType(model.getType(const_op->type_id));
         cl_op.data.cst.code = cl_op.type->code;
 
         if (cl_op.type->code == CL_TYPE_INT)
@@ -753,42 +670,76 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
         }
         else
         {
-            cl_op.data.cst.data.cst_string.value = persistString(const_op->value);
+            if (!const_op->value.empty() && const_op->value.front() == '"')
+            {
+                cl_op.data.cst.code = CL_TYPE_STRING;
+                std::string unquoted = const_op->value.substr(1, const_op->value.length() - 2);
+                cl_op.data.cst.data.cst_string.value = persistString(unquoted);
+            }
+            else
+            {
+                cl_op.data.cst.data.cst_string.value = persistString(const_op->value);
+            }
         }
     }
     else if (auto *var_op = std::get_if<Core::VariableOperand>(&op))
     {
         cl_op.code = CL_OPERAND_VAR;
         const auto *var = model.getVariable(var_op->id);
-        cl_op.type = mapType(model.getType(var->type_id));
-        cl_op.data.var = mapVariable(var);
+        cl_op.type = findType(model.getType(var->type_id));
+        cl_op.data.var = findVariable(var);
 
         if (!var_op->access_path.empty())
         {
             struct cl_accessor *head = nullptr;
             struct cl_accessor *tail = nullptr;
+            const struct cl_type *current_type = cl_op.type;
+
             for (const auto &acc : var_op->access_path)
             {
-                cl_accessors_pool.push_back(cl_accessor{});
+                cl_accessors_pool.emplace_back();
                 struct cl_accessor *cl_a = &cl_accessors_pool.back();
+                memset((void *)cl_a, 0, sizeof(*cl_a));
+
+                cl_a->type = const_cast<struct cl_type *>(current_type);
+
                 if (std::holds_alternative<Core::DerefAccessor>(acc.data))
                 {
                     cl_a->code = CL_ACCESSOR_DEREF;
+                    if (current_type && current_type->item_cnt > 0)
+                        current_type = current_type->items[0].type;
                 }
-                else if (std::holds_alternative<Core::AddressOfAccessor>(acc.data))
+                else if (auto *addr_acc = std::get_if<Core::AddressOfAccessor>(&acc.data))
                 {
                     cl_a->code = CL_ACCESSOR_REF;
+                    current_type = findType(model.getType(addr_acc->target_type_id));
                 }
                 else if (auto *arr_acc = std::get_if<Core::ArrayAccessor>(&acc.data))
                 {
                     cl_a->code = CL_ACCESSOR_DEREF_ARRAY;
                     cl_operands_pool.push_back(mapOperand(arr_acc->index));
                     cl_a->data.array.index = &cl_operands_pool.back();
+                    if (current_type && current_type->item_cnt > 0)
+                        current_type = current_type->items[0].type;
                 }
                 else if (auto *field_acc = std::get_if<Core::FieldAccessor>(&acc.data))
                 {
                     cl_a->code = CL_ACCESSOR_ITEM;
-                    cl_a->data.item.id = static_cast<int>(field_acc->field_id.index);
+                    const auto *field_var = model.getVariable(field_acc->field_id);
+                    cl_a->data.item.id = 0;
+                    if (current_type && field_var)
+                    {
+                        for (int i = 0; i < current_type->item_cnt; ++i)
+                        {
+                            if (current_type->items[i].name && field_var->name == current_type->items[i].name)
+                            {
+                                cl_a->data.item.id = i;
+                                break;
+                            }
+                        }
+                    }
+                    if (current_type && cl_a->data.item.id < current_type->item_cnt)
+                        current_type = current_type->items[cl_a->data.item.id].type;
                 }
                 else if (auto *off_acc = std::get_if<Core::OffsetAccessor>(&acc.data))
                 {
@@ -817,6 +768,63 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
         }
     }
     return cl_op;
+}
+
+enum cl_binop_e PredatorAdapter::mapBinOp(Core::OpCode op)
+{
+    switch (op)
+    {
+    case Core::OpCode::ADD:
+        return CL_BINOP_PLUS;
+    case Core::OpCode::SUB:
+        return CL_BINOP_MINUS;
+    case Core::OpCode::MUL:
+        return CL_BINOP_MULT;
+    case Core::OpCode::DIV:
+        return CL_BINOP_TRUNC_DIV;
+    case Core::OpCode::MOD:
+        return CL_BINOP_TRUNC_MOD;
+    case Core::OpCode::BIT_AND:
+        return CL_BINOP_BIT_AND;
+    case Core::OpCode::BIT_OR:
+        return CL_BINOP_BIT_IOR;
+    case Core::OpCode::BIT_XOR:
+        return CL_BINOP_BIT_XOR;
+    case Core::OpCode::SHL:
+        return CL_BINOP_LSHIFT;
+    case Core::OpCode::SHR:
+        return CL_BINOP_RSHIFT;
+    case Core::OpCode::LOG_AND:
+        return CL_BINOP_TRUTH_AND;
+    case Core::OpCode::LOG_OR:
+        return CL_BINOP_TRUTH_OR;
+    case Core::OpCode::EQUAL:
+        return CL_BINOP_EQ;
+    case Core::OpCode::NOT_EQUAL:
+        return CL_BINOP_NE;
+    case Core::OpCode::GREATER_THAN:
+        return CL_BINOP_GT;
+    case Core::OpCode::LESS_THAN:
+        return CL_BINOP_LT;
+    case Core::OpCode::GREATER_EQUAL:
+        return CL_BINOP_GE;
+    case Core::OpCode::LESS_EQUAL:
+        return CL_BINOP_LE;
+    case Core::OpCode::POINTER_ADD:
+        return CL_BINOP_POINTER_PLUS;
+    case Core::OpCode::POINTER_SUB:
+        return CL_BINOP_POINTER_MINUS;
+    case Core::OpCode::MIN:
+        return CL_BINOP_MIN;
+    case Core::OpCode::MAX:
+        return CL_BINOP_MAX;
+    case Core::OpCode::ROTATE_LEFT:
+        return CL_BINOP_LROTATE;
+    case Core::OpCode::ROTATE_RIGHT:
+        return CL_BINOP_RROTATE;
+    default:
+        return CL_BINOP_PLUS;
+    }
 }
 
 } // namespace CodeListener::Adapters
