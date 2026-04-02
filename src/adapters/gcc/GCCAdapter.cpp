@@ -412,7 +412,15 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
     // for labels and DECL_Ps using GCC's native artificial label/variable naming convention (e.g., L42 or D.42)
     else if (TREE_CODE(variable_tree) == LABEL_DECL)
     {
-        variable->name = "L" + std::to_string(DECL_UID(variable_tree));
+        variable->artificial = DECL_ARTIFICIAL(variable_tree);
+        if (DECL_NAME(variable_tree))
+        {
+            variable->name = IDENTIFIER_POINTER(DECL_NAME(variable_tree));
+        }
+        else
+        {
+            variable->name = "L" + std::to_string(DECL_UID(variable_tree));
+        }
     }
     else if (DECL_P(variable_tree))
     {
