@@ -15,6 +15,138 @@ void PredatorAdapter::emit()
         return;
     }
 
+    // pre-passes for types and variables, because old cl expects to know them already
+    for (const auto &type : model.getTypes())
+    {
+        cl_types_pool.emplace_back();
+        struct cl_type *cl_t = &cl_types_pool.back();
+        type_map[type.id] = cl_t;
+
+        cl_t->uid = static_cast<int>(type.id.index);
+        cl_t->name = persistString(type.name);
+        cl_t->size = type.size_bits / 8;
+
+        switch (type.kind)
+        {
+        case Core::TypeKind::VOID:
+            cl_t->code = CL_TYPE_VOID;
+            break;
+        case Core::TypeKind::UNKNOWN:
+            cl_t->code = CL_TYPE_UNKNOWN;
+            break;
+        case Core::TypeKind::POINTER:
+            cl_t->code = CL_TYPE_PTR;
+            break;
+        case Core::TypeKind::STRUCT:
+            cl_t->code = CL_TYPE_STRUCT;
+            break;
+        case Core::TypeKind::UNION:
+            cl_t->code = CL_TYPE_UNION;
+            break;
+        case Core::TypeKind::ARRAY:
+            cl_t->code = CL_TYPE_ARRAY;
+            break;
+        case Core::TypeKind::FUNCTION:
+            cl_t->code = CL_TYPE_FNC;
+            break;
+        case Core::TypeKind::INTEGER:
+            cl_t->code = CL_TYPE_INT;
+            break;
+        case Core::TypeKind::BOOL:
+            cl_t->code = CL_TYPE_BOOL;
+            break;
+        case Core::TypeKind::ENUM:
+            cl_t->code = CL_TYPE_ENUM;
+            break;
+        case Core::TypeKind::REAL:
+            cl_t->code = CL_TYPE_REAL;
+            break;
+        default:
+            cl_t->code = CL_TYPE_UNKNOWN;
+            break;
+        }
+    }
+
+    for (const auto &type : model.getTypes())
+    {
+        struct cl_type *cl_t = type_map[type.id];
+
+        std::visit(overloaded{[&](const Core::ArrayType &at) {
+                                  cl_t->item_cnt = 1;
+                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(1));
+                                  cl_t->items = cl_type_items_pool.back().data();
+                                  cl_t->items[0].type = type_map[at.element_type_id];
+                              },
+                              [&](const Core::FunctionType &ft) {
+                                  cl_t->item_cnt = 1 + static_cast<int>(ft.parameter_type_ids.size());
+                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
+                                  cl_t->items = cl_type_items_pool.back().data();
+                                  cl_t->items[0].type = type_map[ft.return_type_id];
+                                  for (size_t i = 0; i < ft.parameter_type_ids.size(); ++i)
+                                  {
+                                      cl_t->items[i + 1].type = type_map[ft.parameter_type_ids[i]];
+                                  }
+                              },
+                              [&](const Core::PointerType &pt) {
+                                  cl_t->item_cnt = 1;
+                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(1));
+                                  cl_t->items = cl_type_items_pool.back().data();
+                                  cl_t->items[0].type = type_map[pt.pointee_type_id];
+                              },
+                              [&](const Core::StructType &st) {
+                                  cl_t->item_cnt = static_cast<int>(st.fields.size());
+                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
+                                  cl_t->items = cl_type_items_pool.back().data();
+                                  for (size_t i = 0; i < st.fields.size(); ++i)
+                                  {
+                                      const auto *field_var = model.getVariable(st.fields[i]);
+                                      cl_t->items[i].type = type_map[field_var->type_id];
+                                      cl_t->items[i].name = persistString(field_var->name);
+                                      if (auto *fv = std::get_if<Core::FieldVariable>(&field_var->data))
+                                      {
+                                          cl_t->items[i].offset = fv->byte_offset.value_or(0);
+                                      }
+                                      else
+                                      {
+                                          cl_t->items[i].offset = 0;
+                                      }
+                                  }
+                              },
+                              [&](const Core::UnionType &st) {
+                                  cl_t->item_cnt = static_cast<int>(st.fields.size());
+                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
+                                  cl_t->items = cl_type_items_pool.back().data();
+                                  for (size_t i = 0; i < st.fields.size(); ++i)
+                                  {
+                                      const auto *field_var = model.getVariable(st.fields[i]);
+                                      cl_t->items[i].type = type_map[field_var->type_id];
+                                      cl_t->items[i].name = persistString(field_var->name);
+                                      if (auto *fv = std::get_if<Core::FieldVariable>(&field_var->data))
+                                      {
+                                          cl_t->items[i].offset = fv->byte_offset.value_or(0);
+                                      }
+                                      else
+                                      {
+                                          cl_t->items[i].offset = 0;
+                                      }
+                                  }
+                              },
+                              [&](const auto &) { /* primitives have no items */ }},
+                   type.data);
+    }
+
+    for (const auto &var : model.getVariables())
+    {
+        cl_vars_pool.emplace_back();
+        struct cl_var *cl_v = &cl_vars_pool.back();
+        var_map[var.id] = cl_v;
+
+        cl_v->uid = static_cast<int>(var.id.index);
+        cl_v->name = persistString(var.name);
+        cl_v->artificial = var.artificial;
+        cl_v->loc = mapLocation(var.source_location);
+    }
+
     if (listener->file_open)
     {
         listener->file_open(listener, persistString(model.getFilename())); // TODO: Map main source file
