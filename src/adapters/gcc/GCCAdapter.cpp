@@ -616,8 +616,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             // case PTRMEM_CST:
 
         default:
-            constant_operand.value = "<unknown_constant>";
-            break;
+            return Core::ConstantOperand{Core::TypeId::invalid(), "<unhandled_constant>"};
         }
 
         reporter.report(Core::DiagnosticLevel::Debug, "Parsed constant operand with value: " + constant_operand.value);

@@ -685,20 +685,26 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
 
     if (auto *const_op = std::get_if<Core::ConstantOperand>(&op))
     {
+        if (!const_op->type_id.isValid())
+        {
+            cl_op.code = CL_OPERAND_VOID;
+            return cl_op;
+        }
+
         cl_op.code = CL_OPERAND_CST;
         cl_op.type = findType(model.getType(const_op->type_id));
-        cl_op.data.cst.code = cl_op.type->code;
-
-        if (cl_op.type->code == CL_TYPE_INT)
+        if (!cl_op.type)
         {
-            if (cl_op.type->is_unsigned)
-            {
-                cl_op.data.cst.data.cst_uint.value = std::strtoul(const_op->value.c_str(), nullptr, 10);
-            }
-            else
-            {
-                cl_op.data.cst.data.cst_int.value = std::strtol(const_op->value.c_str(), nullptr, 10);
-            }
+            cl_op.code = CL_OPERAND_VOID;
+            return cl_op;
+        }
+
+        if (const_op->value.size() >= 2 && const_op->value.front() == '"')
+        {
+            // string literal: always stored as CL_TYPE_STRING regardless of pointer type
+            cl_op.data.cst.code = CL_TYPE_STRING;
+            std::string unquoted = const_op->value.substr(1, const_op->value.length() - 2);
+            cl_op.data.cst.data.cst_string.value = persistString(unquoted);
         }
         else if (cl_op.type->code == CL_TYPE_REAL)
         {
@@ -721,6 +727,11 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
     else if (auto *var_op = std::get_if<Core::VariableOperand>(&op))
     {
         const auto *var = model.getVariable(var_op->id);
+        if (!var || !var->type_id.isValid())
+        {
+            cl_op.code = CL_OPERAND_VOID;
+            return cl_op;
+        }
         const auto *type = model.getType(var->type_id);
 
         if (type && type->kind == Core::TypeKind::FUNCTION)
