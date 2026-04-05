@@ -1,11 +1,9 @@
 #pragma once
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
-#include "AnalysisManager.hpp"
-#include "CodeModel.hpp"
 #include "Exporter.hpp"
 
 namespace CodeListener::Exporters
@@ -14,15 +12,17 @@ namespace CodeListener::Exporters
 class JSONExporter : public Exporter
 {
   public:
-    explicit JSONExporter(std::ostream &os, AnnotationServices::AnalysisManager *manager = nullptr);
-    explicit JSONExporter(const std::string &filepath, AnnotationServices::AnalysisManager *manager = nullptr);
+    explicit JSONExporter(std::ostream &os);
+    explicit JSONExporter(const std::string &filepath);
 
-    void exportModel(const Core::CodeModel &model) override;
+  protected:
+    // JSON is a batch format: onEndModel assembles and dumps the whole document.
+    // Fine-grained hooks (onVisitType etc.) are not needed here.
+    void onEndModel(const Core::CodeModel &model) override;
 
   private:
     std::ofstream file_os;
     std::ostream &os;
-    AnnotationServices::AnalysisManager *analysis_manager;
 };
 
 } // namespace CodeListener::Exporters

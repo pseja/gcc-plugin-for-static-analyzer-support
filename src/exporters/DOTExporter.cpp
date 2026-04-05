@@ -8,64 +8,51 @@
 namespace CodeListener::Exporters
 {
 
-DOTExporter::DOTExporter(std::ostream &os, AnnotationServices::AnalysisManager *manager)
-    : os(os), analysis_manager(manager)
+DOTExporter::DOTExporter(std::ostream &os) : os(os)
 {
 }
 
-DOTExporter::DOTExporter(const std::string &filepath, AnnotationServices::AnalysisManager *manager)
-    : file_os(filepath), os(file_os), analysis_manager(manager)
+DOTExporter::DOTExporter(const std::string &filepath) : file_os(filepath), os(file_os)
 {
 }
 
-void DOTExporter::exportModel(const Core::CodeModel &model)
+void DOTExporter::onBeginModel(const Core::CodeModel &)
 {
     os << "digraph IR {\n";
     os << "    node [shape=none, fontname=\"Courier New\", fontsize=10];\n";
     os << "    edge [fontname=\"Courier New\", fontsize=9];\n";
     os << "    graph [rankdir=TB, splines=polyline, compound=true];\n\n";
-
-    for (const auto &func : model.getFunctions())
-    {
-        exportFunction(model, func);
-    }
-
-    if (analysis_manager)
-    {
-        const auto &cg = analysis_manager->getAnnotation<AnnotationServices::CallGraph>(model);
-
-        for (const auto &[caller_id, node] : cg.nodes)
-        {
-            for (const auto &edge : node.outgoing_calls)
-            {
-                if (!edge.callee)
-                {
-                    continue;
-                }
-
-                auto callee_id = *edge.callee;
-                const auto *callee = model.getFunction(callee_id);
-                if (!callee || callee->block_ids.empty())
-                {
-                    continue;
-                }
-
-                const auto *instr = model.getInstruction(edge.call_instruction);
-                if (!instr)
-                {
-                    continue;
-                }
-
-                os << "    block_" << instr->parent_block_id << " -> block_" << callee->block_ids.front()
-                   << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
-            }
-        }
-
-        os << "}\n";
-    }
 }
 
-void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Function &func)
+void DOTExporter::onEndModel(const Core::CodeModel &model)
+{
+    const auto &cg = analysis_manager.getAnnotation<AnnotationServices::CallGraph>(model);
+
+    for (const auto &[caller_id, node] : cg.nodes)
+    {
+        for (const auto &edge : node.outgoing_calls)
+        {
+            if (!edge.callee)
+                continue;
+
+            auto callee_id = *edge.callee;
+            const auto *callee = model.getFunction(callee_id);
+            if (!callee || callee->block_ids.empty())
+                continue;
+
+            const auto *instr = model.getInstruction(edge.call_instruction);
+            if (!instr)
+                continue;
+
+            os << "    block_" << instr->parent_block_id << " -> block_" << callee->block_ids.front()
+               << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
+        }
+    }
+
+    os << "}\n";
+}
+
+void DOTExporter::onBeginFunction(const Core::CodeModel &, const Core::Function &func)
 {
     os << "    subgraph cluster_func_" << func.id << " {\n";
     os << "        label=<<b>Function: " << escape(func.name) << "</b>>;\n";
@@ -73,90 +60,84 @@ void DOTExporter::exportFunction(const Core::CodeModel &model, const Core::Funct
     os << "        fillcolor=\"#f8f9fa\";\n";
     os << "        color=\"#6c757d\";\n";
     os << "        margin=15;\n\n";
-
-    for (auto block_id : func.block_ids)
-    {
-        exportBlock(model, *model.getBlock(block_id));
-    }
-    os << "    }\n\n";
-
-    for (auto block_id : func.block_ids)
-    {
-        const auto &block = model.getBlock(block_id);
-        auto src_id = block->id;
-        bool handled_edges = false;
-
-        if (!block->instruction_ids.empty())
-        {
-            const auto &last_instr = model.getInstruction(block->instruction_ids.back());
-
-            if (auto *sw_instr = std::get_if<Core::SwitchInstruction>(&last_instr->data))
-            {
-                for (const auto &sw_case : sw_instr->cases)
-                {
-                    if (sw_case.target_block_id.isValid())
-                    {
-                        std::string label =
-                            sw_case.low_value.has_value() ? formatOperand(model, sw_case.low_value.value()) : "default";
-                        if (sw_case.high_value.has_value())
-                        {
-                            label += " ... " + formatOperand(model, sw_case.high_value.value());
-                        }
-
-                        os << "    block_" << src_id << " -> block_" << sw_case.target_block_id << " [label=\""
-                           << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
-                    }
-                }
-                handled_edges = true;
-            }
-            else if (auto *cond_instr = std::get_if<Core::CondInstruction>(&last_instr->data))
-            {
-                if (cond_instr->true_target.isValid())
-                {
-                    os << "    block_" << src_id << " -> block_" << cond_instr->true_target
-                       << " [label=\"true\", color=\"#2e7d32\", fontcolor=\"#2e7d32\"];\n";
-                }
-                if (cond_instr->false_target.isValid())
-                {
-                    os << "    block_" << src_id << " -> block_" << cond_instr->false_target
-                       << " [label=\"false\", color=\"#c62828\", fontcolor=\"#c62828\"];\n";
-                }
-                handled_edges = true;
-            }
-        }
-
-        if (!handled_edges)
-        {
-            for (auto succ_id : block->successors)
-            {
-                os << "    block_" << src_id << " -> block_" << succ_id << " [color=\"#495057\"];\n";
-            }
-        }
-    }
 }
 
-void DOTExporter::exportBlock(const Core::CodeModel &model, const Core::Block &block)
+void DOTExporter::onEndFunction(const Core::CodeModel &, const Core::Function &)
+{
+    os << "    }\n\n";
+}
+
+void DOTExporter::onBeginBlock(const Core::CodeModel &, const Core::Block &block)
 {
     os << "        block_" << block.id << " [label=<\n";
     os << "            <table border=\"0\" cellborder=\"1\" cellspacing=\"0\" cellpadding=\"4\">\n";
 
-    os << "                <tr><td bgcolor=\"#e9ecef\" colspan=\"2\" align=\"center\">" << "<b>Block "
-       << escape(block.name) << " (" << block.id << ")</b></td></tr>\n";
+    os << "                <tr><td bgcolor=\"#e9ecef\" colspan=\"2\" align=\"center\">"
+       << "<b>Block " << escape(block.name) << " (" << block.id << ")</b></td></tr>\n";
 
     if (block.instruction_ids.empty())
     {
         os << "                <tr><td bgcolor=\"#ffffff\" colspan=\"2\"><i>&lt;empty&gt;</i></td></tr>\n";
     }
-    else
+}
+
+void DOTExporter::onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &instr)
+{
+    os << exportInstruction(model, instr);
+}
+
+void DOTExporter::onEndBlock(const Core::CodeModel &model, const Core::Block &block)
+{
+    os << "            </table>\n";
+    os << "        >];\n";
+    emitBlockEdges(model, block);
+}
+
+void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block &block)
+{
+    auto src_id = block.id;
+    bool handled_edges = false;
+
+    if (!block.instruction_ids.empty())
     {
-        for (auto instr_id : block.instruction_ids)
+        const auto *last_instr = model.getInstruction(block.instruction_ids.back());
+
+        if (auto *sw_instr = std::get_if<Core::SwitchInstruction>(&last_instr->data))
         {
-            os << exportInstruction(model, *model.getInstruction(instr_id));
+            for (const auto &sw_case : sw_instr->cases)
+            {
+                if (sw_case.target_block_id.isValid())
+                {
+                    std::string label =
+                        sw_case.low_value.has_value() ? formatOperand(model, sw_case.low_value.value()) : "default";
+                    if (sw_case.high_value.has_value())
+                        label += " ... " + formatOperand(model, sw_case.high_value.value());
+
+                    os << "    block_" << src_id << " -> block_" << sw_case.target_block_id << " [label=\""
+                       << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
+                }
+            }
+            handled_edges = true;
+        }
+        else if (auto *cond_instr = std::get_if<Core::CondInstruction>(&last_instr->data))
+        {
+            if (cond_instr->true_target.isValid())
+                os << "    block_" << src_id << " -> block_" << cond_instr->true_target
+                   << " [label=\"true\", color=\"#2e7d32\", fontcolor=\"#2e7d32\"];\n";
+            if (cond_instr->false_target.isValid())
+                os << "    block_" << src_id << " -> block_" << cond_instr->false_target
+                   << " [label=\"false\", color=\"#c62828\", fontcolor=\"#c62828\"];\n";
+            handled_edges = true;
         }
     }
 
-    os << "            </table>\n";
-    os << "        >];\n";
+    if (!handled_edges)
+    {
+        for (auto succ_id : block.successors)
+        {
+            os << "    block_" << src_id << " -> block_" << succ_id << " [color=\"#495057\"];\n";
+        }
+    }
 }
 
 std::string DOTExporter::exportInstruction(const Core::CodeModel &model, const Core::Instruction &instr)

@@ -316,17 +316,15 @@ void to_json(json &j, const CallGraph &cg)
 namespace Exporters
 {
 
-JSONExporter::JSONExporter(std::ostream &os, AnnotationServices::AnalysisManager *manager)
-    : os(os), analysis_manager(manager)
+JSONExporter::JSONExporter(std::ostream &os) : os(os)
 {
 }
 
-JSONExporter::JSONExporter(const std::string &filepath, AnnotationServices::AnalysisManager *manager)
-    : file_os(filepath), os(file_os), analysis_manager(manager)
+JSONExporter::JSONExporter(const std::string &filepath) : file_os(filepath), os(file_os)
 {
 }
 
-void JSONExporter::exportModel(const Core::CodeModel &model)
+void JSONExporter::onEndModel(const Core::CodeModel &model)
 {
     json j_model;
 
@@ -336,15 +334,10 @@ void JSONExporter::exportModel(const Core::CodeModel &model)
     j_model["blocks"] = model.getBlocks();
     j_model["instructions"] = model.getInstructions();
 
-    if (analysis_manager)
-    {
-        json j_annotations = json::object();
-
-        const auto &call_graph = analysis_manager->getAnnotation<AnnotationServices::CallGraph>(model);
-        j_annotations["call_graph"] = call_graph;
-
-        j_model["annotations"] = j_annotations;
-    }
+    json j_annotations = json::object();
+    const auto &call_graph = analysis_manager.getAnnotation<AnnotationServices::CallGraph>(model);
+    j_annotations["call_graph"] = call_graph;
+    j_model["annotations"] = j_annotations;
 
     os << j_model.dump(4) << "\n";
 }

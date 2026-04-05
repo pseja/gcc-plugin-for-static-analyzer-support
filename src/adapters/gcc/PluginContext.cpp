@@ -6,7 +6,6 @@
 #include <context.h>
 #include <tree-pass.h>
 
-#include "AnalysisManager.hpp"
 #include "DOTExporter.hpp"
 #include "JSONExporter.hpp"
 #include "Pass.hpp"
@@ -126,12 +125,11 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     }
 
     const Core::CodeModel &model = PluginContext::getInstance().getCodeModel();
-    AnnotationServices::AnalysisManager analysis_manager;
 
     // JSON export
     if (args->gen_json_file.has_value())
     {
-        CodeListener::Exporters::JSONExporter exporter(args->gen_json_file.value(), &analysis_manager);
+        CodeListener::Exporters::JSONExporter exporter(args->gen_json_file.value());
         exporter.exportModel(model);
         reporter.report(Core::DiagnosticLevel::Info, "Exported JSON to " + args->gen_json_file.value());
     }
@@ -139,7 +137,7 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     // DOT export
     if (args->gen_dot_file.has_value())
     {
-        CodeListener::Exporters::DOTExporter dot_exporter(args->gen_dot_file.value(), &analysis_manager);
+        CodeListener::Exporters::DOTExporter dot_exporter(args->gen_dot_file.value());
         dot_exporter.exportModel(model);
         reporter.report(Core::DiagnosticLevel::Info, "Exported DOT to " + args->gen_dot_file.value());
     }
