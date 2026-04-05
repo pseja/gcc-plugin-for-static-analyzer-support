@@ -1,4 +1,3 @@
-#include <iostream>    // std::cerr, std::cout
 #include <string_view> // std::string_view
 #include <charconv>    // std::from_chars
 
@@ -9,7 +8,7 @@
 namespace CodeListener::CompilerAbstractionLayer
 {
 
-PluginArgs::PluginArgs(const plugin_name_args *plugin_info)
+PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticReporter &reporter)
     : base_name(plugin_info->base_name ? plugin_info->base_name : ""),
       full_name(plugin_info->full_name ? plugin_info->full_name : "")
 {
@@ -31,7 +30,8 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info)
                 auto [ptr, ec] = std::from_chars(value.data(), value.data() + value.size(), verbose);
                 if (ec != std::errc{})
                 {
-                    std::cerr << "CodeListener: error: invalid integer for 'verbose': " << value << "\n";
+                    reporter.report(Core::DiagnosticLevel::Error,
+                                    "CodeListener: error: invalid integer for 'verbose': " + std::string(value));
                     valid = false;
                 }
             }
@@ -76,7 +76,8 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info)
         {
             if (value.empty())
             {
-                std::cerr << "CodeListener: error: mandatory value omitted for pid-file\n";
+                reporter.report(Core::DiagnosticLevel::Error,
+                                "CodeListener: error: mandatory value omitted for pid-file");
                 valid = false;
             }
             else
@@ -88,7 +89,8 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info)
         {
             if (value.empty())
             {
-                std::cerr << "CodeListener: error: mandatory value omitted for type-dot\n";
+                reporter.report(Core::DiagnosticLevel::Error,
+                                "CodeListener: error: mandatory value omitted for type-dot");
                 valid = false;
             }
             else
@@ -98,21 +100,22 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info)
         }
         else
         {
-            std::cerr << "CodeListener: error: unhandled plug-in argument: " << key << "\n";
+            reporter.report(Core::DiagnosticLevel::Error,
+                            "CodeListener: error: unhandled plug-in argument: " + std::string(key));
             valid = false;
         }
     }
 }
 
-void PluginArgs::print() const
+void PluginArgs::print(Core::DiagnosticReporter &reporter) const
 {
-    std::cerr << "PluginArgs:\n";
-    std::cerr << "  Base name: '" << base_name << "'\n";
-    std::cerr << "  Full name: '" << full_name << "'\n";
-    std::cerr << "  Arguments:\n";
+    reporter.report(Core::DiagnosticLevel::Info, "PluginArgs:");
+    reporter.report(Core::DiagnosticLevel::Info, "  Base name: '" + base_name + "'");
+    reporter.report(Core::DiagnosticLevel::Info, "  Full name: '" + full_name + "'");
+    reporter.report(Core::DiagnosticLevel::Info, "  Arguments:");
     for (const auto &[key, value] : raw_args)
     {
-        std::cerr << "    Key: '" << key << "', Value: '" << value << "'\n";
+        reporter.report(Core::DiagnosticLevel::Info, "    Key: '" + key + "', Value: '" + value + "'");
     }
 }
 

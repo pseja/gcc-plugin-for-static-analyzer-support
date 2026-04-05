@@ -1,6 +1,6 @@
 #include <cstdlib>
 #include <fstream>
-#include <iostream>
+#include <sstream>
 
 #include <gcc-plugin.h>
 #include <context.h>
@@ -46,7 +46,7 @@ PluginContext &PluginContext::getInstance()
 
 void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin_gcc_version *version)
 {
-    args = std::make_unique<PluginArgs>(plugin_info);
+    args = std::make_unique<PluginArgs>(plugin_info, reporter);
     adapter = std::make_unique<GCCAdapter>(model, reporter);
 
     init_print(version);
@@ -75,7 +75,7 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     // cleanup
     register_callback(plugin_info->base_name, PLUGIN_FINISH, on_plugin_finish, this);
 
-    std::cerr << "Code Listener GCC plugin initialized\n";
+    reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin initialized");
 }
 
 const PluginArgs *PluginContext::getArgs() const
@@ -100,12 +100,12 @@ GCCAdapter *PluginContext::getAdapter()
 
 void PluginContext::init_print(const plugin_gcc_version *version)
 {
-    std::cerr << "Initializing Code Listener GCC plugin\n";
-    std::cerr << "GCC version: " << version->basever << "\n";
+    reporter.report(Core::DiagnosticLevel::Info, "Initializing Code Listener GCC plugin");
+    reporter.report(Core::DiagnosticLevel::Info, std::string("GCC version: ") + version->basever);
 
     if (args)
     {
-        args->print();
+        args->print(reporter);
     }
 }
 
@@ -114,70 +114,70 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     (void)gcc_data;
     (void)user_data;
 
-    AnnotationServices::AnalysisManager analysis_manager;
-
-    std::cerr << "Code Listener GCC plugin starting to export\n";
+    Core::DiagnosticReporter &reporter = PluginContext::getInstance().getDiagnosticReporter();
+    reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin starting to export");
 
     const PluginArgs *args = PluginContext::getInstance().getArgs();
     if (!args)
     {
-        std::cerr << "Code Listener GCC plugin finished, but weren't able to retrieve arguments\n";
+        reporter.report(Core::DiagnosticLevel::Error,
+                        "Code Listener GCC plugin finished, but weren't able to retrieve arguments");
         return;
     }
 
-    // if (args->gen_json_file.has_value())
-    // {
-    //     std::ofstream json_out(args->gen_json_file.value());
-    //     if (json_out.is_open())
-    //     {
-    //         CodeListener::Exporters::JSONExporter exporter(json_out, &analysis_manager);
-    //         exporter.exportModel(PluginContext::getInstance().getCodeModel());
-    //         std::cerr << "Exported JSON to " << args->gen_json_file.value() << "\n";
-    //     }
-    //     else
-    //     {
-    //         std::cerr << "Failed to open JSON file: " << args->gen_json_file.value() << "\n";
-    //     }
-    // }
+    const Core::CodeModel &model = PluginContext::getInstance().getCodeModel();
+    AnnotationServices::AnalysisManager analysis_manager;
 
-    // if (args->gen_dot_file.has_value())
-    // {
-    //     std::ofstream dot_out(args->gen_dot_file.value());
-    //     if (dot_out.is_open())
-    //     {
-    //         CodeListener::Exporters::DOTExporter dot_exporter(dot_out, &analysis_manager);
-    //         dot_exporter.exportModel(PluginContext::getInstance().getCodeModel());
-    //         std::cerr << "Exported DOT to " << args->gen_dot_file.value() << "\n";
-    //     }
-    //     else
-    //     {
-    //         std::cerr << "Failed to open DOT file: " << args->gen_dot_file.value() << "\n";
-    //     }
-    // }
+    // JSON export
+    if (args->gen_json_file.has_value())
+    {
+        CodeListener::Exporters::JSONExporter exporter(args->gen_json_file.value(), &analysis_manager);
+        exporter.exportModel(model);
+        reporter.report(Core::DiagnosticLevel::Info, "Exported JSON to " + args->gen_json_file.value());
+    }
 
-    std::cerr << "Starting Predator pipeline...\n";
+    // DOT export
+    if (args->gen_dot_file.has_value())
+    {
+        CodeListener::Exporters::DOTExporter dot_exporter(args->gen_dot_file.value(), &analysis_manager);
+        dot_exporter.exportModel(model);
+        reporter.report(Core::DiagnosticLevel::Info, "Exported DOT to " + args->gen_dot_file.value());
+    }
+
+    // skip cl (predator) pipeline when dry-run and no pp output requested
+    if (!args->use_analyzer && !args->dump_pp_file.has_value())
+    {
+        reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished (dry-run)");
+        return;
+    }
+
+    reporter.report(Core::DiagnosticLevel::Info, "Starting Predator pipeline...");
 
     cl_global_init_defaults("cl_gcc_adapter", 0);
-    // "listener=\"easy\""
-    // "listener=\"dotgen\""
-    // "listener=\"typedot\" listener_args=\"types.dot\""
-    // "listener=\"pp\" listener_args=\"pp.txt\""
-    // "listener=\"pp_with_types\" listener_args=\"pp_with_types.txt\""
-    struct cl_code_listener *predator_listener =
-        cl_code_listener_create("listener=\"pp\" listener_args=\"dump_new.txt\" clf=\"unfold_switch,unify_labels_gl\"");
+
+    const char *listener = args->dump_types ? "pp_with_types" : "pp";
+    const std::string out_file = args->dump_pp_file.value_or("");
+    // full switch-unfolding when running the analyzer, minimal otherwise
+    const char *clf = args->use_analyzer ? "unfold_switch,unify_labels_gl" : "unify_labels_fnc";
+
+    std::ostringstream oss;
+    oss << "listener=\"" << listener << "\" listener_args=\"" << out_file << "\" clf=\"" << clf << "\"";
+    std::string config = oss.str();
+
+    struct cl_code_listener *predator_listener = cl_code_listener_create(config.c_str());
     if (predator_listener)
     {
-        CodeListener::Adapters::PredatorAdapter adapter(PluginContext::getInstance().getCodeModel(), predator_listener);
+        CodeListener::Adapters::PredatorAdapter adapter(model, predator_listener);
         adapter.emit();
-        std::cerr << "Predator pipeline finished.\n";
+        reporter.report(Core::DiagnosticLevel::Info, "Predator pipeline finished.");
     }
     else
     {
-        std::cerr << "Failed to create Predator listener\n";
+        reporter.report(Core::DiagnosticLevel::Error, "Failed to create Predator listener");
     }
     cl_global_cleanup();
 
-    std::cerr << "Code Listener GCC plugin finished\n";
+    reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished");
 }
 
 } // namespace CodeListener::CompilerAbstractionLayer

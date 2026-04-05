@@ -118,9 +118,8 @@ def main() -> None:
             continue
 
         # new pipeline
-        raw_new = os.path.join(output_dir, "dump_new.txt")
-        if os.path.exists(raw_new):
-            os.remove(raw_new)
+        if os.path.exists(pp_new):
+            os.remove(pp_new)
 
         cmd_new = [
             "gcc-12",
@@ -128,21 +127,18 @@ def main() -> None:
             "-c",
             abs_test,
             f"-fplugin={NEW_PLUGIN}",
+            f"-fplugin-arg-libcl_gcc-dump-pp={pp_new}",
             "-o",
             "/dev/null",
         ]
-        res_new = subprocess.run(
-            cmd_new, capture_output=True, text=True, cwd=output_dir
-        )
-        if res_new.returncode != 0 or not os.path.exists(raw_new):
+        res_new = subprocess.run(cmd_new, capture_output=True, text=True)
+        if res_new.returncode != 0 or not os.path.exists(pp_new):
             print("FAIL [new pipeline crashed]")
             if res_new.stderr.strip():
                 print(
-                    f"    {'\n    '.join(res_new.stderr.strip().splitlines()[-9:])}")
+                    f"    {"\n".join(['    ' + l for l in res_new.stderr.strip().splitlines()[-9:]])}")
             failed += 1
             continue
-
-        os.rename(raw_new, pp_new)
 
         # normalize and compare results
         with open(pp_old) as f:
