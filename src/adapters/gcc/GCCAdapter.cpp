@@ -196,7 +196,7 @@ Core::TypeId GCCAdapter::getOrCreateType(tree type_tree)
     break;
 
     case ENUMERAL_TYPE: {
-        type->data = Core::EnumType{};
+        type->data = Core::EnumType{.is_unsigned = (bool)TYPE_UNSIGNED(type_tree)};
     }
     break;
 

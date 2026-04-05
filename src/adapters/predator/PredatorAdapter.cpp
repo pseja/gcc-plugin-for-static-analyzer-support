@@ -1,6 +1,7 @@
 #include <variant>
 #include <cstring>
 
+#include "EnumType.hpp"
 #include "FunctionType.hpp"
 #include "PredatorAdapter.hpp"
 #include "UnionType.hpp"
@@ -140,6 +141,7 @@ void PredatorAdapter::emit()
                                   }
                               },
                               [&](const Core::IntegerType &it) { cl_t->is_unsigned = it.is_unsigned; },
+                              [&](const Core::EnumType &et) { cl_t->is_unsigned = et.is_unsigned; },
                               [&](const auto &) { /* primitives have no items */ }},
                    type.data);
     }
