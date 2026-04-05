@@ -163,7 +163,8 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     // "listener=\"typedot\" listener_args=\"types.dot\""
     // "listener=\"pp\" listener_args=\"pp.txt\""
     // "listener=\"pp_with_types\" listener_args=\"pp_with_types.txt\""
-    struct cl_code_listener *predator_listener = cl_code_listener_create("listener=\"easy\"");
+    struct cl_code_listener *predator_listener =
+        cl_code_listener_create("listener=\"pp\" listener_args=\"dump_new.txt\" clf=\"unfold_switch,unify_labels_gl\"");
     if (predator_listener)
     {
         CodeListener::Adapters::PredatorAdapter adapter(PluginContext::getInstance().getCodeModel(), predator_listener);
