@@ -154,6 +154,12 @@ void PredatorAdapter::emit()
         cl_v->name = persistString(var.name);
         cl_v->artificial = var.artificial;
         cl_v->loc = mapLocation(var.source_location);
+
+        if (const auto *sv = std::get_if<Core::StandardVariable>(&var.data))
+        {
+            cl_v->is_extern = (sv->storage_duration == Core::StorageDuration::EXTERN);
+            cl_v->initialized = sv->initial_value.has_value();
+        }
     }
 
     if (listener->file_open)
