@@ -1141,6 +1141,15 @@ void GCCAdapter::processInstruction(gimple *stmt, Core::Block *block)
 
         // opcode
         enum tree_code rhs_code = gimple_assign_rhs_code(stmt);
+
+        // skip non-clobber CONSTRUCTOR assignments, because they are stored as variable initializers in the old
+        // pipeline
+        if (rhs_code == CONSTRUCTOR)
+        {
+            instruction->kind = Core::InstructionKind::NOP;
+            break;
+        }
+
         assign.opcode = mapTreeCodeToOpCode(rhs_code);
 
         enum gimple_rhs_class rhs_class = gimple_assign_rhs_class(stmt);
