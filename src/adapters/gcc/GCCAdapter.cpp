@@ -1199,8 +1199,42 @@ void GCCAdapter::processInstruction(gimple *stmt, Core::Block *block)
             }
         }
 
-        tree fn = gimple_call_fn(stmt);
-        call.callee = parseOperand(fn);
+        if (gimple_call_internal_p(stmt))
+        {
+            internal_fn ifn = gimple_call_internal_fn(stmt);
+            const char *fn_name = internal_fn_name(ifn);
+            std::string fn_str = fn_name ? fn_name : "<internal>";
+
+            // lazily create a synthetic function type for internal builtins
+            if (!builtin_fn_type_id.isValid())
+            {
+                Core::Type *t = model.createType();
+                t->name = "<builtin_fnc_type>";
+                t->kind = Core::TypeKind::FUNCTION;
+                t->data = Core::FunctionType{};
+                builtin_fn_type_id = t->id;
+            }
+
+            auto it = internal_fn_cache.find(fn_str);
+            if (it == internal_fn_cache.end())
+            {
+                Core::Variable *v = model.createVariable();
+                v->name = fn_str;
+                v->type_id = builtin_fn_type_id;
+                v->artificial = true;
+                internal_fn_cache[fn_str] = v->id;
+                call.callee = Core::VariableOperand{v->id, {}};
+            }
+            else
+            {
+                call.callee = Core::VariableOperand{it->second, {}};
+            }
+        }
+        else
+        {
+            tree fn = gimple_call_fn(stmt);
+            call.callee = parseOperand(fn);
+        }
 
         // return value
         tree lhs = gimple_call_lhs(stmt);

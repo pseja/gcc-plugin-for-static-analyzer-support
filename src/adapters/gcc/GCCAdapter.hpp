@@ -41,6 +41,10 @@ class GCCAdapter
     std::unordered_map<tree, Core::TypeId> type_cache;
     std::unordered_map<basic_block, Core::BlockId> block_cache;
 
+    // synthetic type and variable cache for GCC internal functions
+    Core::TypeId builtin_fn_type_id;
+    std::unordered_map<std::string, Core::VariableId> internal_fn_cache;
+
     Core::TypeId getOrCreateType(tree type_tree);
 
     Core::Initializer parseInitializer(tree init_tree);
