@@ -694,19 +694,20 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
         }
         else if (cl_op.type->code == CL_TYPE_REAL)
         {
+            cl_op.data.cst.code = CL_TYPE_REAL;
             cl_op.data.cst.data.cst_real.value = std::strtod(const_op->value.c_str(), nullptr);
         }
         else
         {
-            if (!const_op->value.empty() && const_op->value.front() == '"')
+            // INT, ENUM, BOOL, PTR, CHAR, UNKNOWN are all stored as integer
+            cl_op.data.cst.code = CL_TYPE_INT;
+            if (cl_op.type->is_unsigned)
             {
-                cl_op.data.cst.code = CL_TYPE_STRING;
-                std::string unquoted = const_op->value.substr(1, const_op->value.length() - 2);
-                cl_op.data.cst.data.cst_string.value = persistString(unquoted);
+                cl_op.data.cst.data.cst_uint.value = std::strtoul(const_op->value.c_str(), nullptr, 10);
             }
             else
             {
-                cl_op.data.cst.data.cst_string.value = persistString(const_op->value);
+                cl_op.data.cst.data.cst_int.value = std::strtol(const_op->value.c_str(), nullptr, 10);
             }
         }
     }
