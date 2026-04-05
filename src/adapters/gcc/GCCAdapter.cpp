@@ -176,7 +176,8 @@ Core::TypeId GCCAdapter::getOrCreateType(tree type_tree)
     type->is_volatile = TYPE_VOLATILE(type_tree);
     type->is_atomic = TYPE_ATOMIC(type_tree);
 
-    if (TYPE_SIZE(type_tree) && tree_fits_uhwi_p(TYPE_SIZE(type_tree)))
+    if (TYPE_SIZE(type_tree) && TREE_CODE(TYPE_SIZE(type_tree)) == INTEGER_CST &&
+        tree_fits_uhwi_p(TYPE_SIZE(type_tree)))
     {
         type->size_bits = tree_to_uhwi(TYPE_SIZE(type_tree));
     }
@@ -233,15 +234,14 @@ Core::TypeId GCCAdapter::getOrCreateType(tree type_tree)
         if (TYPE_DOMAIN(type_tree))
         {
             tree max = TYPE_MAX_VALUE(TYPE_DOMAIN(type_tree));
-            if (max && tree_fits_uhwi_p(max))
+            if (max && TREE_CODE(max) == INTEGER_CST && tree_fits_uhwi_p(max))
             {
                 array_type.element_count = tree_to_uhwi(max) + 1;
             }
             else
             {
                 reporter.report(Core::DiagnosticLevel::Warning,
-                                "Array type has a size that is unknown or too large to fit in an unsigned integer (" +
-                                    std::to_string(tree_to_uhwi(max) + 1) + "), treating as having unknown size");
+                                "Array type has a VLA or non-constant domain max, treating as having unknown size");
                 array_type.element_count = std::nullopt;
             }
         }
