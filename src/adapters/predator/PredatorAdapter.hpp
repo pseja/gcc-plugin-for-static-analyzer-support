@@ -40,8 +40,6 @@ class PredatorAdapter
     // TODO: implement
     struct cl_accessor *mapAccessor(const Core::Operand &op);
 
-    // TODO: implement
-    void emitGlobals();
     void emitFunctions();
     void emitFunction(const Core::Function &func);
     void emitInstruction(const Core::Instruction &inst);
