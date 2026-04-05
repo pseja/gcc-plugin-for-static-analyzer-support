@@ -299,7 +299,8 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
                 if (std::holds_alternative<Core::GotoInstruction>(inst->data) ||
                     std::holds_alternative<Core::ReturnInstruction>(inst->data) ||
                     std::holds_alternative<Core::CondInstruction>(inst->data) ||
-                    std::holds_alternative<Core::SwitchInstruction>(inst->data))
+                    std::holds_alternative<Core::SwitchInstruction>(inst->data) ||
+                    std::holds_alternative<Core::AbortInstruction>(inst->data))
                 {
                     has_terminator = true;
                 }
@@ -621,6 +622,13 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
                                    }
                                }
                            }
+                       }
+                   },
+                   [&](const Core::AbortInstruction &) {
+                       cl_i.code = CL_INSN_ABORT;
+                       if (listener->insn)
+                       {
+                           listener->insn(listener, &cl_i);
                        }
                    },
                    [&](const auto &) {
