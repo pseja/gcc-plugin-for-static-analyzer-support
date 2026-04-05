@@ -10,6 +10,7 @@
 #include <gimple.h>              // gimple_location
 #include <gimple-iterator.h>     // gimple_stmt_iterator, gsi_start_bb, gsi_end_p, gsi_next, gsi_stmt
 #include <gimple-pretty-print.h> // debug_gimple_stmt
+#include <internal-fn.h>         // internal_fn_name
 #include <wide-int-print.h>
 #include <print-tree.h>
 #include "coretypes.h"
@@ -18,6 +19,7 @@
 
 #include "DiagnosticLevel.hpp"
 #include "FunctionId.hpp"
+#include "FunctionType.hpp"
 #include "GCCAdapter.hpp"
 #include "Instruction.hpp"
 #include "Operand.hpp"

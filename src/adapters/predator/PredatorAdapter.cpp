@@ -194,9 +194,7 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
 {
     if (listener->fnc_open)
     {
-        struct cl_operand cl_func_op
-        {
-        };
+        struct cl_operand cl_func_op{};
         cl_func_op.code = CL_OPERAND_CST;
 
         cl_types_pool.emplace_back();
@@ -223,9 +221,7 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
         cl_func_op.data.cst.data.cst_fnc.name = persistString(func.name);
         cl_func_op.data.cst.data.cst_fnc.is_extern = false;
 
-        struct cl_loc loc
-        {
-        };
+        struct cl_loc loc{};
         loc.file = persistString(model.getFilename());
         loc.line = 1;
         loc.column = 1;
@@ -250,14 +246,10 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
     if (!func.block_ids.empty() && listener->insn)
     {
         const auto *entry_bb = model.getBlock(func.block_ids.front());
-        struct cl_insn cl_i
-        {
-        };
+        struct cl_insn cl_i{};
         cl_i.code = CL_INSN_JMP;
 
-        struct cl_loc loc
-        {
-        };
+        struct cl_loc loc{};
         loc.file = persistString(model.getFilename());
         loc.line = 1;
         loc.column = 1;
@@ -310,9 +302,7 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
         if (!has_terminator && !bb->successors.empty())
         {
             const auto *succ_bb = model.getBlock(bb->successors[0]);
-            struct cl_insn cl_i
-            {
-            };
+            struct cl_insn cl_i{};
             cl_loc loc{};
             loc.file = persistString(model.getFilename());
             loc.line = 1;
@@ -349,9 +339,7 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
 
 void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
 {
-    struct cl_insn cl_i
-    {
-    };
+    struct cl_insn cl_i{};
     cl_i.loc = mapLocation(inst.source_location);
 
     std::visit(
@@ -478,9 +466,7 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
                    [&](const Core::CondInstruction &cond) {
                        if (cond.opcode != Core::OpCode::NONE)
                        {
-                           struct cl_var fake_var
-                           {
-                           };
+                           struct cl_var fake_var{};
                            fake_var.uid = next_artificial_var_uid++;
                            fake_var.name = nullptr;
                            fake_var.artificial = true;
@@ -496,9 +482,7 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
                            cl_operands_pool.push_back(mapOperand(cond.rhs));
                            const struct cl_operand *src2_op = &cl_operands_pool.back();
 
-                           struct cl_operand dst_op
-                           {
-                           };
+                           struct cl_operand dst_op{};
                            dst_op.code = CL_OPERAND_VAR;
                            dst_op.type = src1_op->type;
                            dst_op.data.var = dst_var;
@@ -506,9 +490,7 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
                            cl_operands_pool.push_back(dst_op);
                            const struct cl_operand *dst_op_ptr = &cl_operands_pool.back();
 
-                           struct cl_insn binop_i
-                           {
-                           };
+                           struct cl_insn binop_i{};
                            binop_i.loc = cl_i.loc;
                            binop_i.code = CL_INSN_BINOP;
                            binop_i.data.insn_binop.dst = dst_op_ptr;
@@ -645,9 +627,7 @@ const char *PredatorAdapter::persistString(const std::string &str)
 
 struct cl_loc PredatorAdapter::mapLocation(const Core::SourceLocation &loc)
 {
-    struct cl_loc cl_l
-    {
-    };
+    struct cl_loc cl_l{};
     cl_l.file = persistString(loc.file);
     cl_l.line = loc.line;
     cl_l.column = loc.column;
@@ -687,9 +667,7 @@ struct cl_var *PredatorAdapter::findVariable(const Core::Variable *var)
 
 struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
 {
-    struct cl_operand cl_op
-    {
-    };
+    struct cl_operand cl_op{};
 
     if (auto *const_op = std::get_if<Core::ConstantOperand>(&op))
     {
