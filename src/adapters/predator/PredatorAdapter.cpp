@@ -558,15 +558,32 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
                                const struct cl_operand *val_lo = nullptr;
                                const struct cl_operand *val_hi = nullptr;
 
-                               if (c.low_value.has_value())
+                               if (!c.low_value.has_value())
                                {
+                                   // default case: the old CL requires CL_OPERAND_VOID for both lo and hi
+                                   cl_operands_pool.emplace_back();
+                                   cl_operands_pool.back().code = CL_OPERAND_VOID;
+                                   val_lo = &cl_operands_pool.back();
+                                   cl_operands_pool.emplace_back();
+                                   cl_operands_pool.back().code = CL_OPERAND_VOID;
+                                   val_hi = &cl_operands_pool.back();
+                               }
+                               else
+                               {
+                                   // regular or range case: both lo and hi must be CL_OPERAND_CST/CL_TYPE_INT
                                    cl_operands_pool.push_back(mapOperand(*c.low_value));
                                    val_lo = &cl_operands_pool.back();
-                               }
-                               if (c.high_value.has_value())
-                               {
-                                   cl_operands_pool.push_back(mapOperand(*c.high_value));
-                                   val_hi = &cl_operands_pool.back();
+                                   if (c.high_value.has_value())
+                                   {
+                                       cl_operands_pool.push_back(mapOperand(*c.high_value));
+                                       val_hi = &cl_operands_pool.back();
+                                   }
+                                   else
+                                   {
+                                       // single case: hi == lo
+                                       cl_operands_pool.push_back(mapOperand(*c.low_value));
+                                       val_hi = &cl_operands_pool.back();
+                                   }
                                }
 
                                const auto *target_bb = model.getBlock(c.target_block_id);
