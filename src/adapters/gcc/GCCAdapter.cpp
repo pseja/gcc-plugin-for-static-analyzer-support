@@ -799,6 +799,7 @@ static Core::OpCode mapTreeCodeToOpCode(enum tree_code code)
         return Core::OpCode::SUB;
     case MULT_EXPR:
         return Core::OpCode::MUL;
+    case RDIV_EXPR:
     case TRUNC_DIV_EXPR:
     case CEIL_DIV_EXPR:
     case FLOOR_DIV_EXPR:
