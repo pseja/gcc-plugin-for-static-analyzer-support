@@ -6,8 +6,8 @@
 #include "PluginContext.hpp"
 #include "register_plugin.hpp"
 
-// required by GCC to indicate that the plugin is GPL compatible
-// int plugin_is_GPL_compatible; // FIXME: defined in predator already
+// required by GCC to indicate that the plugin is GPL-compatible
+int plugin_is_GPL_compatible;
 
 namespace CodeListener::CompilerAbstractionLayer
 {

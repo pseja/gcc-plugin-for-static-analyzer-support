@@ -1,6 +1,4 @@
-#include <cstdlib>
 #include <fstream>
-#include <sstream>
 
 #include <gcc-plugin.h>
 #include <context.h>
@@ -8,16 +6,9 @@
 
 #include "DOTExporter.hpp"
 #include "JSONExporter.hpp"
+#include "PPExporter.hpp"
 #include "Pass.hpp"
 #include "PluginContext.hpp"
-#include "../predator/PredatorAdapter.hpp"
-
-extern "C"
-{
-    void cl_global_init_defaults(const char *app_name, int debug_level);
-    struct cl_code_listener *cl_code_listener_create(const char *config_string);
-    void cl_global_cleanup(void);
-}
 
 namespace CodeListener::CompilerAbstractionLayer
 {
@@ -142,38 +133,13 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
         reporter.report(Core::DiagnosticLevel::Info, "Exported DOT to " + args->gen_dot_file.value());
     }
 
-    // skip cl (predator) pipeline when dry-run and no pp output requested
-    if (!args->use_analyzer && !args->dump_pp_file.has_value())
+    // PP export
+    if (args->dump_pp_file.has_value())
     {
-        reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished (dry-run)");
-        return;
+        CodeListener::Exporters::PPExporter pp_exporter(args->dump_pp_file.value());
+        pp_exporter.exportModel(model);
+        reporter.report(Core::DiagnosticLevel::Info, "Exported PP to " + args->dump_pp_file.value());
     }
-
-    reporter.report(Core::DiagnosticLevel::Info, "Starting Predator pipeline...");
-
-    cl_global_init_defaults("cl_gcc_adapter", 0);
-
-    const char *listener = args->dump_types ? "pp_with_types" : "pp";
-    const std::string out_file = args->dump_pp_file.value_or("");
-    // full switch-unfolding when running the analyzer, minimal otherwise
-    const char *clf = args->use_analyzer ? "unfold_switch,unify_labels_gl" : "unify_labels_fnc";
-
-    std::ostringstream oss;
-    oss << "listener=\"" << listener << "\" listener_args=\"" << out_file << "\" clf=\"" << clf << "\"";
-    std::string config = oss.str();
-
-    struct cl_code_listener *predator_listener = cl_code_listener_create(config.c_str());
-    if (predator_listener)
-    {
-        CodeListener::Adapters::PredatorAdapter adapter(model, predator_listener);
-        adapter.emit();
-        reporter.report(Core::DiagnosticLevel::Info, "Predator pipeline finished.");
-    }
-    else
-    {
-        reporter.report(Core::DiagnosticLevel::Error, "Failed to create Predator listener");
-    }
-    cl_global_cleanup();
 
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished");
 }
