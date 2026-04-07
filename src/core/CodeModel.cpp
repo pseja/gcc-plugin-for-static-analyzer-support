@@ -11,44 +11,93 @@ namespace CodeListener::Core
 
 const Type *CodeModel::getType(TypeId id) const
 {
+    if (!id.isValid() || id.index >= types_pool.size())
+    {
+        return nullptr;
+    }
+
     return &types_pool[id];
 }
 const Variable *CodeModel::getVariable(VariableId id) const
 {
+    if (!id.isValid() || id.index >= variables_pool.size())
+    {
+        return nullptr;
+    }
+
     return &variables_pool[id];
 }
 const Function *CodeModel::getFunction(FunctionId id) const
 {
+    if (!id.isValid() || id.index >= functions_pool.size())
+    {
+        return nullptr;
+    }
+
     return &functions_pool[id];
 }
 const Block *CodeModel::getBlock(BlockId id) const
 {
+    if (!id.isValid() || id.index >= blocks_pool.size())
+    {
+        return nullptr;
+    }
+
     return &blocks_pool[id];
 }
 const Instruction *CodeModel::getInstruction(InstructionId id) const
 {
+    if (!id.isValid() || id.index >= instructions_pool.size())
+    {
+        return nullptr;
+    }
+
     return &instructions_pool[id];
 }
 
 Type *CodeModel::getTypeMutable(TypeId id)
 {
+    if (!id.isValid() || id.index >= types_pool.size())
+    {
+        return nullptr;
+    }
+
     return &types_pool[id];
 }
 Variable *CodeModel::getVariableMutable(VariableId id)
 {
+    if (!id.isValid() || id.index >= variables_pool.size())
+    {
+        return nullptr;
+    }
+
     return &variables_pool[id];
 }
 Function *CodeModel::getFunctionMutable(FunctionId id)
 {
+    if (!id.isValid() || id.index >= functions_pool.size())
+    {
+        return nullptr;
+    }
+
     return &functions_pool[id];
 }
 Block *CodeModel::getBlockMutable(BlockId id)
 {
+    if (!id.isValid() || id.index >= blocks_pool.size())
+    {
+        return nullptr;
+    }
 
     return &blocks_pool[id];
 }
 Instruction *CodeModel::getInstructionMutable(InstructionId id)
 {
+    if (!id.isValid() || id.index >= instructions_pool.size())
+    {
+        return nullptr;
+    }
+
     return &instructions_pool[id];
 }
 
