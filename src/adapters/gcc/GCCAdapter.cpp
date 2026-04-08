@@ -496,9 +496,21 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
         Core::StandardVariable std_var;
 
         // scope
-        if (is_global_var(variable_tree) || TREE_CODE(variable_tree) == FUNCTION_DECL)
+        if (TREE_CODE(variable_tree) == SSA_NAME || TREE_CODE(variable_tree) == PARM_DECL ||
+            TREE_CODE(variable_tree) == RESULT_DECL)
         {
-            std_var.scope = Core::Scope::GLOBAL;
+            std_var.scope = Core::Scope::FUNCTION;
+        }
+        else if (TREE_CODE(variable_tree) == FUNCTION_DECL || is_global_var(variable_tree))
+        {
+            if (TREE_CODE(variable_tree) == VAR_DECL && TREE_STATIC(variable_tree) && !DECL_EXTERNAL(variable_tree))
+            {
+                std_var.scope = Core::Scope::STATIC;
+            }
+            else
+            {
+                std_var.scope = Core::Scope::GLOBAL;
+            }
         }
         else
         {
