@@ -484,6 +484,7 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
 
                            struct cl_operand dst_op{};
                            dst_op.code = CL_OPERAND_VAR;
+                           dst_op.scope = CL_SCOPE_FUNCTION;
                            dst_op.type = src1_op->type;
                            dst_op.data.var = dst_var;
 
@@ -754,6 +755,24 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
         cl_op.code = CL_OPERAND_VAR;
         cl_op.type = findType(type);
         cl_op.data.var = findVariable(var);
+
+        // set scope on the operand so predator can classify VAR_LC vs VAR_GL
+        cl_op.scope = CL_SCOPE_GLOBAL;
+        if (const auto *sv = std::get_if<Core::StandardVariable>(&var->data))
+        {
+            switch (sv->scope)
+            {
+            case Core::Scope::GLOBAL:
+                cl_op.scope = CL_SCOPE_GLOBAL;
+                break;
+            case Core::Scope::STATIC:
+                cl_op.scope = CL_SCOPE_STATIC;
+                break;
+            case Core::Scope::FUNCTION:
+                cl_op.scope = CL_SCOPE_FUNCTION;
+                break;
+            }
+        }
 
         if (!var_op->access_path.empty())
         {
