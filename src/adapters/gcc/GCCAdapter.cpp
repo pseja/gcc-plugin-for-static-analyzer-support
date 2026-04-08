@@ -1498,6 +1498,9 @@ void GCCAdapter::processFunction(function *fun)
     Core::Function *function = model.createFunction();
     reporter.report(Core::DiagnosticLevel::Debug, "Function ID: " + std::to_string(function->id));
 
+    // clear the basic block cache since GCC may reuse basic_block pointer values across functions
+    block_cache.clear();
+
     function->name = function_name(fun);
     reporter.report(Core::DiagnosticLevel::Debug, "Function name set to: " + function->name);
 
