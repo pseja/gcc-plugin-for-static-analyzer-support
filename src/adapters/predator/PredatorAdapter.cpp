@@ -327,7 +327,9 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
             {
                 cl_i.code = CL_INSN_RET;
                 cl_i.loc = loc;
-                cl_i.data.insn_ret.src = nullptr;
+                cl_operands_pool.emplace_back();
+                cl_operands_pool.back().code = CL_OPERAND_VOID;
+                cl_i.data.insn_ret.src = &cl_operands_pool.back();
                 if (listener->insn)
                 {
                     listener->insn(listener, &cl_i);
@@ -435,7 +437,10 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
                        cl_operands_pool.push_back(mapOperand(call.callee));
                        const struct cl_operand *fnc_op = &cl_operands_pool.back();
 
-                       const struct cl_operand *dst_op = nullptr;
+                       struct cl_operand void_op{};
+                       void_op.code = CL_OPERAND_VOID;
+
+                       const struct cl_operand *dst_op = &void_op;
                        if (call.lhs.has_value())
                        {
                            cl_operands_pool.push_back(mapOperand(*call.lhs));
@@ -539,7 +544,9 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
                        }
                        else
                        {
-                           cl_i.data.insn_ret.src = nullptr;
+                           cl_operands_pool.emplace_back();
+                           cl_operands_pool.back().code = CL_OPERAND_VOID;
+                           cl_i.data.insn_ret.src = &cl_operands_pool.back();
                        }
                        if (listener->insn)
                        {
