@@ -1513,6 +1513,12 @@ void GCCAdapter::processFunction(function *fun)
         }
     }
 
+    // process function source location
+    if (fun->decl)
+    {
+        function->source_location = getSourceLocation(DECL_SOURCE_LOCATION(fun->decl));
+    }
+
     processFunctionParameters(fun, function);
 
     // process local variables

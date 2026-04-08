@@ -16,6 +16,7 @@ struct Function
     FunctionId id;
     std::string name;
     TypeId return_type_id;
+    SourceLocation source_location;
 
     std::vector<VariableId> parameter_ids;
 

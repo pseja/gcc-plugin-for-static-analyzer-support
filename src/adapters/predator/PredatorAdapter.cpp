@@ -223,8 +223,8 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
 
         struct cl_loc loc{};
         loc.file = persistString(model.getFilename());
-        loc.line = 1;
-        loc.column = 1;
+        loc.line = func.source_location.line ? func.source_location.line : 1;
+        loc.column = func.source_location.column ? func.source_location.column : 1;
         cl_func_op.data.cst.data.cst_fnc.loc = loc;
 
         listener->fnc_open(listener, &cl_func_op);
