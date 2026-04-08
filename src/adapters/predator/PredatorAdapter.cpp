@@ -186,6 +186,11 @@ void PredatorAdapter::emitFunctions()
 {
     for (const auto &func : model.getFunctions())
     {
+        name_to_func_uid[func.name] = static_cast<int>(func.id.index) + 1000000;
+    }
+
+    for (const auto &func : model.getFunctions())
+    {
         emitFunction(func);
     }
 }
@@ -745,9 +750,24 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
             cl_op.type = findType(type);
             cl_op.data.cst.code = CL_TYPE_FNC;
 
-            cl_op.data.cst.data.cst_fnc.uid = static_cast<int>(var->id.index) + 1000000;
+            int fnc_uid = static_cast<int>(var->id.index) + 2000000; // fallback for external functions
+            auto it = name_to_func_uid.find(var->name);
+            if (it != name_to_func_uid.end())
+            {
+                fnc_uid = it->second;
+            }
+            cl_op.data.cst.data.cst_fnc.uid = fnc_uid;
             cl_op.data.cst.data.cst_fnc.name = persistString(var->name);
-            cl_op.data.cst.data.cst_fnc.is_extern = false; // FIXME: a guess for now
+
+            bool is_ext = false;
+            if (const auto *sv = std::get_if<Core::StandardVariable>(&var->data))
+            {
+                is_ext = (sv->storage_duration == Core::StorageDuration::EXTERN);
+            }
+            cl_op.data.cst.data.cst_fnc.is_extern = is_ext;
+
+            cl_op.data.cst.data.cst_fnc.loc.file = persistString(model.getFilename());
+            cl_op.data.cst.data.cst_fnc.loc.line = 0;
 
             return cl_op;
         }

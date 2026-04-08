@@ -32,6 +32,7 @@ class PredatorAdapter
 
     std::unordered_map<Core::TypeId, struct cl_type *> type_map;
     std::unordered_map<Core::VariableId, struct cl_var *> var_map;
+    std::unordered_map<std::string, int> name_to_func_uid;
 
     struct cl_type *findType(const Core::Type *type);
     struct cl_var *findVariable(const Core::Variable *var);
