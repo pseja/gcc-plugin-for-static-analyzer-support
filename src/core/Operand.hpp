@@ -22,6 +22,7 @@ struct VariableOperand
 {
     VariableId id;
     std::vector<Accessor> access_path;
+    std::optional<TypeId> result_type_id; // type of the full expression, if known
 };
 
 using Operand = std::variant<ConstantOperand, VariableOperand>;

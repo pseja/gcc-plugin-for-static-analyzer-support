@@ -661,6 +661,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             Core::FieldAccessor field_acc;
             field_acc.field_id = getOrCreateVariable(TREE_OPERAND(operand_tree, 1));
             var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::FIELD, std::move(field_acc)});
+            var_op->result_type_id = getOrCreateType(TREE_TYPE(operand_tree));
             return *var_op;
         }
 
@@ -721,6 +722,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             Core::ArrayAccessor arr_acc;
             arr_acc.index = parseOperand(TREE_OPERAND(operand_tree, 1));
             var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::ARRAY, std::move(arr_acc)});
+            var_op->result_type_id = getOrCreateType(TREE_TYPE(operand_tree));
             return *var_op;
         }
 
@@ -738,6 +740,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
         if (var_op)
         {
             var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::DEREF, Core::DerefAccessor{}});
+            var_op->result_type_id = getOrCreateType(TREE_TYPE(operand_tree));
             return *var_op;
         }
 
@@ -755,6 +758,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             Core::AddressOfAccessor addr_acc;
             addr_acc.target_type_id = getOrCreateType(TREE_TYPE(operand_tree));
             var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::ADDRESS_OF, std::move(addr_acc)});
+            var_op->result_type_id = getOrCreateType(TREE_TYPE(operand_tree));
             return *var_op;
         }
 
@@ -780,6 +784,7 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
             }
 
             var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::DEREF, Core::DerefAccessor{}});
+            var_op->result_type_id = getOrCreateType(TREE_TYPE(operand_tree));
             return *var_op;
         }
 
@@ -1247,11 +1252,11 @@ void GCCAdapter::processInstruction(gimple *stmt, Core::Block *block)
                 v->type_id = builtin_fn_type_id;
                 v->artificial = true;
                 internal_fn_cache[fn_str] = v->id;
-                call.callee = Core::VariableOperand{v->id, {}};
+                call.callee = Core::VariableOperand{v->id, {}, std::nullopt};
             }
             else
             {
-                call.callee = Core::VariableOperand{it->second, {}};
+                call.callee = Core::VariableOperand{it->second, {}, std::nullopt};
             }
         }
         else

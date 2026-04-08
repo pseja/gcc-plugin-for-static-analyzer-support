@@ -235,7 +235,7 @@ void PredatorAdapter::emitFunction(const Core::Function &func)
         int arg_id = 1;
         for (const auto &arg_id_val : func.parameter_ids)
         {
-            Core::VariableOperand var_op{arg_id_val, {}};
+            Core::VariableOperand var_op{arg_id_val, {}, std::nullopt};
             Core::Operand op = var_op;
 
             cl_operands_pool.push_back(mapOperand(op));
@@ -831,6 +831,19 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
                 tail = cl_a;
             }
             cl_op.accessor = head;
+            // more reliable than tracing through the cl_type items chain which may have corrupt pointers
+            if (var_op->result_type_id.has_value())
+            {
+                const struct cl_type *res_type = findType(model.getType(*var_op->result_type_id));
+                if (res_type && res_type->size > 0)
+                {
+                    cl_op.type = const_cast<struct cl_type *>(res_type);
+                }
+                else if (res_type && res_type->code == CL_TYPE_VOID)
+                {
+                    cl_op.type = const_cast<struct cl_type *>(res_type);
+                }
+            }
         }
     }
     return cl_op;
