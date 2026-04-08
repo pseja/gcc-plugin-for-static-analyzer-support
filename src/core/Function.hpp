@@ -5,6 +5,7 @@
 
 #include "BlockId.hpp"
 #include "FunctionId.hpp"
+#include "SourceLocation.hpp"
 #include "TypeId.hpp"
 #include "VariableId.hpp"
 
