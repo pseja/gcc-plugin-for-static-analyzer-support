@@ -16,6 +16,8 @@ struct SwitchCase
     std::optional<Operand> high_value;
 
     BlockId target_block_id;
+
+    SourceLocation source_location;
 };
 
 } // namespace CodeListener::Core

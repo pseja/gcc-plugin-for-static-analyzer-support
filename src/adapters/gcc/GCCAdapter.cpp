@@ -1153,6 +1153,7 @@ void GCCAdapter::processInstruction(gimple *stmt, Core::Block *block)
         {
             tree case_label = gimple_switch_label(switch_stmt, i);
             Core::SwitchCase switch_case;
+            switch_case.source_location = getSourceLocation(EXPR_LOCATION(case_label));
 
             basic_block target_bb = label_to_block(cfun, CASE_LABEL(case_label));
             if (target_bb)

@@ -645,7 +645,8 @@ void PredatorAdapter::emitInstruction(const Core::Instruction &inst)
                                const auto *target_bb = model.getBlock(c.target_block_id);
                                const char *label = target_bb ? persistString(target_bb->name) : nullptr;
 
-                               listener->insn_switch_case(listener, &cl_i.loc, val_lo, val_hi, label);
+                               struct cl_loc case_loc = mapLocation(c.source_location);
+                               listener->insn_switch_case(listener, &case_loc, val_lo, val_hi, label);
                            }
                        }
                        if (listener->insn_switch_close)
