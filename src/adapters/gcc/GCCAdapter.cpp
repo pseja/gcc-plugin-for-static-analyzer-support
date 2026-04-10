@@ -399,16 +399,62 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
     }
     else if (TREE_CODE(variable_tree) == SSA_NAME)
     {
-        tree var = SSA_NAME_VAR(variable_tree);
-        if (var && DECL_NAME(var))
+        // Try to follow trivial SSA assignment chains to find an underlying named VAR_DECL
+        // mathces traverse_ssa_names()/get_decl_name() behavior
+        tree resolved = variable_tree;
+        const int max_depth = 4;
+        bool found_named_var = false;
+        for (int depth = 0; depth < max_depth; ++depth)
         {
-            const char *name = IDENTIFIER_POINTER(DECL_NAME(var));
-            variable->name =
-                std::string(name ? name : "<anonymous>") + "_" + std::to_string(SSA_NAME_VERSION(variable_tree));
+            gimple *def_stmt = SSA_NAME_DEF_STMT(resolved);
+            if (!def_stmt || gimple_code(def_stmt) != GIMPLE_ASSIGN)
+            {
+                break;
+            }
+            if (gimple_num_ops(def_stmt) != 2)
+            {
+                break;
+            }
+            if (gimple_assign_lhs(def_stmt) != resolved)
+            {
+                break;
+            }
+            // only follow trivial (ASSIGN = identity copy) operations
+            enum tree_code rhs_code = gimple_assign_rhs_code(def_stmt);
+            if (rhs_code != NOP_EXPR && rhs_code != VAR_DECL && rhs_code != SSA_NAME)
+            {
+                break;
+            }
+            tree rhs = gimple_assign_rhs1(def_stmt);
+            if (!rhs)
+            {
+                break;
+            }
+            enum tree_code rhs_tree_code = TREE_CODE(rhs);
+            if (rhs_tree_code == VAR_DECL || rhs_tree_code == PARM_DECL)
+            {
+                if (DECL_NAME(rhs))
+                {
+                    const char *name = IDENTIFIER_POINTER(DECL_NAME(rhs));
+                    variable->name = name ? name : "";
+                    found_named_var = true;
+                }
+                break;
+            }
+            else if (rhs_tree_code == SSA_NAME)
+            {
+                resolved = rhs;
+                continue;
+            }
+            else
+            {
+                break;
+            }
         }
-        else
+        if (!found_named_var)
         {
-            variable->name = "ssa_" + std::to_string(SSA_NAME_VERSION(variable_tree));
+            // empty name if no DECL_NAME
+            variable->name = "";
         }
     }
     // for labels and DECL_Ps using GCC's native artificial label/variable naming convention (e.g., L42 or D.42)
@@ -426,7 +472,8 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
     }
     else if (DECL_P(variable_tree))
     {
-        variable->name = "D." + std::to_string(DECL_UID(variable_tree));
+        // empty name if no DECL_NAME
+        variable->name = "";
     }
     reporter.report(Core::DiagnosticLevel::Debug, "Variable name extracted as: " + variable->name);
 

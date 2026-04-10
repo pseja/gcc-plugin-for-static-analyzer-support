@@ -154,7 +154,7 @@ void PredatorAdapter::emit()
         var_map[var.id] = cl_v;
 
         cl_v->uid = static_cast<int>(var.id.index);
-        cl_v->name = persistString(var.name);
+        cl_v->name = var.name.empty() ? nullptr : persistString(var.name);
         cl_v->artificial = var.artificial;
         cl_v->loc = mapLocation(var.source_location);
 
@@ -701,7 +701,10 @@ const char *PredatorAdapter::persistString(const std::string &str)
 struct cl_loc PredatorAdapter::mapLocation(const Core::SourceLocation &loc)
 {
     struct cl_loc cl_l{};
-    cl_l.file = persistString(loc.file);
+    if (loc.file != "<unknown>" && !loc.file.empty())
+    {
+        cl_l.file = persistString(loc.file);
+    }
     cl_l.line = loc.line;
     cl_l.column = loc.column;
     cl_l.sysp = false;
