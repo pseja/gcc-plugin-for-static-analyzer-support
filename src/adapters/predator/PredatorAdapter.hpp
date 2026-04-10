@@ -27,6 +27,7 @@ class PredatorAdapter
     std::deque<struct cl_operand> cl_operands_pool;
     std::deque<struct cl_accessor> cl_accessors_pool;
     std::deque<std::vector<struct cl_type_item>> cl_type_items_pool;
+    std::deque<struct cl_initializer> cl_initializer_pool;
 
     std::deque<std::string> string_pool;
 
@@ -38,8 +39,12 @@ class PredatorAdapter
     struct cl_var *findVariable(const Core::Variable *var);
     struct cl_operand mapOperand(const Core::Operand &op);
     struct cl_loc mapLocation(const Core::SourceLocation &loc);
-    // TODO: implement
-    struct cl_accessor *mapAccessor(const Core::Operand &op);
+
+    // build cl_initializer chain from Core::Initializer, appending to **tail
+    // returns pointer to first node (or nullptr if no initializers)
+    struct cl_initializer *buildInitializerChain(const Core::Initializer &init, struct cl_var *dst_var,
+                                                 const struct cl_type *dst_type,
+                                                 std::vector<std::pair<const struct cl_type *, int>> &field_path);
 
     void emitFunctions();
     void emitFunction(const Core::Function &func);

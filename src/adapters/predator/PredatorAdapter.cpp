@@ -3,6 +3,7 @@
 
 #include "EnumType.hpp"
 #include "FunctionType.hpp"
+#include "Initializer.hpp"
 #include "PredatorAdapter.hpp"
 #include "UnionType.hpp"
 #include "utility.hpp"
@@ -160,8 +161,50 @@ void PredatorAdapter::emit()
         if (const auto *sv = std::get_if<Core::StandardVariable>(&var.data))
         {
             cl_v->is_extern = (sv->storage_duration == Core::StorageDuration::EXTERN);
-            cl_v->initialized = sv->initial_value.has_value();
+            // global and static variables are always zero-initialized in C (unless explicitly initialized)
+            // match original predator plugin behavior: set initialized=true for all non-extern globals/statics
+            if (!cl_v->is_extern && (sv->scope == Core::Scope::GLOBAL || sv->scope == Core::Scope::STATIC))
+            {
+                cl_v->initialized = true;
+            }
+            else
+            {
+                cl_v->initialized = sv->initial_value.has_value();
+            }
         }
+    }
+
+    // pre-populate function name-to-uid map so initializer chains can reference functions correctly
+    for (const auto &func : model.getFunctions())
+    {
+        name_to_func_uid[func.name] = static_cast<int>(func.id.index) + 1000000;
+    }
+
+    // build cl_initializer chains for variables that have initial values
+    // (done after all vars/types are registered so mapOperand can resolve cross-references)
+    for (const auto &var : model.getVariables())
+    {
+        const auto *sv = std::get_if<Core::StandardVariable>(&var.data);
+        if (!sv || !sv->initial_value.has_value())
+        {
+            continue;
+        }
+
+        struct cl_var *cl_v = var_map[var.id];
+        if (!cl_v)
+        {
+            continue;
+        }
+
+        const struct cl_type *var_cl_type = nullptr;
+        if (var.type_id.isValid())
+        {
+            const Core::Type *var_type = model.getType(var.type_id);
+            var_cl_type = findType(var_type);
+        }
+
+        std::vector<std::pair<const struct cl_type *, int>> field_path;
+        cl_v->initial = buildInitializerChain(sv->initial_value.value(), cl_v, var_cl_type, field_path);
     }
 
     if (listener->file_open)
@@ -690,6 +733,176 @@ struct cl_var *PredatorAdapter::findVariable(const Core::Variable *var)
     if (it != var_map.end())
     {
         return it->second;
+    }
+
+    return nullptr;
+}
+
+struct cl_initializer *PredatorAdapter::buildInitializerChain(
+    const Core::Initializer &init, struct cl_var *dst_var, const struct cl_type *dst_type,
+    std::vector<std::pair<const struct cl_type *, int>> &field_path)
+{
+    if (const auto *list = std::get_if<std::shared_ptr<Core::InitializerList>>(&init))
+    {
+        if (!*list)
+        {
+            return nullptr;
+        }
+
+        const struct cl_type *item_type = dst_type;
+        bool is_array = item_type && item_type->code == CL_TYPE_ARRAY;
+
+        struct cl_initializer *head = nullptr;
+        struct cl_initializer **tail_ptr = &head;
+
+        for (int i = 0; i < static_cast<int>((*list)->elements.size()); ++i)
+        {
+            // determine element type:
+            // - for structs/unions: items[i].type (field type), item_cnt == number of fields
+            // - for arrays: items[0].type (element type), item_cnt == 1
+            const struct cl_type *field_type = nullptr;
+            if (item_type)
+            {
+                if (is_array && item_type->item_cnt >= 1)
+                {
+                    field_type = item_type->items[0].type; // all elements have same type
+                }
+                else if (!is_array && i < item_type->item_cnt)
+                {
+                    field_type = item_type->items[i].type;
+                }
+            }
+
+            field_path.push_back({item_type, i});
+
+            struct cl_initializer *child = buildInitializerChain((*list)->elements[i], dst_var, field_type, field_path);
+
+            field_path.pop_back();
+
+            // append child chain (follow to end of child's chain, then link to tail)
+            if (child)
+            {
+                *tail_ptr = child;
+                // find end of child chain
+                struct cl_initializer *end = child;
+                while (end->next)
+                {
+                    end = end->next;
+                }
+                tail_ptr = &end->next;
+            }
+        }
+
+        return head;
+    }
+    else if (const auto *op = std::get_if<Core::Operand>(&init))
+    {
+        // scalar initializer: emit CL_INSN_UNOP(CL_UNOP_ASSIGN, dst_with_path, src_operand)
+        cl_initializer_pool.emplace_back();
+        struct cl_initializer *node = &cl_initializer_pool.back();
+        memset(node, 0, sizeof(*node));
+
+        node->insn.code = CL_INSN_UNOP;
+        node->insn.loc = dst_var->loc;
+
+        // build src operand
+        cl_operands_pool.push_back(mapOperand(*op));
+        struct cl_operand *src = &cl_operands_pool.back();
+
+        // build dst operand: dst_var with field accessor chain
+        cl_operands_pool.emplace_back();
+        struct cl_operand *dst = &cl_operands_pool.back();
+        memset(dst, 0, sizeof(*dst));
+        dst->code = CL_OPERAND_VAR;
+        dst->scope = CL_SCOPE_GLOBAL; // static/global initializers
+        dst->type = nullptr;          // will be set later
+        dst->data.var = dst_var;
+
+        // build accessor chain via field_path
+        if (!field_path.empty())
+        {
+            struct cl_accessor *acc_head = nullptr;
+            struct cl_accessor **acc_tail = &acc_head;
+            const struct cl_type *cur_type = nullptr;
+
+            for (const auto &[path_type, field_idx] : field_path)
+            {
+                cl_accessors_pool.emplace_back();
+                struct cl_accessor *cl_a = &cl_accessors_pool.back();
+                memset(cl_a, 0, sizeof(*cl_a));
+
+                cl_a->type = const_cast<struct cl_type *>(path_type);
+                cl_a->next = nullptr;
+
+                bool path_is_array = path_type && path_type->code == CL_TYPE_ARRAY;
+                if (path_is_array)
+                {
+                    // array accessor: use CL_ACCESSOR_DEREF_ARRAY with integer index
+                    cl_a->code = CL_ACCESSOR_DEREF_ARRAY;
+                    cl_operands_pool.emplace_back();
+                    struct cl_operand *idx_op = &cl_operands_pool.back();
+                    memset(idx_op, 0, sizeof(*idx_op));
+
+                    // find the int type for the index
+                    idx_op->code = CL_OPERAND_CST;
+                    idx_op->data.cst.code = CL_TYPE_INT;
+                    idx_op->data.cst.data.cst_int.value = field_idx;
+                    // find a suitable cl_type for int
+                    for (const auto &[tid, clt] : type_map)
+                    {
+                        if (clt->code == CL_TYPE_INT)
+                        {
+                            idx_op->type = clt;
+                            break;
+                        }
+                    }
+                    cl_a->data.array.index = idx_op;
+
+                    // element type
+                    if (path_type && path_type->item_cnt >= 1)
+                    {
+                        cur_type = path_type->items[0].type;
+                    }
+                }
+                else
+                {
+                    // struct/union field accessor
+                    cl_a->code = CL_ACCESSOR_ITEM;
+                    cl_a->data.item.id = field_idx;
+
+                    // track the type of this field
+                    if (path_type && field_idx < path_type->item_cnt)
+                    {
+                        cur_type = path_type->items[field_idx].type;
+                    }
+                }
+
+                *acc_tail = cl_a;
+                acc_tail = &cl_a->next;
+            }
+
+            dst->accessor = acc_head;
+            // the type of the dst operand is the type at the leaf of the accessor path
+            if (cur_type)
+            {
+                dst->type = const_cast<struct cl_type *>(cur_type);
+            }
+        }
+        else
+        {
+            // no accessor path: dst is the variable itself
+            if (src->type)
+            {
+                dst->type = src->type;
+            }
+        }
+
+        node->insn.data.insn_unop.code = CL_UNOP_ASSIGN;
+        node->insn.data.insn_unop.dst = dst;
+        node->insn.data.insn_unop.src = src;
+        node->next = nullptr;
+
+        return node;
     }
 
     return nullptr;
