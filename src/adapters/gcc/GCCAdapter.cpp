@@ -360,8 +360,8 @@ Core::Initializer GCCAdapter::parseInitializer(tree init_tree)
     else if (TREE_CODE(init_tree) == STRING_CST)
     {
         // special case: strings are technically arrays of chars, but usually kept as constants
-        return Core::ConstantOperand{getOrCreateType(TREE_TYPE(init_tree)),
-                                     std::string(TREE_STRING_POINTER(init_tree), TREE_STRING_LENGTH(init_tree))};
+        std::string raw(TREE_STRING_POINTER(init_tree), TREE_STRING_LENGTH(init_tree));
+        return Core::ConstantOperand{getOrCreateType(TREE_TYPE(init_tree)), std::string("\"") + raw + "\""};
     }
 
     // base case: it's just a regular operand (INTEGER_CST, REAL_CST, or an address of a variable)
