@@ -392,7 +392,7 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
     // build universal variable properties
     variable->type_id = getOrCreateType(TREE_TYPE(variable_tree));
 
-    if (DECL_NAME(variable_tree))
+    if (DECL_P(variable_tree) && DECL_NAME(variable_tree))
     {
         const char *name = IDENTIFIER_POINTER(DECL_NAME(variable_tree));
         variable->name = name ? name : "<anonymous>";
