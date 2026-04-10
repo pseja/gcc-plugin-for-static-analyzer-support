@@ -754,7 +754,15 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
         if (type && type->kind == Core::TypeKind::FUNCTION)
         {
             cl_op.code = CL_OPERAND_CST;
-            cl_op.type = findType(type);
+            if (var_op->result_type_id.has_value())
+            {
+                const struct cl_type *res_type = findType(model.getType(*var_op->result_type_id));
+                cl_op.type = res_type ? const_cast<struct cl_type *>(res_type) : findType(type);
+            }
+            else
+            {
+                cl_op.type = findType(type);
+            }
             cl_op.data.cst.code = CL_TYPE_FNC;
 
             int fnc_uid = static_cast<int>(var->id.index) + 2000000; // fallback for external functions
