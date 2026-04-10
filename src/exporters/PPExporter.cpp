@@ -65,7 +65,7 @@ void PPExporter::onBeginFunction(const Core::CodeModel &model, const Core::Funct
             os << ", ";
         }
         os << "%arg" << (i + 1) << ": ";
-        Core::VariableOperand vo{func.parameter_ids[i], {}};
+        Core::VariableOperand vo{func.parameter_ids[i], {}, std::nullopt};
         Core::Operand op = vo;
         os << fmtOperand(op, model);
     }
@@ -94,12 +94,12 @@ void PPExporter::onBeginFunction(const Core::CodeModel &model, const Core::Funct
     }
 }
 
-void PPExporter::onEndFunction(const Core::CodeModel & /*model*/, const Core::Function & /*func*/)
+void PPExporter::onEndFunction(const Core::CodeModel &, const Core::Function &)
 {
-    os << "\n"; // fnc_close blank line
+    os << "\n";
 }
 
-void PPExporter::onBeginBlock(const Core::CodeModel & /*model*/, const Core::Block &block)
+void PPExporter::onBeginBlock(const Core::CodeModel &, const Core::Block &block)
 {
     if (block.name == "ENTRY" || block.name == "EXIT")
     {
