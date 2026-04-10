@@ -721,41 +721,71 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
         Core::Operand base_op = parseOperand(TREE_OPERAND(operand_tree, 0));
 
         Core::VariableOperand *var_op = std::get_if<Core::VariableOperand>(&base_op);
-        if (var_op)
+        if (!var_op)
         {
-            Core::BitSliceAccessor bit_acc{0, 0};
-            tree size_tree = TREE_OPERAND(operand_tree, 1);
-            tree pos_tree = TREE_OPERAND(operand_tree, 2);
-
-            if (size_tree && tree_fits_uhwi_p(size_tree))
-            {
-                bit_acc.bit_size = tree_to_uhwi(size_tree);
-            }
-            else
-            {
-                reporter.report(
-                    Core::DiagnosticLevel::Warning,
-                    "Bit-field reference has a size that is unknown or too large to fit in an unsigned integer (" +
-                        std::to_string(tree_to_uhwi(size_tree)) + "), treating as having unknown size");
-            }
-
-            if (pos_tree && tree_fits_uhwi_p(pos_tree))
-            {
-                bit_acc.bit_start = tree_to_uhwi(pos_tree);
-            }
-            else
-            {
-                reporter.report(
-                    Core::DiagnosticLevel::Warning,
-                    "Bit-field reference has a position that is unknown or too large to fit in an unsigned integer (" +
-                        std::to_string(tree_to_uhwi(pos_tree)) + "), treating as having unknown position");
-            }
-
-            var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::BIT_SLICE, std::move(bit_acc)});
-            return *var_op;
+            return base_op;
         }
 
-        return base_op;
+        // BIT_FIELD_REF<obj, size, pos> - map to a field accessor by matching bit offset,
+        // the same way the original predator plugin does it (by bitfield_lookup)
+        tree pos_tree = TREE_OPERAND(operand_tree, 2);
+        if (pos_tree && tree_fits_uhwi_p(pos_tree))
+        {
+            const unsigned int bit_offset = tree_to_uhwi(pos_tree);
+            tree struct_type = TREE_TYPE(TREE_OPERAND(operand_tree, 0));
+            // try to find the field with matching bit offset
+            tree field = NULL_TREE;
+            if (struct_type && (TREE_CODE(struct_type) == RECORD_TYPE || TREE_CODE(struct_type) == UNION_TYPE))
+            {
+                for (tree f = TYPE_FIELDS(struct_type); f; f = TREE_CHAIN(f))
+                {
+                    if (TREE_CODE(f) != FIELD_DECL)
+                    {
+                        continue;
+                    }
+                    // compute field bit offset: DECL_FIELD_OFFSET*8 + DECL_FIELD_BIT_OFFSET
+                    tree byte_off_node = DECL_FIELD_OFFSET(f);
+                    tree bit_off_node = DECL_FIELD_BIT_OFFSET(f);
+                    if (!byte_off_node || !bit_off_node)
+                    {
+                        continue;
+                    }
+                    if (!tree_fits_uhwi_p(byte_off_node) || !tree_fits_uhwi_p(bit_off_node))
+                    {
+                        continue;
+                    }
+                    unsigned int field_bit_off = tree_to_uhwi(byte_off_node) * 8 + tree_to_uhwi(bit_off_node);
+                    if (field_bit_off == bit_offset)
+                    {
+                        field = f;
+                        break;
+                    }
+                }
+            }
+            if (field != NULL_TREE)
+            {
+                Core::FieldAccessor field_acc;
+                field_acc.field_id = getOrCreateVariable(field);
+                var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::FIELD, std::move(field_acc)});
+                var_op->result_type_id = getOrCreateType(TREE_TYPE(operand_tree));
+                return *var_op;
+            }
+        }
+        // fallback: emit as bit-slice accessor (may not be fully handled downstream)
+        tree size_tree = TREE_OPERAND(operand_tree, 1);
+        tree pos_tree2 = TREE_OPERAND(operand_tree, 2);
+        Core::BitSliceAccessor bit_acc{0, 0};
+        if (size_tree && tree_fits_uhwi_p(size_tree))
+        {
+            bit_acc.bit_size = tree_to_uhwi(size_tree);
+        }
+        if (pos_tree2 && tree_fits_uhwi_p(pos_tree2))
+        {
+            bit_acc.bit_start = tree_to_uhwi(pos_tree2);
+        }
+
+        var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::BIT_SLICE, std::move(bit_acc)});
+        return *var_op;
     }
     break;
 
