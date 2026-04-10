@@ -817,25 +817,33 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
 
     case MEM_REF: {
         reporter.report(Core::DiagnosticLevel::Debug, "Recursively parsing memory reference operand...");
-        Core::Operand ptr_op = parseOperand(TREE_OPERAND(operand_tree, 0));
+        tree inner_tree = TREE_OPERAND(operand_tree, 0);
+
+        bool inner_is_addr_expr = (TREE_CODE(inner_tree) == ADDR_EXPR);
+        tree parse_tree = inner_is_addr_expr ? TREE_OPERAND(inner_tree, 0) : inner_tree;
+        Core::Operand ptr_op = parseOperand(parse_tree);
 
         Core::VariableOperand *var_op = std::get_if<Core::VariableOperand>(&ptr_op);
-        if (var_op)
+        if (!var_op)
         {
-            tree offset_tree = TREE_OPERAND(operand_tree, 1);
-            if (offset_tree && !integer_zerop(offset_tree))
-            {
-                Core::OffsetAccessor off_acc;
-                off_acc.offset = parseOperand(offset_tree);
-                var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::OFFSET, std::move(off_acc)});
-            }
-
-            var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::DEREF, Core::DerefAccessor{}});
-            var_op->result_type_id = getOrCreateType(TREE_TYPE(operand_tree));
-            return *var_op;
+            return ptr_op;
         }
 
-        return ptr_op;
+        if (!inner_is_addr_expr)
+        {
+            var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::DEREF, Core::DerefAccessor{}});
+        }
+
+        tree offset_tree = TREE_OPERAND(operand_tree, 1);
+        if (offset_tree && !integer_zerop(offset_tree))
+        {
+            Core::OffsetAccessor off_acc;
+            off_acc.offset = parseOperand(offset_tree);
+            var_op->access_path.push_back(Core::Accessor{Core::AccessorKind::OFFSET, std::move(off_acc)});
+        }
+
+        var_op->result_type_id = getOrCreateType(TREE_TYPE(operand_tree));
+        return *var_op;
     }
     break;
 
