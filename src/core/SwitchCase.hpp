@@ -4,6 +4,7 @@
 
 #include "BlockId.hpp"
 #include "Operand.hpp"
+#include "SourceLocation.hpp"
 
 namespace CodeListener::Core
 {
