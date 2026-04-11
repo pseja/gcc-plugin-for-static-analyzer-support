@@ -1,0 +1,3 @@
+[submodule "predator"]
+	path = analyzers/predator
+	url = git@github.com:kdudka/predator.git
