@@ -87,17 +87,34 @@ if(WITH_PREDATOR)
     set(PREDATOR_BUILD "${CMAKE_CURRENT_BINARY_DIR}/analyzers/predator/sl_build")
     set(PATCH_FILE "${CMAKE_CURRENT_SOURCE_DIR}/build-aux/cl_gcc_support.patch")
 
+    # replication of what predator's Makefile-based build generates 
+    # so the CMake-only ExternalProject build can compile version.c
+    execute_process(
+        COMMAND git log -1 --format=%H
+        WORKING_DIRECTORY "${PREDATOR_SRC}"
+        OUTPUT_VARIABLE PREDATOR_GIT_SHA1
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(NOT PREDATOR_GIT_SHA1)
+        set(PREDATOR_GIT_SHA1 "unknown")
+    endif()
+    file(WRITE "${PREDATOR_SRC}/sl/version.h"
+        "#define SL_GIT_SHA1 \"${PREDATOR_GIT_SHA1}\"\n")
+
     include(ExternalProject)
     ExternalProject_Add(predator_sl
         SOURCE_DIR        "${PREDATOR_SRC}/sl"
         BINARY_DIR        "${PREDATOR_BUILD}"
-        PATCH_COMMAND     patch --forward -p2 -d "${PREDATOR_SRC}"
+        PATCH_COMMAND     patch --forward -p1 -d "${PREDATOR_SRC}"
                               --input "${PATCH_FILE}" || true
         CMAKE_ARGS
             -DCMAKE_BUILD_TYPE=Release
             -DGCC_HOST=${GCC_HOST_BIN}
             -DCL_GCC_PLUGIN=$<TARGET_FILE:cl_gcc>
             -DCL_INCLUDE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/include
+            -DCL_LIB=$<TARGET_FILE:cl_core>
+            -DCLGCC_LIB=$<TARGET_FILE:cl_gcc>
         BUILD_COMMAND     ${CMAKE_COMMAND} --build . --target sl_analyzer
         INSTALL_COMMAND   ""
         DEPENDS           cl_gcc
