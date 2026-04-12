@@ -1,60 +1,131 @@
 CC := gcc-12
+BUILD := build
+JOBS := $(shell nproc)
 
-MAKEFLAGS += --no-builtin-rules
+PLUGIN := $(BUILD)/libcl_gcc.so
+CALLGRAPH := $(BUILD)/libcl_callgraph_dot.so
+JSON_DUMP := $(BUILD)/libcl_json_dump.so
+PREDATOR := $(BUILD)/analyzers/predator/sl_build/libsl_analyzer.so
+PRED_INC := analyzers/predator/include/predator-builtins
+PRED_TESTS := $(BUILD)/analyzers/predator/sl_build
+CL_ADAPT_TESTS := analyzers/predator/cl/tests/gcc-adapter/C
 
-PLUGIN_FLAGS = -O0 -fplugin=$(BUILD_DIR)/libcl_gcc.so -fplugin-arg-libcl_gcc-gen-dot=$*.dot -fplugin-arg-libcl_gcc-gen-json=$*.json
+# source file to analyze (required by analyzer targets)
+FILE ?=
+# passed to -fplugin-arg-libcl_gcc-args= (optional)
+ARGS ?=
 
-BUILD_DIR := build
-TEST_DIR := tests/integration_tests
+# MAKEFLAGS += --no-builtin-rules
+.PHONY: all build configure callgraph json predator \
+        test-predator test-cl-adapter test clean help FORCE
 
-TEST_SRCS := $(wildcard $(TEST_DIR)/*.c)
+# silently check that FILE was provided before an analyzer target runs
+define require_file
+	@test -n "$(FILE)" || { \
+		echo "Usage: make $@ FILE=path/to/file.c [ARGS=...]"; exit 1; }
+endef
 
-.PHONY: all build dump test test-clean clean help FORCE
-.PRECIOUS: %.log %.dot
+# run the plugin with a given analyzer.so and optional extra compiler flags
+#   $(1) - path to analyzer.so
+#   $(2) - extra CFLAGS
+define run_analyzer
+	$(CC) -S $(FILE) -o /dev/null \
+	  -fplugin=$(PLUGIN) \
+	  -fplugin-arg-libcl_gcc-load-analyzer=$(1) \
+	  $(if $(ARGS),-fplugin-arg-libcl_gcc-args="$(ARGS)") \
+	  $(2)
+endef
 
 all: build
 
+# build
+
+## run CMake configuration (no build)
+configure:
+	cmake -S . -B $(BUILD) -DTARGET_GCC=$(CC)
+
+## configure (if needed) and compile everything
 build:
-	cmake -S . -B $(BUILD_DIR)
-	cmake --build $(BUILD_DIR) -j
+	cmake -S . -B $(BUILD) -DTARGET_GCC=$(CC)
+	cmake --build $(BUILD) -j$(JOBS)
 
-Makefile: ;
+## callgraph FILE=<src> [ARGS=<output.dot>]
+##   emit a Graphviz call-graph DOT file
+##   default output: callgraph.dot
+callgraph:
+	$(call require_file)
+	$(call run_analyzer,$(CALLGRAPH),)
 
-ifneq ($(filter dump,$(MAKECMDGOALS)),)
-%.c: dump
-DUMP_FLAGS := -O0 -fdump-tree-all-raw -fdump-tree-cfg-graph -fdump-lang-all -dumpdir dump/
-endif
+## json FILE=<src> [ARGS=<output.json>]
+##   dump the full CodeModel as JSON
+##   default output: dump.json
+json:
+	$(call require_file)
+	$(call run_analyzer,$(JSON_DUMP),)
 
-%.c: build FORCE
-	rm -f $*.png
-	$(CC) $(DUMP_FLAGS) $(PLUGIN_FLAGS) $@ > $*.log 2>&1 || (tail -n 20 $*.log && exit 1)
+## predator FILE=<src> [ARGS=<predator-args>]
+##   run the Predator heap-shape / memory-safety analyzer
+##   default ARGS: error_label:ERROR
+predator:
+	$(call require_file)
+	$(call run_analyzer,$(PREDATOR), \
+	  -std=gnu99 \
+	  -DPREDATOR \
+	  -I$(PRED_INC) \
+	  -fplugin-arg-libcl_gcc-preserve-ec)
 
-	if [ -f $*.dot ]; then \
-		dot -Tpng $*.dot -o $*.png; \
+# tests
+
+## run the full Predator regression test suite
+test-predator:
+	ctest --test-dir $(PRED_TESTS) -R "^new-plugin-" -j$(JOBS) --progress
+
+## run the old CL GCC-adapter C tests through libcl_gcc.so + libcl_json_dump.so
+## each file must compile and exit 0
+test-cl-adapter: FORCE
+	@pass=0; fail=0; failed_list=''; \
+	for src in $(CL_ADAPT_TESTS)/*.c; do \
+		name=$$(basename $$src); \
+		if $(CC) -S $$src -o /dev/null \
+		  -std=gnu89 -O0 -DPREDATOR -DNDEBUG -Wall -Wextra \
+		  -fplugin=$(PLUGIN) \
+		  -fplugin-arg-libcl_gcc-load-analyzer=$(JSON_DUMP) \
+		  2>/dev/null; \
+		then \
+			printf 'PASS %s\n' "$$name"; pass=$$((pass+1)); \
+		else \
+			printf 'FAIL %s\n' "$$name"; fail=$$((fail+1)); \
+			failed_list="$$failed_list $$name"; \
+		fi; \
+	done; \
+	echo ""; \
+	echo "cl-adapter: $$pass passed, $$fail failed out of $$((pass+fail))"; \
+	if [ $$fail -ne 0 ]; then \
+		echo "Failed tests:$$failed_list"; exit 1; \
 	fi
 
-dump:
-	rm -rf dump
-	mkdir -p dump
+## run all test suites
+test: test-cl-adapter test-predator
 
-test: $(TEST_SRCS)
+# cleanup
 
-test-clean:
-	rm -f $(TEST_DIR)/*.dot $(TEST_DIR)/*.json $(TEST_DIR)/*.png $(TEST_DIR)/*.log
-
+## remove the build directory
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD)
 
+# help message
 help:
-	@echo "Usage: make [target]"
-	@echo "Targets:"
-	@echo "  all         - Builds the project (default)"
-	@echo "  build       - Builds the project"
-	@echo "  %.c 	     - Compiles the specified .c file"
-	@echo "  dump %.c    - Generates dump files for the specified .c file"
-	@echo "  test        - Runs tests"
-	@echo "  test-clean  - Cleans test artifacts"
-	@echo "  clean       - Cleans build artifacts"
-	@echo "  help        - Shows this help message"
-
-FORCE:
+	@echo " Build:"
+	@echo "     make build     - configure (if needed) and compile everything"
+	@echo "     make configure - run CMake configuration (no build)"
+	@echo "     make clean     - remove the build directory"
+	@echo ""
+	@echo " Analyzers:"
+	@echo "     make callgraph FILE=foo.c [ARGS=callgraph.dot]     - emit a Graphviz call-graph DOT file"
+	@echo "     make json      FILE=foo.c [ARGS=dump.json]         - dump the full CodeModel as JSON"
+	@echo "     make predator  FILE=foo.c [ARGS=error_label:ERROR] - run the Predator heap-shape / memory-safety analyzer"
+	@echo ""
+	@echo " Tests:"
+	@echo "     make test-predator   - run all Predator regression tests"
+	@echo "     make test-cl-adapter - run all old CL GCC-adapter C tests via libcl_gcc.so"
+	@echo "     make test            - run all of the above"

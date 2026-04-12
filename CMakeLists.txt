@@ -6,6 +6,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(TARGET_VERSION "12")
 set(TARGET_GCC "gcc-${TARGET_VERSION}" CACHE STRING "The GCC compiler executable to build the plugin for")
 
+option(WITH_PREDATOR "Build predator (libsl_analyzer.so) and its regression tests" ON)
+
 execute_process(
     COMMAND ${TARGET_GCC} -print-file-name=plugin
     OUTPUT_VARIABLE GCC_PLUGIN_DIR
@@ -46,10 +48,61 @@ file(GLOB_RECURSE GCC_SOURCES src/adapters/gcc/*.cpp src/adapters/*.cpp)
 
 add_library(cl_gcc SHARED ${GCC_SOURCES})
 
-target_include_directories(cl_gcc PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc)
+target_include_directories(cl_gcc PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc src/adapters/predator include)
 
-target_link_libraries(cl_gcc PRIVATE cl_core)
+target_link_libraries(cl_gcc PRIVATE cl_core dl)
 
 target_compile_options(cl_gcc PRIVATE -g3 -O0 -shared -fPIC -fno-rtti -Wall -Wextra -Werror -pedantic)
 
 set_target_properties(cl_gcc PROPERTIES CXX_STANDARD 23)
+
+# demo native analyzers
+# each analyzer is a small shared library that implements cl_native_analyzer_api.h
+# load one via: -fplugin-arg-libcl_gcc-load-analyzer=<path_to_lib>.so
+#               -fplugin-arg-libcl_gcc-args=<output_file>
+function(add_cl_analyzer target source)
+    add_library(${target} SHARED ${source})
+    target_include_directories(${target} PRIVATE include src/core src/exporters src/annotation_services)
+    target_link_libraries(${target} PRIVATE cl_core)
+    target_compile_options(${target} PRIVATE -fvisibility=default -shared -fPIC -fno-rtti -Wall -Wextra -Werror)
+    set_target_properties(${target} PROPERTIES CXX_STANDARD 23)
+endfunction()
+
+add_cl_analyzer(cl_callgraph_dot analyzers/callgraph_dot/callgraph_dot.cpp)
+add_cl_analyzer(cl_json_dump     analyzers/json_dump/json_dump.cpp)
+
+# predator integration when WITH_PREDATOR=ON:
+#   1. apply build-aux/cl_gcc_support.patch to add sl_analyzer_shim.cc and the
+#        new-plugin test macros to predator's sl/CMakeLists.txt
+#   2. configure and build predator/sl/ as an ExternalProject, which produces
+#      libsl_analyzer.so and registers the regression tests with CTest
+#
+# after a top-level build the tests can be run with:
+#   ctest --test-dir <build>/predator/sl_build -R "^new-plugin-"
+if(WITH_PREDATOR)
+    find_program(GCC_HOST_BIN ${TARGET_GCC} REQUIRED
+        DOC "GCC used by predator tests (must match the plugin's TARGET_GCC)")
+
+    set(PREDATOR_SRC "${CMAKE_CURRENT_SOURCE_DIR}/analyzers/predator")
+    set(PREDATOR_BUILD "${CMAKE_CURRENT_BINARY_DIR}/analyzers/predator/sl_build")
+    set(PATCH_FILE "${CMAKE_CURRENT_SOURCE_DIR}/build-aux/cl_gcc_support.patch")
+
+    include(ExternalProject)
+    ExternalProject_Add(predator_sl
+        SOURCE_DIR        "${PREDATOR_SRC}/sl"
+        BINARY_DIR        "${PREDATOR_BUILD}"
+        PATCH_COMMAND     patch --forward -p2 -d "${PREDATOR_SRC}"
+                              --input "${PATCH_FILE}" || true
+        CMAKE_ARGS
+            -DCMAKE_BUILD_TYPE=Release
+            -DGCC_HOST=${GCC_HOST_BIN}
+            -DCL_GCC_PLUGIN=$<TARGET_FILE:cl_gcc>
+            -DCL_INCLUDE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/include
+        BUILD_COMMAND     ${CMAKE_COMMAND} --build . --target sl_analyzer
+        INSTALL_COMMAND   ""
+        DEPENDS           cl_gcc
+    )
+
+    message(STATUS "Predator build dir: ${PREDATOR_BUILD}")
+    message(STATUS "Run predator tests: ctest --test-dir ${PREDATOR_BUILD} -R \"^new-plugin-\"")
+endif()
