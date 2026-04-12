@@ -101,7 +101,7 @@ new file mode 100644
 index 0000000..12d32883d11a76002ef135ecd9282b907b59a2ac
 --- /dev/null
 +++ b/sl/sl_analyzer_shim.cc
-@@ -0,0 +1,116 @@
+@@ -0,0 +1,114 @@
 +/*
 + * Shim that exposes predator's ClEasy listener to the new CodeListener GCC plugin (libcl_gcc.so)
 + */
