@@ -99,10 +99,24 @@ if(WITH_PREDATOR)
     if(NOT PREDATOR_GIT_SHA1)
         set(PREDATOR_GIT_SHA1 "unknown")
     endif()
+    file(WRITE "${PREDATOR_SRC}/cl/version_cl.h"
+        "#define CL_GIT_SHA1 \"${PREDATOR_GIT_SHA1}\"\n")
     file(WRITE "${PREDATOR_SRC}/sl/version.h"
         "#define SL_GIT_SHA1 \"${PREDATOR_GIT_SHA1}\"\n")
 
+    set(PREDATOR_CL_BUILD "${PREDATOR_SRC}/cl_build")
+
     include(ExternalProject)
+    ExternalProject_Add(predator_cl
+        SOURCE_DIR        "${PREDATOR_SRC}/cl"
+        BINARY_DIR        "${PREDATOR_CL_BUILD}"
+        CMAKE_ARGS
+            -DCMAKE_BUILD_TYPE=Release
+            -DGCC_HOST=${GCC_HOST_BIN}
+        BUILD_COMMAND     ${CMAKE_COMMAND} --build . --target cl --target clgcc
+        INSTALL_COMMAND   ""
+    )
+
     ExternalProject_Add(predator_sl
         SOURCE_DIR        "${PREDATOR_SRC}/sl"
         BINARY_DIR        "${PREDATOR_BUILD}"
@@ -112,12 +126,9 @@ if(WITH_PREDATOR)
             -DCMAKE_BUILD_TYPE=Release
             -DGCC_HOST=${GCC_HOST_BIN}
             -DCL_GCC_PLUGIN=$<TARGET_FILE:cl_gcc>
-            -DCL_INCLUDE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/include
-            -DCL_LIB=$<TARGET_FILE:cl_core>
-            -DCLGCC_LIB=$<TARGET_FILE:cl_gcc>
         BUILD_COMMAND     ${CMAKE_COMMAND} --build . --target sl_analyzer
         INSTALL_COMMAND   ""
-        DEPENDS           cl_gcc
+        DEPENDS           cl_gcc predator_cl
     )
 
     message(STATUS "Predator build dir: ${PREDATOR_BUILD}")
