@@ -37,7 +37,7 @@ sudo apt install gcc-12 g++-12 gcc-12-plugin-dev cmake patch
 ### 1. Clone with submodules
 
 ```bash
-git clone --recurse-submodules git@github.com:pseja/gcc-plugin-for-static-analyzer-support.git
+git clone --recurse-submodules -b implementation git@github.com:pseja/gcc-plugin-for-static-analyzer-support.git
 cd gcc-plugin-for-static-analyzer-support
 ```
 
