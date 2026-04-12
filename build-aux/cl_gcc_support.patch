@@ -1,0 +1,218 @@
+diff --git a/sl/CMakeLists.txt b/sl/CMakeLists.txt
+index 7129f377..97b04006 100644
+--- a/sl/CMakeLists.txt
++++ b/sl/CMakeLists.txt
+@@ -83,6 +83,15 @@ add_library(predator STATIC
+ # build compiler plug-in (libsl.so/.dylib)
+ CL_BUILD_COMPILER_PLUGIN(sl predator ../cl_build)
+ 
++# build analyzer-only shared library (no GCC plugin layer) for use with
++# the new libcl_gcc.so plugin via -fplugin-arg-...-load-analyzer=libsl_analyzer.so
++add_library(sl_analyzer SHARED sl_analyzer_shim.cc)
++target_include_directories(sl_analyzer PRIVATE ${PROJECT_SOURCE_DIR}/../include)
++target_link_libraries(sl_analyzer PRIVATE ${CL_LIB} predator)
++set_target_properties(sl_analyzer PROPERTIES CXX_STANDARD 11)
++# override the project-wide -fvisibility=hidden so that cl_create_listener is exported
++target_compile_options(sl_analyzer PRIVATE -fvisibility=default)
++
+ # get the full path of libsl.so/.dylib
+ set(SL_PLUG $<TARGET_FILE:sl>)
+ 
+@@ -435,6 +444,61 @@ macro(test_predator_regre name_suff ext arg1)
+     endforeach()
+ endmacro(test_predator_regre)
+ 
++# path to libcl_gcc.so (the new CodeListener GCC plugin)
++# when set, an additional set of tests is added to test the new plugin
++# together with libsl_analyzer.so instead of the old libsl.so
++set(CL_GCC_PLUGIN "" CACHE FILEPATH
++    "Full path to libcl_gcc.so for new-pipeline predator tests (leave empty to skip)")
++
++macro(test_predator_regre_new_plugin name_suff ext arg1)
++    if(NOT "${CL_GCC_PLUGIN}" STREQUAL "")
++        foreach (num ${tests})
++            set(cmd "LC_ALL=C CCACHE_DISABLE=1 ${GCC_EXEC_PREFIX} ${GCC_HOST}")
++
++            set(cmd "${cmd} -std=gnu99")
++            set(cmd "${cmd} -m64")
++
++            if (ENABLE_CC1_PLUS)
++                set(cmd "${cmd} -x c++")
++            endif()
++
++            set(cmd "${cmd} -S ${testdir}/test-${num}.c -o /dev/null")
++            set(cmd "${cmd} -I${PROJECT_SOURCE_DIR}/../include/predator-builtins -DPREDATOR")
++            set(cmd "${cmd} -fplugin=${CL_GCC_PLUGIN}")
++            set(cmd "${cmd} -fplugin-arg-libcl_gcc-load-analyzer=${sl_BINARY_DIR}/libsl_analyzer.so")
++            if(NOT "${arg1}" STREQUAL "")
++                set(cmd "${cmd} ${arg1}")
++            endif()
++            set(cmd "${cmd} -fplugin-arg-libcl_gcc-preserve-ec")
++            set(cmd "${cmd} 2>&1")
++
++            # filter out messages unrelated to our plug-in
++            set(cmd "${cmd} | (grep -E '\\\\[-fplugin=libcl_gcc.so\\\\]\$|compiler error|undefined symbol|CL_BREAK_IF'; true)")
++            set(cmd "${cmd} | sed 's/ \\\\[-fplugin=libcl_gcc.so\\\\]\$//'")
++
++            # filter out NOTE messages with internal location
++            set(cmd "${cmd} | (grep -v 'note: .*\\\\[internal location\\\\]'; true)")
++
++            # drop absolute paths
++            set(cmd "${cmd} | sed 's|^[^:]*/||'")
++
++            # drop column numbers
++            set(cmd "${cmd} | sed -E 's|^([^:]+:[0-9]+:)[0-9]+:|\\\\1|'")
++
++            # drop var UIDs that are not guaranteed to be fixed among runs
++            set(cmd "${cmd} | sed -E -e 's|#[0-9]+:||g' -e 's|#[0-9]+|_|g' -e 's|[.][0-9]+||g'")
++
++            # diff with the expected output
++            set(cmd "${cmd} | diff -up ${testdir}/test-${num}.err${ext} -")
++            set(test_name "new-plugin-test-${num}.c${name_suff}")
++            add_test(${test_name} bash -o pipefail -c "${cmd}")
++
++            SET_TESTS_PROPERTIES(${test_name} PROPERTIES COST ${cost})
++            MATH(EXPR cost "${cost} + 1")
++        endforeach()
++    endif()
++endmacro(test_predator_regre_new_plugin)
++
+ # default mode
+ test_predator_regre("" "" "-fplugin-arg-libsl-args=error_label:ERROR")
+ 
+@@ -448,6 +512,14 @@ test_predator_regre("-OOM" ".oom" "-fplugin-arg-libsl-args=oom")
+ # exit_leaks enabled
+ test_predator_regre("-EXIT_LEAKS" ".exit_leaks" "-fplugin-arg-libsl-args=exit_leaks")
+ 
++# same tests with the new CodeListener GCC plugin (libcl_gcc.so)
++test_predator_regre_new_plugin("" "" "-fplugin-arg-libcl_gcc-args=error_label:ERROR")
++test_predator_regre_new_plugin("-TRACK_UNINIT" ".uninit"
++    "-fplugin-arg-libcl_gcc-args=track_uninit")
++test_predator_regre_new_plugin("-OOM" ".oom" "-fplugin-arg-libcl_gcc-args=oom")
++test_predator_regre_new_plugin("-EXIT_LEAKS" ".exit_leaks"
++    "-fplugin-arg-libcl_gcc-args=exit_leaks")
++
+ if(TEST_WITH_VALGRIND)
+     message (STATUS "valgrind enabled for testing...")
+     test_predator_smoke("valgrind-test" valgrind
+
+diff --git a/sl/sl_analyzer_shim.cc b/sl/sl_analyzer_shim.cc
+new file mode 100644
+index 0000000..12d32883d11a76002ef135ecd9282b907b59a2ac
+--- /dev/null
++++ b/sl/sl_analyzer_shim.cc
+@@ -0,0 +1,116 @@
++/*
++ * Shim that exposes predator's ClEasy listener to the new CodeListener GCC plugin (libcl_gcc.so)
++ */
++
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++
++#include <cl/code_listener.h>
++
++// module-level state (one per process / GCC invocation)
++
++static std::string g_plugin_basename;
++static int g_cnt_errors = 0;
++static int g_cnt_warnings = 0;
++
++// message-printing callbacks registered with cl_global_init
++
++static void noop_printer(const char * /* msg */)
++{
++}
++
++static void trivial_printer(const char *msg)
++{
++    if (g_plugin_basename.empty())
++    {
++        fprintf(stderr, "%s\n", msg);
++    }
++    else
++    {
++        fprintf(stderr, "%s [-fplugin=%s]\n", msg, g_plugin_basename.c_str());
++    }
++}
++
++static void warn_printer(const char *msg)
++{
++    trivial_printer(msg);
++    ++g_cnt_warnings;
++}
++
++static void error_printer(const char *msg)
++{
++    trivial_printer(msg);
++    ++g_cnt_errors;
++}
++
++static void die_printer(const char *msg)
++{
++    trivial_printer(msg);
++    abort();
++}
++
++static const char *safe_basename(const char *path)
++{
++    const char *slash = strrchr(path, '/');
++    if (slash && slash[1])
++    {
++        return slash + 1;
++    }
++    return path;
++}
++
++/**
++ * Initialise the predator listener and return the root cl_code_listener 
++ * for a single compilation run.
++ *
++ * @param analyzer_args Value of -fplugin-arg-<plugin>-args=<VALUE>,
++ *                      e.g. "error_label:ERROR", "track_uninit", etc.
++ *                      May be NULL or empty.
++ * @param plugin_name   Full path (or basename) of the calling GCC plugin,
++ *                      e.g. "/build/libcl_gcc.so". Used to tag diagnostic
++ *                      messages with "[-fplugin=libcl_gcc.so]" so that the
++ *                      existing predator test-suite filters still work.
++ *                      May be NULL.
++ *
++ * @return A fresh cl_code_listener that must be destroyed via listener->destroy()
++ *         once the analysis is complete, or NULL on failure.
++ */
++extern "C" struct cl_code_listener *cl_create_listener(
++    const char *analyzer_args, const char *plugin_name)
++{
++    // derive the basename that appears in "[-fplugin=...]" tags
++    g_plugin_basename = plugin_name ? safe_basename(plugin_name) : "";
++    g_cnt_errors = 0;
++    g_cnt_warnings = 0;
++
++    // register our message printers with the code-listener infrastructure
++    struct cl_init_data init;
++    init.debug = noop_printer;
++    init.warn = warn_printer;
++    init.error = error_printer;
++    init.note = trivial_printer;
++    init.die = die_printer;
++    init.debug_level = 0;
++    cl_global_init(&init);
++
++    // build the config string for the "easy" (= predator) listener
++    //   clf=unfold_switch   - expand switch into a chain of ifs, required by predator
++    //   clf=unify_labels_gl - give globally unique names to labels
++    std::string config = "listener=\"easy\" listener_args=\"" + std::string(analyzer_args ? analyzer_args : "") +
++                         "\" clf=\"unfold_switch,unify_labels_gl\"";
++
++    return cl_code_listener_create(config.c_str());
++}
++
++/**
++ * Return the number of errors reported since the last cl_create_listener()
++ * call. Useful if the caller wants to forward the exit-code.
++ */
++extern "C" int cl_get_error_count(void)
++{
++    return g_cnt_errors;
++}
