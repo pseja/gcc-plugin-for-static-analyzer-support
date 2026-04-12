@@ -1,4 +1,8 @@
 #include <fstream>
+#include <dlfcn.h>
+
+#include <cl_analyzer_api.h>
+#include <cl_native_analyzer_api.h>
 
 #include <gcc-plugin.h>
 #include <context.h>
@@ -7,6 +11,7 @@
 #include "DOTExporter.hpp"
 #include "JSONExporter.hpp"
 #include "PPExporter.hpp"
+#include "PredatorAdapter.hpp"
 #include "Pass.hpp"
 #include "PluginContext.hpp"
 
@@ -65,6 +70,13 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     // cleanup
     register_callback(plugin_info->base_name, PLUGIN_FINISH, on_plugin_finish, this);
 
+    // load external analyzer (e.g. libsl_analyzer.so) if requested
+    if (args->load_analyzer.has_value())
+    {
+        const std::string &an_args = args->analyzer_args.has_value() ? args->analyzer_args.value() : "";
+        load_analyzer(args->load_analyzer.value(), an_args, plugin_info->full_name ? plugin_info->full_name : "");
+    }
+
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin initialized");
 }
 
@@ -86,6 +98,101 @@ Core::CodeModel &PluginContext::getCodeModel()
 GCCAdapter *PluginContext::getAdapter()
 {
     return adapter.get();
+}
+
+struct cl_code_listener *PluginContext::getAnalyzerListener() const
+{
+    return analyzer_listener;
+}
+
+const cl_native_analyzer_api_t *PluginContext::getNativeAnalyzerApi() const
+{
+    return native_analyzer_api;
+}
+
+void PluginContext::load_analyzer(const std::string &path, const std::string &analyzer_args,
+                                  const std::string &plugin_full_name)
+{
+    // dlopen the analyzer shared library
+    void *handle = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    if (!handle)
+    {
+        reporter.report(Core::DiagnosticLevel::Error,
+                        std::string("Could not load analyzer '") + path + "': " + dlerror());
+        return;
+    }
+    analyzer_dl_handle = handle;
+
+    // check for the native (CodeModel-level) API
+    auto get_native = reinterpret_cast<const cl_native_analyzer_api_t *(*)()>(dlsym(handle, "cl_get_native_api"));
+    if (get_native)
+    {
+        const cl_native_analyzer_api_t *napi = get_native();
+        if (napi && napi->api_version == CL_NATIVE_API_VERSION)
+        {
+            native_analyzer_api = napi;
+            reporter.report(Core::DiagnosticLevel::Info, "Native analyzer loaded from '" + path + "'");
+            return; // native analyzer: no cl_code_listener needed
+        }
+        else if (napi)
+        {
+            reporter.report(Core::DiagnosticLevel::Warning,
+                            "Native analyzer API version mismatch in '" + path + "', ignoring native API");
+        }
+    }
+
+    // fall back to the legacy cl_get_analyzer_api
+    auto get_api = reinterpret_cast<const cl_analyzer_api_t *(*)()>(dlsym(handle, "cl_get_analyzer_api"));
+    if (!get_api)
+    {
+        reporter.report(Core::DiagnosticLevel::Error,
+                        std::string("Analyzer '") + path +
+                            "' exports neither 'cl_get_native_api' nor 'cl_get_analyzer_api'");
+        return;
+    }
+
+    const cl_analyzer_api_t *api = get_api();
+    if (!api)
+    {
+        reporter.report(Core::DiagnosticLevel::Error, "cl_get_analyzer_api() returned NULL");
+        return;
+    }
+    if (api->api_version != CL_ANALYZER_API_VERSION)
+    {
+        reporter.report(Core::DiagnosticLevel::Error, std::string("Analyzer API version mismatch: plugin expects ") +
+                                                          std::to_string(CL_ANALYZER_API_VERSION) +
+                                                          ", analyzer reports " + std::to_string(api->api_version) +
+                                                          " in '" + path + "'");
+        return;
+    }
+
+    struct cl_code_listener *listener = api->create(analyzer_args.empty() ? nullptr : analyzer_args.c_str(),
+                                                    plugin_full_name.empty() ? nullptr : plugin_full_name.c_str());
+    if (!listener)
+    {
+        reporter.report(Core::DiagnosticLevel::Error, "Analyzer create() returned NULL");
+        return;
+    }
+
+    analyzer_listener = listener;
+
+    // legacy analyzer may also optionally export the native API
+    if (get_native)
+    {
+        const cl_native_analyzer_api_t *napi = get_native();
+        if (napi && napi->api_version == CL_NATIVE_API_VERSION)
+        {
+            native_analyzer_api = napi;
+            reporter.report(Core::DiagnosticLevel::Info, "Native analyzer API loaded from '" + path + "'");
+        }
+        else if (napi)
+        {
+            reporter.report(Core::DiagnosticLevel::Warning,
+                            "Native analyzer API version mismatch in '" + path + "', ignoring native API");
+        }
+    }
+
+    reporter.report(Core::DiagnosticLevel::Info, "Analyzer loaded from '" + path + "'");
 }
 
 void PluginContext::init_print(const plugin_gcc_version *version)
@@ -139,6 +246,23 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
         CodeListener::Exporters::PPExporter pp_exporter(args->dump_pp_file.value());
         pp_exporter.exportModel(model);
         reporter.report(Core::DiagnosticLevel::Info, "Exported PP to " + args->dump_pp_file.value());
+    }
+
+    // feed the model to a loaded analyzer (e.g. predator via libsl_analyzer.so)
+    struct cl_code_listener *listener = PluginContext::getInstance().getAnalyzerListener();
+    if (listener)
+    {
+        CodeListener::Adapters::PredatorAdapter pa(model, listener);
+        pa.emit();
+    }
+
+    // feed the model to a native (CodeModel-level) analyzer if one was loaded
+    const cl_native_analyzer_api_t *napi = PluginContext::getInstance().getNativeAnalyzerApi();
+    if (napi && napi->analyze)
+    {
+        const PluginArgs *pa = PluginContext::getInstance().getArgs();
+        const char *an_args = (pa && pa->analyzer_args.has_value()) ? pa->analyzer_args.value().c_str() : nullptr;
+        napi->analyze(model, an_args);
     }
 
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished");

@@ -11,6 +11,9 @@
 #include "GCCDiagnosticReporter.hpp"
 #include "PluginArgs.hpp"
 
+struct cl_code_listener;         // forward – avoid including code_listener.h here
+struct cl_native_analyzer_api_t; // forward – avoid including cl_native_analyzer_api.h here
+
 namespace CodeListener::CompilerAbstractionLayer
 {
 
@@ -29,6 +32,8 @@ class PluginContext
     Core::DiagnosticReporter &getDiagnosticReporter();
     Core::CodeModel &getCodeModel();
     GCCAdapter *getAdapter();
+    struct cl_code_listener *getAnalyzerListener() const;
+    const cl_native_analyzer_api_t *getNativeAnalyzerApi() const;
 
   private:
     std::unique_ptr<PluginArgs> args;
@@ -37,9 +42,14 @@ class PluginContext
     Core::CodeModel model;
     static struct plugin_info plugin_info;
 
+    void *analyzer_dl_handle{nullptr};
+    struct cl_code_listener *analyzer_listener{nullptr};
+    const cl_native_analyzer_api_t *native_analyzer_api{nullptr};
+
     PluginContext() = default;
 
     void init_print(const plugin_gcc_version *version);
+    void load_analyzer(const std::string &path, const std::string &analyzer_args, const std::string &plugin_full_name);
 
     static void on_plugin_finish(void *gcc_data, void *user_data);
 };
