@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "CodeModel.hpp"
-#include "../../../predator/include/cl/code_listener.h"
+#include "../../../analyzers/predator/include/cl/code_listener.h"
 
 namespace CodeListener::Adapters
 {
