@@ -101,7 +101,7 @@ new file mode 100644
 index 0000000..12d32883d11a76002ef135ecd9282b907b59a2ac
 --- /dev/null
 +++ b/sl/sl_analyzer_shim.cc
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,139 @@
 +/*
 + * Shim that exposes predator's ClEasy listener to the new CodeListener GCC plugin (libcl_gcc.so)
 + */
@@ -112,6 +112,15 @@ index 0000000..12d32883d11a76002ef135ecd9282b907b59a2ac
 +#include <string>
 +
 +#include <cl/code_listener.h>
++
++// inline copy of the analyzer API contract (keep in sync with cl_analyzer_api.h)
++#define CL_ANALYZER_API_VERSION 1
++
++typedef struct
++{
++    int api_version;
++    struct cl_code_listener *(*create)(const char *args, const char *plugin_name);
++} cl_analyzer_api_t;
 +
 +// module-level state (one per process / GCC invocation)
 +
@@ -206,6 +215,22 @@ index 0000000..12d32883d11a76002ef135ecd9282b907b59a2ac
 +                         "\" clf=\"unfold_switch,unify_labels_gl\"";
 +
 +    return cl_code_listener_create(config.c_str());
++}
++
++static const cl_analyzer_api_t g_analyzer_api = {
++    CL_ANALYZER_API_VERSION,
++    cl_create_listener,
++};
++
++/**
++ * Entry point required by cl_analyzer_api.h.
++ *
++ * The plugin (libcl_gcc.so) dlsym()s this function and calls it once
++ * at plugin-init time to obtain the table of callbacks.
++ */
++extern "C" const cl_analyzer_api_t *cl_get_analyzer_api(void)
++{
++    return &g_analyzer_api;
 +}
 +
 +/**
