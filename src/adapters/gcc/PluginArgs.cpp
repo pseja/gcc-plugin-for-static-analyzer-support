@@ -31,7 +31,7 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticRepo
                 if (ec != std::errc{})
                 {
                     reporter.report(Core::DiagnosticLevel::Error,
-                                    "CodeListener: error: invalid integer for 'verbose': " + std::string(value));
+                                    "Invalid integer for 'verbose': " + std::string(value));
                     valid = false;
                 }
             }
@@ -47,6 +47,18 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticRepo
         else if (key == "args")
         {
             analyzer_args = value;
+        }
+        else if (key == "load-analyzer")
+        {
+            if (value.empty())
+            {
+                reporter.report(Core::DiagnosticLevel::Error, "Mandatory value omitted for load-analyzer argument");
+                valid = false;
+            }
+            else
+            {
+                load_analyzer = value;
+            }
         }
         else if (key == "dry-run")
         {
@@ -76,8 +88,7 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticRepo
         {
             if (value.empty())
             {
-                reporter.report(Core::DiagnosticLevel::Error,
-                                "CodeListener: error: mandatory value omitted for pid-file");
+                reporter.report(Core::DiagnosticLevel::Error, "Mandatory value omitted for pid-file argument");
                 valid = false;
             }
             else
@@ -89,8 +100,7 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticRepo
         {
             if (value.empty())
             {
-                reporter.report(Core::DiagnosticLevel::Error,
-                                "CodeListener: error: mandatory value omitted for type-dot");
+                reporter.report(Core::DiagnosticLevel::Error, "Mandatory value omitted for type-dot argument");
                 valid = false;
             }
             else
@@ -100,8 +110,7 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticRepo
         }
         else
         {
-            reporter.report(Core::DiagnosticLevel::Error,
-                            "CodeListener: error: unhandled plug-in argument: " + std::string(key));
+            reporter.report(Core::DiagnosticLevel::Error, "Unhandled plug-in argument: " + std::string(key));
             valid = false;
         }
     }

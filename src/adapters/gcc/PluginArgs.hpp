@@ -26,6 +26,7 @@ struct PluginArgs
     bool valid{true};
 
     std::optional<std::string> analyzer_args;
+    std::optional<std::string> load_analyzer;
     std::optional<std::string> dump_pp_file;
     std::optional<std::string> gen_json_file;
     std::optional<std::string> gen_dot_file;
