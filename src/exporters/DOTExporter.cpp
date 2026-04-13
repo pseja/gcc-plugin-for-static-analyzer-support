@@ -33,16 +33,22 @@ void DOTExporter::onEndModel(const Core::CodeModel &model)
         for (const auto &edge : node.outgoing_calls)
         {
             if (!edge.callee)
+            {
                 continue;
+            }
 
             auto callee_id = *edge.callee;
             const auto *callee = model.getFunction(callee_id);
             if (!callee || callee->block_ids.empty())
+            {
                 continue;
+            }
 
             const auto *instr = model.getInstruction(edge.call_instruction);
             if (!instr)
+            {
                 continue;
+            }
 
             os << "    block_" << instr->parent_block_id << " -> block_" << callee->block_ids.front()
                << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
@@ -111,7 +117,9 @@ void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block
                     std::string label =
                         sw_case.low_value.has_value() ? formatOperand(model, sw_case.low_value.value()) : "default";
                     if (sw_case.high_value.has_value())
+                    {
                         label += " ... " + formatOperand(model, sw_case.high_value.value());
+                    }
 
                     os << "    block_" << src_id << " -> block_" << sw_case.target_block_id << " [label=\""
                        << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
@@ -122,11 +130,15 @@ void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block
         else if (auto *cond_instr = std::get_if<Core::CondInstruction>(&last_instr->data))
         {
             if (cond_instr->true_target.isValid())
+            {
                 os << "    block_" << src_id << " -> block_" << cond_instr->true_target
                    << " [label=\"true\", color=\"#2e7d32\", fontcolor=\"#2e7d32\"];\n";
+            }
             if (cond_instr->false_target.isValid())
+            {
                 os << "    block_" << src_id << " -> block_" << cond_instr->false_target
                    << " [label=\"false\", color=\"#c62828\", fontcolor=\"#c62828\"];\n";
+            }
             handled_edges = true;
         }
     }
@@ -402,7 +414,9 @@ std::string DOTExporter::formatInstructionText(const Core::CodeModel &model, con
                 {
                     res += formatOperand(model, call.arguments[i]);
                     if (i + 1 < call.arguments.size())
+                    {
                         res += ", ";
+                    }
                 }
                 res += ")";
                 return res;
