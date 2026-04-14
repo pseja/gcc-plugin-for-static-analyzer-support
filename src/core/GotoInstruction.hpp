@@ -7,7 +7,6 @@ namespace CodeListener::Core
 
 struct GotoInstruction
 {
-    // FIXME: maybe `Operand destination`
     BlockId target;
 };
 

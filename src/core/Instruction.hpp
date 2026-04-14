@@ -22,8 +22,7 @@ struct Instruction
     SourceLocation source_location;
 
     // ends a basic block (e.g. GOTO, RET, SWITCH, COND)
-    // TODO: maybe remove this? what about the old cl
-    bool is_terminator = false;
+    bool is_terminator{false};
 };
 
 } // namespace CodeListener::Core

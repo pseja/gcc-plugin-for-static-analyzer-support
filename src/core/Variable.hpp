@@ -19,7 +19,6 @@ struct Variable
     SourceLocation source_location;
 
     // true for variables created by the compiler for internal purposes
-    // FIXME: this isn't being assigned everywhere it should be, so it is not fully reliable
     bool artificial{false};
 
     VariableData data;
