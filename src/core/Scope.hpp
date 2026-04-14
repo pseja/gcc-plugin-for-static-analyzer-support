@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace CodeListener::Core
 {
@@ -12,7 +12,7 @@ enum class Scope
     FUNCTION,
 };
 
-inline std::string toString(Scope scope)
+constexpr std::string_view toString(Scope scope) noexcept
 {
     switch (scope)
     {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace CodeListener::Core
 {
@@ -15,7 +15,7 @@ enum class AccessorKind
     BIT_SLICE,  // expr[start:end] (bit field extraction)
 };
 
-inline std::string toString(AccessorKind accessor_kind)
+constexpr std::string_view toString(AccessorKind accessor_kind) noexcept
 {
     switch (accessor_kind)
     {

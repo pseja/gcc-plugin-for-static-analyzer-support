@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace CodeListener::Core
 {
@@ -14,7 +14,7 @@ enum class StorageDuration
     THREAD_LOCAL,
 };
 
-inline std::string toString(StorageDuration storage_duration)
+constexpr std::string_view toString(StorageDuration storage_duration) noexcept
 {
     switch (storage_duration)
     {

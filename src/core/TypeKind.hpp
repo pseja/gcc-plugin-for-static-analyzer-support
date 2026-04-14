@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace CodeListener::Core
 {
@@ -21,7 +21,7 @@ enum class TypeKind
     UNKNOWN,
 };
 
-inline std::string toString(TypeKind kind)
+constexpr std::string_view toString(TypeKind kind) noexcept
 {
     switch (kind)
     {

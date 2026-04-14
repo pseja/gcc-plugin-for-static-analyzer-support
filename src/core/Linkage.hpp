@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace CodeListener::Core
 {
@@ -12,7 +12,7 @@ enum class Linkage
     EXTERNAL, // visible across translation units
 };
 
-inline std::string toString(Linkage linkage)
+constexpr std::string_view toString(Linkage linkage) noexcept
 {
     switch (linkage)
     {

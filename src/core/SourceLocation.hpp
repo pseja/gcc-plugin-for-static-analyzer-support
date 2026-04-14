@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <string_view>
+#include <sstream>
 
 namespace CodeListener::Core
 {
@@ -18,10 +20,11 @@ struct SourceLocation
     SourceLocation(std::string file, int line, int column, void *native_handle = nullptr);
 };
 
-inline std::string toString(const SourceLocation &loc)
+inline std::string_view toString(const SourceLocation &loc)
 {
-    return "SourceLocation(" + loc.file + ":" + loc.function + ":" + std::to_string(loc.line) + ":" +
-           std::to_string(loc.column) + ")";
+    std::ostringstream oss;
+    oss << loc.file << ':' << loc.function << ':' << loc.line << ':' << loc.column;
+    return oss.str();
 }
 
 } // namespace CodeListener::Core

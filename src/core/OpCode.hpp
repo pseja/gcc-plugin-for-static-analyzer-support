@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace CodeListener::Core
 {
@@ -58,7 +58,7 @@ enum class OpCode
     CAST, // (cast)x
 };
 
-inline std::string toString(OpCode op)
+constexpr std::string_view toString(OpCode op) noexcept
 {
     switch (op)
     {
