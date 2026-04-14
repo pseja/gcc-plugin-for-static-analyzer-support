@@ -1,17 +1,20 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include "AsmOperandConstraint.hpp"
+
 namespace CodeListener::Core
 {
 
 struct AsmInstruction
 {
-    // TODO: GCCAdapter doesn't parse operands for ASM yet (old cl doesn't do this at all), but there'll likely be:
-    // std::string assembly_string;
-    // std::vector<Operand> inputs;
-    // std::vector<Operand> outputs;
-    // std::vector<Operand> clobbers;
-    // std::vector<Operand> labels;
-    // this is for now, just a placeholder for the instruction to not get shown in the code like an empty instruction
+    std::string assembly_string;
+    std::vector<AsmOperandConstraint> inputs;
+    std::vector<AsmOperandConstraint> outputs;
+    std::vector<std::string> clobbers;
+    bool is_volatile{false};
 };
 
 } // namespace CodeListener::Core

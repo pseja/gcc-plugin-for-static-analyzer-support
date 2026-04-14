@@ -10,6 +10,7 @@
 #include "SwitchCase.hpp"
 #include "Type.hpp"
 #include "TypeKind.hpp"
+#include "ComplexType.hpp"
 #include "utility.hpp"
 #include "Variable.hpp"
 
@@ -193,59 +194,74 @@ void to_json(json &j, const Instruction &instr)
              {"is_terminator", instr.is_terminator},
              {"location", instr.source_location}};
 
-    std::visit(
-        Exporters::overloaded{[&](const std::monostate &) { j["data_kind"] = "EMPTY"; },
-                              [&](const AssignInstruction &i) {
-                                  j["opcode"] = toString(i.opcode);
-                                  j["lhs"] = i.lhs;
-                                  if (i.rhs1)
-                                  {
-                                      j["rhs1"] = i.rhs1.value();
-                                  }
-                                  if (i.rhs2)
-                                  {
-                                      j["rhs2"] = i.rhs2.value();
-                                  }
-                                  if (i.rhs3)
-                                  {
-                                      j["rhs3"] = i.rhs3.value();
-                                  }
-                              },
-                              [&](const CallInstruction &i) {
-                                  if (i.lhs)
-                                  {
-                                      j["lhs"] = i.lhs.value();
-                                  }
-                                  j["callee"] = i.callee;
-                                  j["arguments"] = i.arguments;
-                              },
-                              [&](const ReturnInstruction &i) {
-                                  if (i.return_value)
-                                  {
-                                      j["return_value"] = i.return_value.value();
-                                  }
-                              },
-                              [&](const CondInstruction &i) {
-                                  j["opcode"] = toString(i.opcode);
-                                  j["lhs"] = i.lhs;
-                                  j["rhs"] = i.rhs;
-                                  j["true_target"] = i.true_target;
-                                  j["false_target"] = i.false_target;
-                              },
-                              [&](const SwitchInstruction &i) {
-                                  j["index"] = i.index;
-                                  j["cases"] = i.cases;
-                              },
-                              [&](const GotoInstruction &i) { j["target"] = i.target; },
-                              [&](const LabelInstruction &i) { j["label"] = i.label; }, [&](const AsmInstruction &) {},
-                              [&](const PhiInstruction &i) {
-                                  j["lhs"] = i.lhs;
-                                  j["incoming_values"] = i.incoming_values;
-                              },
-                              [&](const ClobberInstruction &i) { j["clobbered_variable"] = i.clobbered_variable; },
-                              [&](const UnreachableInstruction &) {}, [&](const AbortInstruction &) {},
-                              [&](const UnknownInstruction &i) { j["description"] = i.description; }},
-        instr.data);
+    std::visit(Exporters::overloaded{
+                   [&](const std::monostate &) { j["data_kind"] = "EMPTY"; },
+                   [&](const AssignInstruction &i) {
+                       j["opcode"] = toString(i.opcode);
+                       j["lhs"] = i.lhs;
+                       if (i.rhs1)
+                       {
+                           j["rhs1"] = i.rhs1.value();
+                       }
+                       if (i.rhs2)
+                       {
+                           j["rhs2"] = i.rhs2.value();
+                       }
+                       if (i.rhs3)
+                       {
+                           j["rhs3"] = i.rhs3.value();
+                       }
+                   },
+                   [&](const CallInstruction &i) {
+                       if (i.lhs)
+                       {
+                           j["lhs"] = i.lhs.value();
+                       }
+                       j["callee"] = i.callee;
+                       j["arguments"] = i.arguments;
+                   },
+                   [&](const ReturnInstruction &i) {
+                       if (i.return_value)
+                       {
+                           j["return_value"] = i.return_value.value();
+                       }
+                   },
+                   [&](const CondInstruction &i) {
+                       j["opcode"] = toString(i.opcode);
+                       j["lhs"] = i.lhs;
+                       j["rhs"] = i.rhs;
+                       j["true_target"] = i.true_target;
+                       j["false_target"] = i.false_target;
+                   },
+                   [&](const SwitchInstruction &i) {
+                       j["index"] = i.index;
+                       j["cases"] = i.cases;
+                   },
+                   [&](const GotoInstruction &i) { j["target"] = i.target; },
+                   [&](const LabelInstruction &i) { j["label"] = i.label; },
+                   [&](const AsmInstruction &i) {
+                       j["assembly_string"] = i.assembly_string;
+                       j["is_volatile"] = i.is_volatile;
+                       j["outputs"] = json::array();
+                       for (const auto &out : i.outputs)
+                       {
+                           j["outputs"].push_back(json{{"constraint", out.constraint}, {"operand", out.operand}});
+                       }
+                       j["inputs"] = json::array();
+                       for (const auto &in : i.inputs)
+                       {
+                           j["inputs"].push_back(json{{"constraint", in.constraint}, {"operand", in.operand}});
+                       }
+                       j["clobbers"] = i.clobbers;
+                   },
+                   [&](const PhiInstruction &i) {
+                       j["lhs"] = i.lhs;
+                       j["incoming_values"] = i.incoming_values;
+                   },
+                   [&](const ClobberInstruction &i) { j["clobbered_variable"] = i.clobbered_variable; },
+                   [&](const UnreachableInstruction &) {}, [&](const AbortInstruction &) {},
+                   [&](const UnknownInstruction &i) { j["description"] = i.description; }},
+               instr.data);
 }
 
 void to_json(json &j, const Block &block)

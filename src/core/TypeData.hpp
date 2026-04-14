@@ -13,11 +13,12 @@
 #include "StructType.hpp"
 #include "UnionType.hpp"
 #include "FunctionType.hpp"
+#include "ComplexType.hpp"
 
 namespace CodeListener::Core
 {
 
 using TypeData = std::variant<UnknownType, VoidType, EnumType, IntegerType, FloatType, BoolType, PointerType, ArrayType,
-                              StructType, UnionType, FunctionType>;
+                              StructType, UnionType, FunctionType, ComplexType>;
 
 } // namespace CodeListener::Core

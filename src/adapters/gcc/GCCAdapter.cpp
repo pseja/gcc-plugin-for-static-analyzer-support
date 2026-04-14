@@ -20,6 +20,7 @@
 #include "DiagnosticLevel.hpp"
 #include "FunctionId.hpp"
 #include "FunctionType.hpp"
+#include "ComplexType.hpp"
 #include "GCCAdapter.hpp"
 #include "Instruction.hpp"
 #include "Operand.hpp"
@@ -63,7 +64,8 @@ Core::TypeKind GCCAdapter::mapTypeTreeToTypeKind(tree &type_tree)
         return Core::TypeKind::POINTER;
     // case NULLPTR_TYPE:
     // case FIXED_POINT_TYPE:
-    // case COMPLEX_TYPE:
+    case COMPLEX_TYPE:
+        return Core::TypeKind::COMPLEX;
     // case VECTOR_TYPE:
     case ARRAY_TYPE:
         return Core::TypeKind::ARRAY;
@@ -77,8 +79,6 @@ Core::TypeKind GCCAdapter::mapTypeTreeToTypeKind(tree &type_tree)
     case FUNCTION_TYPE:
     case METHOD_TYPE:
         return Core::TypeKind::FUNCTION;
-    // case COMPLEX_TYPE:
-    //     return Core::TypeKind::COMPLEX;
     default:
         return Core::TypeKind::UNKNOWN;
     }
@@ -227,7 +227,12 @@ Core::TypeId GCCAdapter::getOrCreateType(tree type_tree)
 
         // case NULLPTR_TYPE:
         // case FIXED_POINT_TYPE:
-        // case COMPLEX_TYPE:
+
+    case COMPLEX_TYPE: {
+        type->data = Core::ComplexType{.component_type_id = getOrCreateType(TREE_TYPE(type_tree))};
+    }
+    break;
+
         // case VECTOR_TYPE:
 
     case ARRAY_TYPE: {
@@ -1286,7 +1291,68 @@ void GCCAdapter::processInstruction(gimple *stmt, Core::Block *block)
         Core::AsmInstruction asm_instr;
         instruction->kind = Core::InstructionKind::ASM;
 
-        // gasm *asm_stmt = as_a<gasm *>(stmt);
+        gasm *asm_stmt = as_a<gasm *>(stmt);
+
+        const char *asm_str = gimple_asm_string(asm_stmt);
+        asm_instr.assembly_string = asm_str ? asm_str : "";
+        asm_instr.is_volatile = gimple_asm_volatile_p(asm_stmt);
+
+        // output operands: list of (constraint, lvalue) tree_list nodes
+        for (unsigned i = 0; i < gimple_asm_noutputs(asm_stmt); ++i)
+        {
+            tree output_op = gimple_asm_output_op(asm_stmt, i);
+            Core::AsmOperandConstraint oc;
+
+            tree purpose = TREE_PURPOSE(output_op);
+            if (purpose && TREE_CODE(purpose) == STRING_CST)
+            {
+                oc.constraint = TREE_STRING_POINTER(purpose);
+            }
+            else if (purpose && TREE_CODE(purpose) == TREE_LIST)
+            {
+                tree inner = TREE_VALUE(purpose);
+                if (inner && TREE_CODE(inner) == STRING_CST)
+                {
+                    oc.constraint = TREE_STRING_POINTER(inner);
+                }
+            }
+            oc.operand = parseOperand(TREE_VALUE(output_op));
+            asm_instr.outputs.push_back(std::move(oc));
+        }
+
+        // input operands: list of (constraint, rvalue) tree_list nodes
+        for (unsigned i = 0; i < gimple_asm_ninputs(asm_stmt); ++i)
+        {
+            tree input_op = gimple_asm_input_op(asm_stmt, i);
+            Core::AsmOperandConstraint oc;
+
+            tree purpose = TREE_PURPOSE(input_op);
+            if (purpose && TREE_CODE(purpose) == STRING_CST)
+            {
+                oc.constraint = TREE_STRING_POINTER(purpose);
+            }
+            else if (purpose && TREE_CODE(purpose) == TREE_LIST)
+            {
+                tree inner = TREE_VALUE(purpose);
+                if (inner && TREE_CODE(inner) == STRING_CST)
+                {
+                    oc.constraint = TREE_STRING_POINTER(inner);
+                }
+            }
+            oc.operand = parseOperand(TREE_VALUE(input_op));
+            asm_instr.inputs.push_back(std::move(oc));
+        }
+
+        // clobber strings
+        for (unsigned i = 0; i < gimple_asm_nclobbers(asm_stmt); ++i)
+        {
+            tree clobber_op = gimple_asm_clobber_op(asm_stmt, i);
+            tree clobber_str = TREE_VALUE(clobber_op);
+            if (clobber_str && TREE_CODE(clobber_str) == STRING_CST)
+            {
+                asm_instr.clobbers.push_back(TREE_STRING_POINTER(clobber_str));
+            }
+        }
 
         instruction->data = std::move(asm_instr);
     }
