@@ -83,7 +83,9 @@ void to_json(json &j, const Type &type)
                                      [&](const FunctionType &f) {
                                          j["return_type_id"] = f.return_type_id;
                                          j["parameter_type_ids"] = f.parameter_type_ids;
-                                     }},
+                                         j["is_variadic"] = f.is_variadic;
+                                     },
+                                     [&](const ComplexType &c) { j["component_type_id"] = c.component_type_id; }},
                type.data);
 }
 

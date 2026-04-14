@@ -312,9 +312,15 @@ Core::TypeId GCCAdapter::getOrCreateType(tree type_tree)
             if (TREE_VALUE(arg) == void_type_node)
             {
                 break;
+                saw_void = true;
             }
 
             function_type.parameter_type_ids.push_back(getOrCreateType(TREE_VALUE(arg)));
+        }
+
+        if (TYPE_ARG_TYPES(type_tree) && !saw_void)
+        {
+            function_type.is_variadic = true;
         }
 
         type->data = std::move(function_type);
