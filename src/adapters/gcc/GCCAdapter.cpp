@@ -615,7 +615,15 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
         {
             if (TREE_CODE(variable_tree) == VAR_DECL && TREE_STATIC(variable_tree) && !DECL_EXTERNAL(variable_tree))
             {
-                std_var.scope = Core::Scope::STATIC;
+                tree ctx = DECL_CONTEXT(variable_tree);
+                if (ctx != NULL_TREE && TREE_CODE(ctx) == FUNCTION_DECL)
+                {
+                    std_var.scope = Core::Scope::STATIC;
+                }
+                else
+                {
+                    std_var.scope = Core::Scope::GLOBAL;
+                }
             }
             else
             {
