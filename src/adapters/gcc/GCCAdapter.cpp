@@ -358,12 +358,13 @@ Core::TypeId GCCAdapter::getOrCreateType(tree type_tree)
 
         function_type.return_type_id = getOrCreateType(TREE_TYPE(type_tree));
 
+        bool saw_void = false;
         for (tree arg = TYPE_ARG_TYPES(type_tree); arg; arg = TREE_CHAIN(arg))
         {
             if (TREE_VALUE(arg) == void_type_node)
             {
-                break;
                 saw_void = true;
+                break;
             }
 
             function_type.parameter_type_ids.push_back(getOrCreateType(TREE_VALUE(arg)));
