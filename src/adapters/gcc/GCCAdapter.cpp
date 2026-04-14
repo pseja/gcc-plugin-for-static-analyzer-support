@@ -161,14 +161,65 @@ Core::TypeId GCCAdapter::getOrCreateType(tree type_tree)
     type_cache[type_tree] = type->id;
 
     // extract type name
-    if (TYPE_NAME(type_tree) && TREE_CODE(TYPE_NAME(type_tree)) == TYPE_DECL && DECL_NAME(TYPE_NAME(type_tree)))
+    if (TYPE_NAME(type_tree))
     {
-        type->name = IDENTIFIER_POINTER(DECL_NAME(TYPE_NAME(type_tree)));
+        tree tn = TYPE_NAME(type_tree);
+        if (TREE_CODE(tn) == IDENTIFIER_NODE)
+        {
+            type->name = IDENTIFIER_POINTER(tn);
+        }
+        else if (TREE_CODE(tn) == TYPE_DECL && DECL_NAME(tn))
+        {
+            type->name = IDENTIFIER_POINTER(DECL_NAME(tn));
+        }
     }
-    else
+    if (type->name.empty())
     {
-        reporter.report(Core::DiagnosticLevel::Warning,
-                        "Type does not have a name or has an unsupported name tree structure");
+        location_t type_loc = UNKNOWN_LOCATION;
+        if (TYPE_NAME(type_tree) && TREE_CODE(TYPE_NAME(type_tree)) == TYPE_DECL)
+        {
+            type_loc = DECL_SOURCE_LOCATION(TYPE_NAME(type_tree));
+        }
+        if (type_loc == UNKNOWN_LOCATION &&
+            (TREE_CODE(type_tree) == RECORD_TYPE || TREE_CODE(type_tree) == UNION_TYPE ||
+             TREE_CODE(type_tree) == QUAL_UNION_TYPE))
+        {
+            tree field = TYPE_FIELDS(type_tree);
+            if (field && (TREE_CODE(field) == FIELD_DECL || TREE_CODE(field) == TYPE_DECL))
+            {
+                type_loc = DECL_SOURCE_LOCATION(field);
+            }
+        }
+        if (type_loc != UNKNOWN_LOCATION && type_loc > BUILTINS_LOCATION)
+        {
+            expanded_location eloc = expand_location(type_loc);
+            if (eloc.file)
+            {
+                std::string prefix;
+                switch (TREE_CODE(type_tree))
+                {
+                case RECORD_TYPE:
+                    prefix = "<anon.struct.";
+                    break;
+                case UNION_TYPE:
+                case QUAL_UNION_TYPE:
+                    prefix = "<anon.union.";
+                    break;
+                case ENUMERAL_TYPE:
+                    prefix = "<anon.enum.";
+                    break;
+                default:
+                    prefix = "<anon.";
+                    break;
+                }
+                type->name = prefix + eloc.file + ":" + std::to_string(eloc.line) + ">";
+            }
+        }
+        if (type->name.empty())
+        {
+            reporter.report(Core::DiagnosticLevel::Warning,
+                            "Type does not have a name or has an unsupported name tree structure");
+        }
     }
     reporter.report(Core::DiagnosticLevel::Debug, "Type name extracted as: " + type->name);
 
