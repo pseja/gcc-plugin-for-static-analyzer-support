@@ -568,7 +568,7 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
         }
         field_var.byte_offset = offset_bits / 8;
 
-        if (DECL_BIT_FIELD(variable_tree))
+        if (DECL_BIT_FIELD(variable_tree) || DECL_BIT_FIELD_TYPE(variable_tree))
         {
             if (DECL_SIZE(variable_tree) && tree_fits_uhwi_p(DECL_SIZE(variable_tree)))
             {
