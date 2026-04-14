@@ -1537,13 +1537,23 @@ void GCCAdapter::processInstruction(gimple *stmt, Core::Block *block)
 
     if (gcode == GIMPLE_CALL && (gimple_call_flags(stmt) & ECF_NORETURN))
     {
-        Core::Instruction *abort_instr = model.createInstruction();
-        block->instruction_ids.push_back(abort_instr->id);
-        abort_instr->parent_block_id = block->id;
-        abort_instr->kind = Core::InstructionKind::ABORT;
-        abort_instr->data = Core::AbortInstruction{};
-        abort_instr->source_location = instruction->source_location;
-        // abort_instr->is_terminator = true;
+        Core::Instruction *term_instr = model.createInstruction();
+        block->instruction_ids.push_back(term_instr->id);
+        term_instr->parent_block_id = block->id;
+        term_instr->source_location = instruction->source_location;
+
+        // distinguish __builtin_unreachable (semantic dead-end) from other noreturn builtins (abort/trap)
+        tree fn_decl = gimple_call_fndecl(stmt);
+        if (fn_decl && fndecl_built_in_p(fn_decl, BUILT_IN_UNREACHABLE))
+        {
+            term_instr->kind = Core::InstructionKind::UNREACHABLE;
+            term_instr->data = Core::UnreachableInstruction{};
+        }
+        else
+        {
+            term_instr->kind = Core::InstructionKind::ABORT;
+            term_instr->data = Core::AbortInstruction{};
+        }
     }
 
     instruction->source_location = getSourceLocation(enhanceLocationT(gimple_location(stmt), gcode, stmt));
