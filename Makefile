@@ -113,12 +113,19 @@ test: test-cl-adapter test-predator
 clean:
 	rm -rf $(BUILD)
 
+## reset the Predator submodule to a clean state
+clean-predator:
+	git -C $(PREDATOR_SRC) reset --hard HEAD
+	git -C $(PREDATOR_SRC) clean -fdx	
+	git submodule update --init --recursive $(PREDATOR_SRC)
+
 # help message
 help:
 	@echo " Build:"
-	@echo "     make build     - configure (if needed) and compile everything"
-	@echo "     make configure - run CMake configuration (no build)"
-	@echo "     make clean     - remove the build directory"
+	@echo "     make build          - configure (if needed) and compile everything"
+	@echo "     make configure      - run CMake configuration (no build)"
+	@echo "     make clean          - remove the build directory"
+	@echo "     make clean-predator - reset the Predator submodule to a clean state"
 	@echo ""
 	@echo " Analyzers:"
 	@echo "     make callgraph FILE=foo.c [ARGS=callgraph.dot]     - emit a Graphviz call-graph DOT file"
