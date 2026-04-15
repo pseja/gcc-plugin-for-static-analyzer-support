@@ -281,6 +281,7 @@ void to_json(json &j, const Function &func)
     j = json{{"id", func.id},
              {"name", func.name},
              {"return_type_id", func.return_type_id},
+             {"source_location", func.source_location},
              {"parameter_ids", func.parameter_ids},
              {"local_variable_ids", func.local_variable_ids},
              {"block_ids", func.block_ids}};

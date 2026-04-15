@@ -5,10 +5,11 @@ JOBS := $(shell nproc)
 PLUGIN := $(BUILD)/libcl_gcc.so
 CALLGRAPH := $(BUILD)/libcl_callgraph_dot.so
 JSON_DUMP := $(BUILD)/libcl_json_dump.so
-PREDATOR := $(BUILD)/analyzers/predator/sl_build/libsl_analyzer.so
-PRED_INC := analyzers/predator/include/predator-builtins
-PRED_TESTS := $(BUILD)/analyzers/predator/sl_build
-CL_ADAPT_TESTS := analyzers/predator/cl/tests/gcc-adapter/C
+PREDATOR_SRC := analyzers/predator
+PREDATOR := $(BUILD)/$(PREDATOR_SRC)/sl_build/libsl_analyzer.so
+PRED_INC := $(PREDATOR_SRC)/include/predator-builtins
+PRED_TESTS := $(BUILD)/$(PREDATOR_SRC)/sl_build
+CL_ADAPT_TESTS := $(PREDATOR_SRC)/cl/tests/gcc-adapter/C
 
 # source file to analyze (required by analyzer targets)
 FILE ?=
@@ -17,7 +18,7 @@ ARGS ?=
 
 # MAKEFLAGS += --no-builtin-rules
 .PHONY: all build configure callgraph json predator \
-        test-predator test-cl-adapter test clean help FORCE
+        test-predator test-cl-adapter test-codemodel test clean help FORCE
 
 # silently check that FILE was provided before an analyzer target runs
 define require_file
@@ -80,37 +81,21 @@ predator:
 test-predator:
 	ctest --test-dir $(PRED_TESTS) -R "^new-plugin-" -j$(JOBS) --progress
 
-## run the old CL GCC-adapter C tests through libcl_gcc.so + libcl_json_dump.so
-## each file must compile and exit 0
-test-cl-adapter: FORCE
-	@pass=0; fail=0; failed_list=''; \
-	for src in $(CL_ADAPT_TESTS)/*.c; do \
-		name=$$(basename $$src); \
-		if $(CC) -S $$src -o /dev/null \
-		  -std=gnu89 -O0 -DPREDATOR -DNDEBUG -Wall -Wextra \
-		  -fplugin=$(PLUGIN) \
-		  -fplugin-arg-libcl_gcc-load-analyzer=$(JSON_DUMP) \
-		  2>/dev/null; \
-		then \
-			printf 'PASS %s\n' "$$name"; pass=$$((pass+1)); \
-		else \
-			printf 'FAIL %s\n' "$$name"; fail=$$((fail+1)); \
-			failed_list="$$failed_list $$name"; \
-		fi; \
-	done; \
-	echo ""; \
-	echo "cl-adapter: $$pass passed, $$fail failed out of $$((pass+fail))"; \
-	if [ $$fail -ne 0 ]; then \
-		echo "Failed tests:$$failed_list"; exit 1; \
-	fi
+## run the CL GCC-adapter tests
+test-cl-adapter:
+	ctest --test-dir $(BUILD) -L cl-adapter -j$(JOBS) --output-on-failure --progress
+
+## run CodeModel tests
+test-codemodel:
+	ctest --test-dir $(BUILD) -L codemodel -j$(JOBS) --output-on-failure --progress
 
 ## run all test suites
-test: test-cl-adapter test-predator
+test: test-cl-adapter test-predator test-codemodel
 
 # cleanup
 
 ## remove the build directory
-clean:
+clean: clean-predator
 	rm -rf $(BUILD)
 
 ## reset the Predator submodule to a clean state
@@ -135,4 +120,5 @@ help:
 	@echo " Tests:"
 	@echo "     make test-predator   - run all Predator regression tests"
 	@echo "     make test-cl-adapter - run all old CL GCC-adapter C tests via libcl_gcc.so"
+	@echo "     make test-codemodel  - run all CodeModel tests"
 	@echo "     make test            - run all of the above"
