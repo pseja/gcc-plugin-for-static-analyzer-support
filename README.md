@@ -130,6 +130,35 @@ make predator FILE=your_file.c
 
 > The `-DPREDATOR` flag and the predator-builtins include are required so that `__VERIFIER_error()` and similar builtins are visible to the analyzed code.
 
+## Running multiple Translation Unit (TU) program analyses
+
+```bash
+# 1. Compile each TU to JSON (one GCC invocation per file)
+gcc -fplugin=libcl_gcc.so -fplugin-arg-libcl_gcc-load-analyzer=libcl_json_dump.so \
+    -fplugin-arg-libcl_gcc-args=a.json -S a.c -o /dev/null
+gcc ... -fplugin-arg-libcl_gcc-args=b.json -S b.c -o /dev/null
+
+# 2. Merge all TUs into one whole-program model
+cl_merge a.json b.json -o merged.json
+
+# 3. Run any native analyzer on the merged model
+cl_analyze merged.json --analyzer=libcl_callgraph_dot.so --args=whole_program.dot
+cl_analyze merged.json --analyzer=libsl_analyzer.so --args=error_label:ERROR
+```
+
+or you can use the Makefile abstractions:
+
+```bash
+# compile every .c file in DIR to JSON, then merge into DIR/merged.json
+make json-multi DIR=<dir>
+
+# generate a DOT CFG from DIR/merged.json and render it to DIR/merged.svg
+make dot-multi DIR=<dir> [VERBOSITY=CLEAN|COMPACT|FULL]
+
+# shorthand for json-multi + dot-multi in one step
+make merge DIR=<dir>
+```
+
 ## Running Tests
 
 ### Predator regression test suite

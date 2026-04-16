@@ -109,6 +109,19 @@ endfunction()
 add_cl_analyzer(cl_callgraph_dot analyzers/callgraph_dot/callgraph_dot.cpp)
 add_cl_analyzer(cl_json_dump analyzers/json_dump/json_dump.cpp)
 
+# standalone tools (cl_merge, cl_analyze)
+function(add_cl_tool target)
+  add_executable(${target} src/tools/${target}/main.cpp)
+  target_include_directories(${target} PRIVATE include src/core src/exporters
+                                               src/annotation_services)
+  target_link_libraries(${target} PRIVATE cl_core ${CMAKE_DL_LIBS})
+  target_compile_options(${target} PRIVATE -Wall -Wextra -Werror -fno-rtti)
+  set_target_properties(${target} PROPERTIES CXX_STANDARD 23)
+endfunction()
+
+add_cl_tool(cl_merge)
+add_cl_tool(cl_analyze)
+
 # predator integration when WITH_PREDATOR=ON: 1. apply
 # build-aux/cl_gcc_support.patch to add sl_analyzer_shim.cc and the new-plugin
 # test macros to predator's sl/CMakeLists.txt 2. configure and build
