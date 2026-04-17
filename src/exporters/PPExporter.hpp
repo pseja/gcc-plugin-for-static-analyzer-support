@@ -28,6 +28,7 @@ class PPExporter : public Exporter
     void onBeginFunction(const Core::CodeModel &model, const Core::Function &func) override;
     void onEndFunction(const Core::CodeModel &model, const Core::Function &func) override;
 
+    bool shouldVisitBlock(const Core::CodeModel &model, const Core::Block &block) override;
     void onBeginBlock(const Core::CodeModel &model, const Core::Block &block) override;
 
     void onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &inst) override;
@@ -37,9 +38,6 @@ class PPExporter : public Exporter
   private:
     std::ofstream file_os;
     std::ostream &os;
-
-    // skip ENTRY and EXIT blocks
-    bool skip_block = false;
 
     // tracks whether the current block already has an explicit terminator
     bool block_has_terminator = false;

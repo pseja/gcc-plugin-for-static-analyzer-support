@@ -99,22 +99,20 @@ void PPExporter::onEndFunction(const Core::CodeModel &, const Core::Function &)
     os << "\n";
 }
 
+bool PPExporter::shouldVisitBlock(const Core::CodeModel &, const Core::Block &block)
+{
+    return block.name != "ENTRY" && block.name != "EXIT";
+}
+
 void PPExporter::onBeginBlock(const Core::CodeModel &, const Core::Block &block)
 {
-    if (block.name == "ENTRY" || block.name == "EXIT")
-    {
-        skip_block = true;
-        return;
-    }
-
-    skip_block = false;
     block_has_terminator = false;
     os << "\n\t" << block.name << ":\n";
 }
 
 void PPExporter::onEndBlock(const Core::CodeModel &model, const Core::Block &block)
 {
-    if (skip_block || block_has_terminator)
+    if (block_has_terminator)
     {
         return;
     }
@@ -142,11 +140,6 @@ void PPExporter::onEndBlock(const Core::CodeModel &model, const Core::Block &blo
 
 void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &inst)
 {
-    if (skip_block)
-    {
-        return;
-    }
-
     std::visit(
         overloaded{
             [&](const Core::AssignInstruction &a) {
