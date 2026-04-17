@@ -31,6 +31,11 @@ void CodeModelVisitor::walk(const CodeModel &model)
         for (const auto block_id : func.block_ids)
         {
             const Block &block = *model.getBlock(block_id);
+            if (!shouldVisitBlock(model, block))
+            {
+                continue;
+            }
+
             onBeginBlock(model, block);
 
             for (const auto instr_id : block.instruction_ids)
@@ -69,6 +74,11 @@ void CodeModelVisitor::onBeginFunction(const CodeModel &, const Function &)
 }
 void CodeModelVisitor::onEndFunction(const CodeModel &, const Function &)
 {
+}
+
+bool CodeModelVisitor::shouldVisitBlock(const CodeModel &, const Block &)
+{
+    return true;
 }
 
 void CodeModelVisitor::onBeginBlock(const CodeModel &, const Block &)

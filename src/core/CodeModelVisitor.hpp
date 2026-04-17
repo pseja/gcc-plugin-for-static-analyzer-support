@@ -27,6 +27,8 @@ class CodeModelVisitor
     virtual void onBeginFunction(const CodeModel &, const Function &);
     virtual void onEndFunction(const CodeModel &, const Function &);
 
+    virtual bool shouldVisitBlock(const CodeModel &, const Block &);
+
     virtual void onBeginBlock(const CodeModel &, const Block &);
     virtual void onEndBlock(const CodeModel &, const Block &);
 

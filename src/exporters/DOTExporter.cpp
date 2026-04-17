@@ -8,24 +8,99 @@
 namespace CodeListener::Exporters
 {
 
-DOTExporter::DOTExporter(std::ostream &os) : os(os)
+DOTExporter::DOTExporter(std::ostream &os, DotVerbosity verbosity) : os(os), verbosity(verbosity)
 {
 }
 
-DOTExporter::DOTExporter(const std::string &filepath) : file_os(filepath), os(file_os)
+DOTExporter::DOTExporter(const std::string &filepath, DotVerbosity verbosity)
+    : file_os(filepath), os(file_os), verbosity(verbosity)
 {
+}
+
+// Returns true when 'instr' is an explicit CFG terminal (goto / if / ret / switch / abort).
+static bool isCleanTerminal(const Core::Instruction &instr)
+{
+    return std::visit(
+        overloaded{
+            [](const Core::ReturnInstruction &) { return true; }, [](const Core::GotoInstruction &) { return true; },
+            [](const Core::CondInstruction &) { return true; }, [](const Core::SwitchInstruction &) { return true; },
+            [](const Core::AbortInstruction &) { return true; }, [](const auto &) { return false; }},
+        instr.data);
+}
+
+// Returns true if the block in CLEAN mode needs a "..." body node.
+static bool cleanHasBody(const Core::CodeModel &model, const Core::Block &block)
+{
+    if (block.instruction_ids.empty())
+    {
+        return false;
+    }
+
+    const auto *last = model.getInstruction(block.instruction_ids.back());
+    if (!last)
+    {
+        return false;
+    }
+
+    return isCleanTerminal(*last) ? (block.instruction_ids.size() > 1) : true;
+}
+
+bool DOTExporter::shouldVisitBlock(const Core::CodeModel &, const Core::Block &block)
+{
+    if (verbosity == DotVerbosity::FULL)
+    {
+        return true;
+    }
+    if (block.name == "ENTRY" || block.name == "EXIT")
+    {
+        return false;
+    }
+    if (verbosity == DotVerbosity::COMPACT && block.instruction_ids.empty())
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void DOTExporter::onBeginModel(const Core::CodeModel &)
 {
+    edge_buffer.str("");
+    edge_buffer.clear();
+    curr_file.clear();
+    file_cluster_id = 0;
+
     os << "digraph IR {\n";
     os << "    node [shape=none, fontname=\"Courier New\", fontsize=10];\n";
     os << "    edge [fontname=\"Courier New\", fontsize=9];\n";
     os << "    graph [rankdir=TB, splines=polyline, compound=true];\n\n";
 }
 
+void DOTExporter::closeFileCluster()
+{
+    if (!curr_file.empty())
+    {
+        os << "    }\n\n";
+        curr_file.clear();
+    }
+}
+
+void DOTExporter::openFileCluster(const std::string &file)
+{
+    closeFileCluster();
+
+    curr_file = file;
+    os << "    subgraph cluster_file_" << file_cluster_id++ << " {\n";
+    os << "        label=" << '"' << escape(file) << '"' << ";\n";
+    os << "        color=\"#d1d5db\";\n";
+    os << "        style=dashed;\n";
+    os << "        bgcolor=\"#f9fafb\";\n";
+    os << "        margin=20;\n\n";
+}
+
 void DOTExporter::onEndModel(const Core::CodeModel &model)
 {
+    closeFileCluster();
     const auto &cg = analysis_manager.getAnnotation<AnnotationServices::CallGraph>(model);
 
     for (const auto &[caller_id, node] : cg.nodes)
@@ -50,59 +125,148 @@ void DOTExporter::onEndModel(const Core::CodeModel &model)
                 continue;
             }
 
-            os << "    block_" << instr->parent_block_id << " -> block_" << callee->block_ids.front()
-               << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
+            const Core::Block *target_block = nullptr;
+            for (const auto &bid : callee->block_ids)
+            {
+                if (isBlockVisible(model, bid))
+                {
+                    target_block = model.getBlock(bid);
+                    break;
+                }
+            }
+            if (!target_block)
+            {
+                continue;
+            }
+
+            if (verbosity == DotVerbosity::CLEAN)
+            {
+                const auto *src_block = model.getBlock(instr->parent_block_id);
+                bool has_body = src_block && cleanHasBody(model, *src_block);
+                os << "    block_" << instr->parent_block_id << (has_body ? "_1" : "_0") << " -> block_"
+                   << target_block->id << "_0"
+                   << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
+            }
+            else
+            {
+                os << "    block_" << instr->parent_block_id << " -> block_" << target_block->id
+                   << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
+            }
         }
     }
+
+    os << edge_buffer.str();
 
     os << "}\n";
 }
 
 void DOTExporter::onBeginFunction(const Core::CodeModel &, const Core::Function &func)
 {
-    os << "    subgraph cluster_func_" << func.id << " {\n";
-    os << "        label=<<b>Function: " << escape(func.name) << "</b>>;\n";
-    os << "        style=filled;\n";
-    os << "        fillcolor=\"#f8f9fa\";\n";
-    os << "        color=\"#6c757d\";\n";
-    os << "        margin=15;\n\n";
+    const std::string &file = func.source_location.file;
+    if (file != curr_file)
+    {
+        openFileCluster(file);
+    }
+
+    os << "        subgraph cluster_func_" << func.id << " {\n";
+    os << "            label=<<b>" << escape(func.name) << "()</b>>;\n";
+    os << "            style=filled;\n";
+    os << "            fillcolor=\"#ffffff\";\n";
+    os << "            color=\"#9ca3af\";\n";
+    os << "            margin=15;\n\n";
 }
 
 void DOTExporter::onEndFunction(const Core::CodeModel &, const Core::Function &)
 {
-    os << "    }\n\n";
+    os << "        }\n\n";
 }
 
-void DOTExporter::onBeginBlock(const Core::CodeModel &, const Core::Block &block)
+void DOTExporter::onBeginBlock(const Core::CodeModel &model, const Core::Block &block)
 {
+    if (verbosity == DotVerbosity::CLEAN)
+    {
+        os << "        subgraph cluster_block_" << block.id << " {\n";
+        os << "            label=\"" << escape(block.name) << "\";\n";
+        os << "            color=\"#6b7280\";\n";
+        os << "            style=dashed;\n";
+        os << "            bgcolor=\"#ffffff\";\n";
+        os << "            margin=8;\n";
+
+        if (block.instruction_ids.empty())
+        {
+            os << "            block_" << block.id << "_0 [shape=box, color=\"#9ca3af\", "
+               << "fontcolor=\"#9ca3af\", style=dotted, label=\"(empty)\"];\n";
+        }
+        else
+        {
+            const auto *last_instr = model.getInstruction(block.instruction_ids.back());
+            bool has_body = cleanHasBody(model, block);
+            if (has_body)
+            {
+                os << "            block_" << block.id << "_0 [shape=box, color=\"#9ca3af\", "
+                   << "fontcolor=\"#9ca3af\", style=dotted, label=\"...\"];\n";
+                os << "            block_" << block.id << "_0 -> block_" << block.id << "_1 "
+                   << "[color=\"#9ca3af\", style=dotted, arrowhead=open];\n";
+            }
+
+            const std::string term_suffix = has_body ? "_1" : "_0";
+
+            auto [term_label, term_color, term_style] = DOTExporter::cleanTerminalInfo(*last_instr);
+            os << "            block_" << block.id << term_suffix << " [shape=box, color=\"" << term_color
+               << "\", fontcolor=\"" << term_color << "\", style=" << term_style << ", label=\"" << term_label
+               << "\"];\n";
+        }
+
+        os << "        }\n";
+        return;
+    }
+
     os << "        block_" << block.id << " [label=<\n";
     os << "            <table border=\"0\" cellborder=\"1\" cellspacing=\"0\" cellpadding=\"4\">\n";
 
-    os << "                <tr><td bgcolor=\"#e9ecef\" colspan=\"2\" align=\"center\">"
-       << "<b>Block " << escape(block.name) << " (" << block.id << ")</b></td></tr>\n";
+    if (verbosity == DotVerbosity::FULL)
+    {
+        os << "                <tr><td bgcolor=\"#f3f4f6\" colspan=\"2\" align=\"center\">"
+           << "<b>Block " << escape(block.name) << " (" << block.id << ")</b></td></tr>\n";
+    }
+    else
+    {
+        os << "                <tr><td bgcolor=\"#f3f4f6\" align=\"center\">"
+           << "<b>" << escape(block.name) << "</b></td></tr>\n";
+    }
 
     if (block.instruction_ids.empty())
     {
-        os << "                <tr><td bgcolor=\"#ffffff\" colspan=\"2\"><i>&lt;empty&gt;</i></td></tr>\n";
+        const char *span = (verbosity == DotVerbosity::FULL) ? " colspan=\"2\"" : "";
+        os << "                <tr><td bgcolor=\"#ffffff\"" << span << "><i>&lt;empty&gt;</i></td></tr>\n";
     }
 }
 
 void DOTExporter::onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &instr)
 {
+    if (verbosity == DotVerbosity::CLEAN)
+    {
+        return;
+    }
+
     os << exportInstruction(model, instr);
 }
 
 void DOTExporter::onEndBlock(const Core::CodeModel &model, const Core::Block &block)
 {
-    os << "            </table>\n";
-    os << "        >];\n";
+    if (verbosity != DotVerbosity::CLEAN)
+    {
+        os << "            </table>\n";
+        os << "        >];\n";
+    }
+
     emitBlockEdges(model, block);
 }
 
 void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block &block)
 {
-    auto src_id = block.id;
     bool handled_edges = false;
+    std::string src = edgeSrcNodeStr(model, block);
 
     if (!block.instruction_ids.empty())
     {
@@ -112,7 +276,7 @@ void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block
         {
             for (const auto &sw_case : sw_instr->cases)
             {
-                if (sw_case.target_block_id.isValid())
+                if (sw_case.target_block_id.isValid() && isBlockVisible(model, sw_case.target_block_id))
                 {
                     std::string label =
                         sw_case.low_value.has_value() ? formatOperand(model, sw_case.low_value.value()) : "default";
@@ -121,23 +285,23 @@ void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block
                         label += " ... " + formatOperand(model, sw_case.high_value.value());
                     }
 
-                    os << "    block_" << src_id << " -> block_" << sw_case.target_block_id << " [label=\""
-                       << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
+                    edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(sw_case.target_block_id) << " [label=\""
+                                << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
                 }
             }
             handled_edges = true;
         }
         else if (auto *cond_instr = std::get_if<Core::CondInstruction>(&last_instr->data))
         {
-            if (cond_instr->true_target.isValid())
+            if (cond_instr->true_target.isValid() && isBlockVisible(model, cond_instr->true_target))
             {
-                os << "    block_" << src_id << " -> block_" << cond_instr->true_target
-                   << " [label=\"true\", color=\"#2e7d32\", fontcolor=\"#2e7d32\"];\n";
+                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(cond_instr->true_target)
+                            << " [label=\"true\", color=\"#059669\", fontcolor=\"#059669\"];\n";
             }
-            if (cond_instr->false_target.isValid())
+            if (cond_instr->false_target.isValid() && isBlockVisible(model, cond_instr->false_target))
             {
-                os << "    block_" << src_id << " -> block_" << cond_instr->false_target
-                   << " [label=\"false\", color=\"#c62828\", fontcolor=\"#c62828\"];\n";
+                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(cond_instr->false_target)
+                            << " [label=\"false\", color=\"#dc2626\", fontcolor=\"#dc2626\"];\n";
             }
             handled_edges = true;
         }
@@ -147,32 +311,130 @@ void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block
     {
         for (auto succ_id : block.successors)
         {
-            os << "    block_" << src_id << " -> block_" << succ_id << " [color=\"#495057\"];\n";
+            if (isBlockVisible(model, succ_id))
+            {
+                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(succ_id) << " [color=\"#6b7280\"];\n";
+            }
         }
     }
+}
+
+bool DOTExporter::isBlockVisible(const Core::CodeModel &model, Core::BlockId id) const
+{
+    if (verbosity == DotVerbosity::FULL)
+    {
+        return true;
+    }
+    const auto *b = model.getBlock(id);
+    if (!b)
+    {
+        return false;
+    }
+    if (b->name == "ENTRY" || b->name == "EXIT")
+    {
+        return false;
+    }
+    if (verbosity == DotVerbosity::COMPACT && b->instruction_ids.empty())
+    {
+        return false;
+    }
+
+    return true;
+}
+
+std::string DOTExporter::edgeSrcNodeStr(const Core::CodeModel &model, const Core::Block &block) const
+{
+    if (verbosity == DotVerbosity::CLEAN)
+    {
+        bool has_body = cleanHasBody(model, block);
+        return "block_" + std::to_string(block.id.index) + (has_body ? "_1" : "_0");
+    }
+
+    return "block_" + std::to_string(block.id.index);
+}
+
+std::string DOTExporter::edgeTargetNodeStr(Core::BlockId id) const
+{
+    if (verbosity == DotVerbosity::CLEAN)
+    {
+        return "block_" + std::to_string(id.index) + "_0";
+    }
+
+    return "block_" + std::to_string(id.index);
+}
+
+std::tuple<const char *, const char *, const char *> DOTExporter::cleanTerminalInfo(const Core::Instruction &instr)
+{
+    if (!isCleanTerminal(instr))
+    {
+        return {"goto", "#6b7280", "bold"};
+    }
+
+    return std::visit(
+        overloaded{[](const Core::ReturnInstruction &) -> std::tuple<const char *, const char *, const char *> {
+                       return {"ret", "#7c3aed", "bold"};
+                   },
+                   [](const Core::GotoInstruction &) -> std::tuple<const char *, const char *, const char *> {
+                       return {"goto", "#6b7280", "bold"};
+                   },
+                   [](const Core::CondInstruction &) -> std::tuple<const char *, const char *, const char *> {
+                       return {"if", "#059669", "bold"};
+                   },
+                   [](const Core::SwitchInstruction &) -> std::tuple<const char *, const char *, const char *> {
+                       return {"switch", "#d97706", "bold"};
+                   },
+                   [](const Core::CallInstruction &) -> std::tuple<const char *, const char *, const char *> {
+                       return {"call", "#2563eb", "dashed"};
+                   },
+                   [](const Core::AbortInstruction &) -> std::tuple<const char *, const char *, const char *> {
+                       return {"abort", "#dc2626", "bold"};
+                   },
+                   [](const auto &) -> std::tuple<const char *, const char *, const char *> {
+                       return {"insn", "#9ca3af", "solid"};
+                   }},
+        instr.data);
 }
 
 std::string DOTExporter::exportInstruction(const Core::CodeModel &model, const Core::Instruction &instr)
 {
     std::ostringstream ss;
 
-    std::string bgcolor = std::visit(overloaded{[](const std::monostate &) { return "#eeeeee"; },
-                                                [](const Core::AssignInstruction &) { return "#e8f5e9"; },
-                                                [](const Core::CallInstruction &) { return "#e3f2fd"; },
-                                                [](const Core::ReturnInstruction &) { return "#e1bee7"; },
-                                                [](const Core::CondInstruction &) { return "#fff8e1"; },
-                                                [](const Core::SwitchInstruction &) { return "#fff3e0"; },
-                                                [](const Core::GotoInstruction &) { return "#f3e5f5"; },
-                                                [](const Core::PhiInstruction &) { return "#fce4ec"; },
-                                                [](const Core::AbortInstruction &) { return "#ef9a9a"; },
-                                                [](const Core::LabelInstruction &) { return "#cfd8dc"; },
-                                                [](const Core::AsmInstruction &) { return "#d7ccc8"; },
-                                                [](const Core::ClobberInstruction &) { return "#ffebee"; },
-                                                [](const Core::UnreachableInstruction &) { return "#bcaaa4"; },
-                                                [](const Core::UnknownInstruction &) { return "#eeeeee"; }},
+    std::string bgcolor = std::visit(overloaded{// standard execution
+                                                [](const std::monostate &) { return "#ffffff"; },
+                                                [](const Core::AssignInstruction &) { return "#ffffff"; },
+                                                [](const Core::CondInstruction &) { return "#ffffff"; },
+                                                [](const Core::PhiInstruction &) { return "#ffffff"; },
+                                                [](const Core::LabelInstruction &) { return "#ffffff"; },
+                                                [](const Core::UnknownInstruction &) { return "#ffffff"; },
+
+                                                // inter-procedural
+                                                [](const Core::CallInstruction &) { return "#eff6ff"; },
+
+                                                // exiting
+                                                [](const Core::ReturnInstruction &) { return "#f5f3ff"; },
+
+                                                // danger/crash
+                                                [](const Core::AbortInstruction &) { return "#fef2f2"; },
+                                                [](const Core::ClobberInstruction &) { return "#fef2f2"; },
+                                                [](const Core::UnreachableInstruction &) { return "#fef2f2"; },
+
+                                                // branching
+                                                [](const Core::SwitchInstruction &) { return "#fffbeb"; },
+                                                [](const Core::GotoInstruction &) { return "#fffbeb"; },
+
+                                                // hardware/direct memory
+                                                [](const Core::AsmInstruction &) { return "#f1f5f9"; }},
                                      instr.data);
 
     std::string readable_expr = formatInstructionText(model, instr);
+
+    if (verbosity == DotVerbosity::COMPACT)
+    {
+        ss << "                <tr>\n"
+           << "                    <td bgcolor=\"" << bgcolor << "\" align=\"left\">" << readable_expr << "</td>\n"
+           << "                </tr>\n";
+        return ss.str();
+    }
 
     std::string tooltip_attr = "";
     if (!instr.source_location.file.empty() && instr.source_location.file != "<unknown>")
@@ -197,7 +459,23 @@ std::string DOTExporter::formatOperand(const Core::CodeModel &model, const Core:
     return std::visit(overloaded{[&](const Core::ConstantOperand &co) { return escape(co.value); },
                                  [&](const Core::VariableOperand &vo) {
                                      const auto *var = model.getVariable(vo.id);
-                                     std::string res = var ? escape(var->name) : "???";
+                                     std::string res;
+                                     if (!var)
+                                     {
+                                         res = "???";
+                                     }
+                                     else if (!var->name.empty())
+                                     {
+                                         res = escape(var->name);
+                                     }
+                                     else if (var->artificial)
+                                     {
+                                         res = "<i>tmp." + std::to_string(vo.id.index) + "</i>";
+                                     }
+                                     else
+                                     {
+                                         res = "<i>anon." + std::to_string(vo.id.index) + "</i>";
+                                     }
                                      for (const auto &acc : vo.access_path)
                                      {
                                          res = formatAccessor(model, acc, res);
@@ -355,7 +633,7 @@ std::string DOTExporter::formatInstructionText(const Core::CodeModel &model, con
         std::string name = getRawTypeName(op);
         if (!name.empty())
         {
-            return "<font color=\"#2e7d32\">" + escape(name) + "</font> ";
+            return "<font color=\"#059669\">" + escape(name) + "</font> ";
         }
         return "";
     };
@@ -441,7 +719,7 @@ std::string DOTExporter::formatInstructionText(const Core::CodeModel &model, con
                 return "<b>" + formatOperand(model, lbl.label) + ":</b>";
             },
             [&](const Core::ClobberInstruction &cl) -> std::string {
-                return "<b><font color=\"#c62828\">clobber</font></b> " + formatOperand(model, cl.clobbered_variable);
+                return "<b><font color=\"#dc2626\">clobber</font></b> " + formatOperand(model, cl.clobbered_variable);
             },
             [&](const Core::PhiInstruction &phi) -> std::string {
                 std::string res =
@@ -463,7 +741,7 @@ std::string DOTExporter::formatInstructionText(const Core::CodeModel &model, con
             },
             [&](const Core::AbortInstruction &) -> std::string { return "<b>abort()</b>"; },
             [&](const Core::UnreachableInstruction &) -> std::string { return "<b>unreachable</b>"; },
-            [&](const Core::AsmInstruction &) -> std::string { return "<b>asm(NOT HANDLED BY THE ADAPTER YET)</b>"; },
+            [&](const Core::AsmInstruction &) -> std::string { return "<b>asm()</b>"; },
             [&](const Core::UnknownInstruction &u) -> std::string {
                 return "<b>unknown</b>: " + escape(u.description);
             }},
