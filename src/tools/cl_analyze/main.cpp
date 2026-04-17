@@ -218,8 +218,12 @@ int main(int argc, char *argv[])
         CodeListener::AnnotationServices::AnalysisManager am;
         CodeListener::AnalysisContext ctx(stderr_reporter, am);
         const char *args_cstr = analyzer_args.empty() ? nullptr : analyzer_args.c_str();
-        api->analyze(model, ctx, args_cstr);
+        bool ok = api->analyze(model, ctx, args_cstr);
         dlclose(handle);
+        if (!ok || stderr_reporter.hadError())
+        {
+            return EXIT_FAILURE;
+        }
     }
 
     return EXIT_SUCCESS;

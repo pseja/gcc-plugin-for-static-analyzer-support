@@ -9,13 +9,14 @@ LegacyPredatorBridge::LegacyPredatorBridge(struct cl_code_listener *listener) : 
 {
 }
 
-void LegacyPredatorBridge::analyze(const Core::CodeModel &model, AnalysisContext &ctx)
+bool LegacyPredatorBridge::analyze(const Core::CodeModel &model, AnalysisContext &ctx)
 {
     // the legacy Predator C API has its own internal reporter
     (void)ctx;
 
     CodeListener::Adapters::PredatorAdapter pa(model, listener);
     pa.emit();
+    return true;
 }
 
 } // namespace CodeListener::CompilerAbstractionLayer

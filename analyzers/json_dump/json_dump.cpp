@@ -25,10 +25,11 @@
 
 using namespace CodeListener;
 
-static void json_dump_analyze(const Core::CodeModel &model, AnalysisContext &ctx, const char *args)
+static bool json_dump_analyze(const Core::CodeModel &model, AnalysisContext &ctx, const char *args)
 {
     const std::string outpath = (args && args[0] != '\0') ? args : "ir_dump.json";
     ctx.exportJson(model, outpath);
+    return true;
 }
 
 static const cl_native_analyzer_api_t json_dump_api = {

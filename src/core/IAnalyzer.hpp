@@ -23,8 +23,10 @@ class IAnalyzer
      *
      * @param model The CodeModel to analyze.
      * @param ctx   Services: GCC-formatted reporter, shared annotation cache, and export helpers.
+     *
+     * @return true if analysis succeeded; false if at least one error was found
      */
-    virtual void analyze(const CodeModel &model, AnalysisContext &ctx) = 0;
+    virtual bool analyze(const CodeModel &model, AnalysisContext &ctx) = 0;
 };
 
 } // namespace CodeListener::Core

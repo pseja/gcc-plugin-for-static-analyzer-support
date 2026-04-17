@@ -25,8 +25,11 @@ struct cl_native_analyzer_api_t
      * @param model The fully populated CodeModel for the translation unit.
      * @param ctx   Services available to the analyzer.
      * @param args  Value of -fplugin-arg-<plugin>-args=VALUE. May be NULL.
+     *
+     * @return true if analysis succeeded; false if at least one error was found.
+     *         A false return causes the calling tool to exit with a non-zero status.
      */
-    void (*analyze)(const CodeListener::Core::CodeModel &model, CodeListener::AnalysisContext &ctx, const char *args);
+    bool (*analyze)(const CodeListener::Core::CodeModel &model, CodeListener::AnalysisContext &ctx, const char *args);
 };
 
 extern "C"

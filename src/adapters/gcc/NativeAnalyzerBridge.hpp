@@ -17,7 +17,7 @@ class NativeAnalyzerBridge : public Core::IAnalyzer
   public:
     explicit NativeAnalyzerBridge(const cl_native_analyzer_api_t *api, std::string args = {});
 
-    void analyze(const Core::CodeModel &model, AnalysisContext &ctx) override;
+    bool analyze(const Core::CodeModel &model, AnalysisContext &ctx) override;
 
   private:
     const cl_native_analyzer_api_t *api;

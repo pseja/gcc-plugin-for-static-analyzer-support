@@ -28,7 +28,7 @@
 
 using namespace CodeListener;
 
-static void callgraph_analyze(const Core::CodeModel &model, AnalysisContext &ctx, const char *args)
+static bool callgraph_analyze(const Core::CodeModel &model, AnalysisContext &ctx, const char *args)
 {
     const std::string outpath = (args && args[0] != '\0') ? args : "callgraph.dot";
 
@@ -38,7 +38,7 @@ static void callgraph_analyze(const Core::CodeModel &model, AnalysisContext &ctx
     if (!out.is_open())
     {
         ctx.reporter.report(Core::DiagnosticLevel::Error, "callgraph_dot: cannot open output file '" + outpath + "'");
-        return;
+        return false;
     }
 
     out << "digraph callgraph {\n";
@@ -88,6 +88,7 @@ static void callgraph_analyze(const Core::CodeModel &model, AnalysisContext &ctx
     }
 
     out << "}\n";
+    return true;
 }
 
 static const cl_native_analyzer_api_t callgraph_dot_api = {

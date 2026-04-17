@@ -8,12 +8,13 @@ NativeAnalyzerBridge::NativeAnalyzerBridge(const cl_native_analyzer_api_t *api, 
 {
 }
 
-void NativeAnalyzerBridge::analyze(const Core::CodeModel &model, AnalysisContext &ctx)
+bool NativeAnalyzerBridge::analyze(const Core::CodeModel &model, AnalysisContext &ctx)
 {
     if (api && api->analyze)
     {
-        api->analyze(model, ctx, args.empty() ? nullptr : args.c_str());
+        return api->analyze(model, ctx, args.empty() ? nullptr : args.c_str());
     }
+    return true;
 }
 
 } // namespace CodeListener::CompilerAbstractionLayer

@@ -240,10 +240,19 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     }
 
     // feed the model to every loaded analyzer via a shared AnalysisContext
+    bool analysis_succeeded{true};
     AnalysisContext ctx(reporter, PluginContext::getInstance().shared_analysis_manager);
     for (auto &analyzer : PluginContext::getInstance().analyzers)
     {
-        analyzer->analyze(model, ctx);
+        if (!analyzer->analyze(model, ctx))
+        {
+            analysis_succeeded = false;
+        }
+    }
+
+    if (!analysis_succeeded)
+    {
+        reporter.report(Core::DiagnosticLevel::Error, "One or more analyzers reported errors");
     }
 
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished");
