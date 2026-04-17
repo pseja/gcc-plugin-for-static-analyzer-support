@@ -347,11 +347,11 @@ void JSONExporter::onEndModel(const Core::CodeModel &model)
 {
     json j_model;
 
-    j_model["types"] = model.getTypes();
-    j_model["variables"] = model.getVariables();
-    j_model["functions"] = model.getFunctions();
-    j_model["blocks"] = model.getBlocks();
-    j_model["instructions"] = model.getInstructions();
+    j_model["types"] = model.types();
+    j_model["variables"] = model.variables();
+    j_model["functions"] = model.functions();
+    j_model["blocks"] = model.blocks();
+    j_model["instructions"] = model.instructions();
 
     json j_annotations = json::object();
     const auto &call_graph = analysis_manager.getAnnotation<AnnotationServices::CallGraph>(model);

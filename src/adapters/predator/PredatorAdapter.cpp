@@ -26,7 +26,7 @@ void PredatorAdapter::emit()
     }
 
     // pre-passes for types and variables, because old cl expects to know them already
-    for (const auto &type : model.getTypes())
+    for (const auto &type : model.types())
     {
         cl_types_pool.emplace_back();
         struct cl_type *cl_t = &cl_types_pool.back();
@@ -77,7 +77,7 @@ void PredatorAdapter::emit()
         }
     }
 
-    for (const auto &type : model.getTypes())
+    for (const auto &type : model.types())
     {
         struct cl_type *cl_t = type_map[type.id];
 
@@ -147,7 +147,7 @@ void PredatorAdapter::emit()
                    type.data);
     }
 
-    for (const auto &var : model.getVariables())
+    for (const auto &var : model.variables())
     {
         cl_vars_pool.emplace_back();
         struct cl_var *cl_v = &cl_vars_pool.back();
@@ -175,14 +175,14 @@ void PredatorAdapter::emit()
     }
 
     // pre-populate function name-to-uid map so initializer chains can reference functions correctly
-    for (const auto &func : model.getFunctions())
+    for (const auto &func : model.functions())
     {
         name_to_func_uid[func.name] = static_cast<int>(func.id.index) + 1000000;
     }
 
     // build cl_initializer chains for variables that have initial values
     // (done after all vars/types are registered so mapOperand can resolve cross-references)
-    for (const auto &var : model.getVariables())
+    for (const auto &var : model.variables())
     {
         const auto *sv = std::get_if<Core::StandardVariable>(&var.data);
         if (!sv || !sv->initial_value.has_value())
@@ -227,12 +227,12 @@ void PredatorAdapter::emit()
 
 void PredatorAdapter::emitFunctions()
 {
-    for (const auto &func : model.getFunctions())
+    for (const auto &func : model.functions())
     {
         name_to_func_uid[func.name] = static_cast<int>(func.id.index) + 1000000;
     }
 
-    for (const auto &func : model.getFunctions())
+    for (const auto &func : model.functions())
     {
         emitFunction(func);
     }

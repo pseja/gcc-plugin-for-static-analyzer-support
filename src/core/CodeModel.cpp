@@ -101,27 +101,6 @@ Instruction *CodeModel::getInstructionMutable(InstructionId id)
     return &instructions_pool[id];
 }
 
-const std::deque<Type> &CodeModel::getTypes() const
-{
-    return types_pool;
-}
-const std::deque<Variable> &CodeModel::getVariables() const
-{
-    return variables_pool;
-}
-const std::deque<Function> &CodeModel::getFunctions() const
-{
-    return functions_pool;
-}
-const std::deque<Block> &CodeModel::getBlocks() const
-{
-    return blocks_pool;
-}
-const std::deque<Instruction> &CodeModel::getInstructions() const
-{
-    return instructions_pool;
-}
-
 const std::string &CodeModel::getFilename() const
 {
     return filename;
@@ -192,67 +171,5 @@ void CodeModel::addInstruction(Instruction *instruction)
     instruction->id = InstructionId{instructions_pool.size()};
     instructions_pool.push_back(*instruction);
 }
-
-// template <typename T>
-// void CodeModel::attachAnnotation(NodeId target_id, const std::string &key, std::unique_ptr<T> data)
-// {
-//     annotations[target_id][key] = std::move(data);
-// }
-
-// template <typename T>
-// const T *CodeModel::getAnnotation(NodeId target_id, const std::string &key) const
-// {
-//     auto it = annotations.find(target_id);
-//     if (it != annotations.end())
-//     {
-//         auto it2 = it->second.find(key);
-//         if (it2 != it->second.end())
-//         {
-//             return dynamic_cast<const T *>(it2->second.get());
-//         }
-//     }
-//     return nullptr;
-// }
-
-// auto CodeModel::types() const
-// {
-//     return types_pool | std::views::values;
-// }
-// auto CodeModel::variables() const
-// {
-//     return variables_pool | std::views::values;
-// }
-// auto CodeModel::functions() const
-// {
-//     return functions_pool | std::views::values;
-// }
-// auto CodeModel::blocks() const
-// {
-//     return blocks_pool | std::views::values;
-// }
-// auto CodeModel::instructions() const
-// {
-//     return instructions_pool | std::views::values;
-// }
-
-// auto CodeModel::parametersOf(const Function &func) const
-// {
-//     return func.parameter_ids |
-//            std::views::transform([this](NodeId id) -> const Variable & { return variables_pool.at(id); });
-// }
-// auto CodeModel::blocksOf(const Function &func) const
-// {
-//     return func.block_ids | std::views::transform([this](NodeId id) -> const Block & { return blocks_pool.at(id); });
-// }
-// auto CodeModel::instructionsOf(const Block &block) const
-// {
-//     return block.instruction_ids |
-//            std::views::transform([this](NodeId id) -> const Instruction & { return instructions_pool.at(id); });
-// }
-// auto CodeModel::instructionsOf(const Function &func) const
-// {
-//     return blocksOf(func) | std::views::transform([this](const Block &b) { return instructionsOf(b); }) |
-//            std::views::join;
-// }
 
 } // namespace CodeListener::Core

@@ -2,7 +2,8 @@
 
 // #include <memory> // std::unique_ptr
 // #include <unordered_map> // std::unordered_map
-#include <deque> // std::deque
+#include <deque>  // std::deque
+#include <ranges> // std::views::transform, std::views::join
 
 // #include "AnnotationBase.hpp"
 #include "Block.hpp"
@@ -35,35 +36,51 @@ class CodeModel
     Block *getBlockMutable(BlockId id);
     Instruction *getInstructionMutable(InstructionId id);
 
-    // Type *getType(TypeId id);
-    // Variable *getVariable(VariableId id);
-    // Function *getFunction(FunctionId id);
-    // Block *getBlock(BlockId id);
-    // Instruction *getInstruction(InstructionId id);
-
-    const std::deque<Type> &getTypes() const;
-    const std::deque<Variable> &getVariables() const;
-    const std::deque<Function> &getFunctions() const;
-    const std::deque<Block> &getBlocks() const;
-    const std::deque<Instruction> &getInstructions() const;
-
     const std::string &getFilename() const;
     void setFilename(const std::string &filename);
 
-    // // flat range views
-    // auto types() const;
-    // auto variables() const;
-    // auto functions() const;
-    // auto blocks() const;
-    // auto instructions() const;
-
-    // auto parametersOf(const Function &func) const;
-    // auto blocksOf(const Function &func) const;
-    // auto instructionsOf(const Block &block) const;
-    // auto instructionsOf(const Function &func) const;
-
-    // template <typename T>
-    // const T *getAnnotation(NodeId target_id, const std::string &key) const;
+    // flat range views
+    [[nodiscard]] auto types() const
+    {
+        return std::views::all(types_pool);
+    }
+    [[nodiscard]] auto variables() const
+    {
+        return std::views::all(variables_pool);
+    }
+    [[nodiscard]] auto functions() const
+    {
+        return std::views::all(functions_pool);
+    }
+    [[nodiscard]] auto blocks() const
+    {
+        return std::views::all(blocks_pool);
+    }
+    [[nodiscard]] auto instructions() const
+    {
+        return std::views::all(instructions_pool);
+    }
+    [[nodiscard]] auto parametersOf(const Function &func) const
+    {
+        return func.parameter_ids |
+               std::views::transform([this](VariableId id) -> const Variable & { return variables_pool[id.index]; });
+    }
+    [[nodiscard]] auto blocksOf(const Function &func) const
+    {
+        return func.block_ids |
+               std::views::transform([this](BlockId id) -> const Block & { return blocks_pool[id.index]; });
+    }
+    [[nodiscard]] auto instructionsOf(const Block &block) const
+    {
+        return block.instruction_ids | std::views::transform([this](InstructionId id) -> const Instruction & {
+                   return instructions_pool[id.index];
+               });
+    }
+    [[nodiscard]] auto instructionsOf(const Function &func) const
+    {
+        return blocksOf(func) | std::views::transform([this](const Block &b) { return instructionsOf(b); }) |
+               std::views::join;
+    }
 
     // --- Model Builder API ---
     Type *createType();
@@ -78,9 +95,6 @@ class CodeModel
     void addBlock(Block *block);
     void addInstruction(Instruction *instruction);
 
-    // template <typename T>
-    // void attachAnnotation(NodeId target_id, const std::string &key, std::unique_ptr<T> data);
-
   private:
     // flat storage
     std::deque<Type> types_pool;
@@ -90,10 +104,6 @@ class CodeModel
     std::deque<Instruction> instructions_pool;
 
     std::string filename;
-
-    // annotations
-    // std::unordered_map<NodeId, std::unordered_map<std::string, std::unique_ptr<AnnotationServices::AnnotationBase>>>
-    //     annotations;
 };
 
 } // namespace CodeListener::Core

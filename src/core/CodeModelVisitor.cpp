@@ -14,17 +14,17 @@ void CodeModelVisitor::walk(const CodeModel &model)
 {
     onBeginModel(model);
 
-    for (const auto &type : model.getTypes())
+    for (const auto &type : model.types())
     {
         onVisitType(model, type);
     }
 
-    for (const auto &var : model.getVariables())
+    for (const auto &var : model.variables())
     {
         onVisitVariable(model, var);
     }
 
-    for (const auto &func : model.getFunctions())
+    for (const auto &func : model.functions())
     {
         onBeginFunction(model, func);
 

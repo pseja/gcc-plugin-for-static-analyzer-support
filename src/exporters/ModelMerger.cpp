@@ -368,7 +368,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
     for (size_t tu = 0; tu < models.size(); tu++)
     {
         IdMaps &maps = id_maps[tu];
-        for (const auto &t : models[tu].getTypes())
+        for (const auto &t : models[tu].types())
         {
             std::string key = typeKey(t);
             if (!key.empty())
@@ -385,7 +385,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
             // new type
             Core::Type *tp = merged.createType();
             *tp = t;
-            tp->id = Core::TypeId{merged.getTypes().size() - 1};
+            tp->id = Core::TypeId{merged.types().size() - 1};
 
             maps.type_map[t.id] = tp->id;
             if (!key.empty())
@@ -401,7 +401,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
     for (size_t tu = 0; tu < models.size(); tu++)
     {
         IdMaps &maps = id_maps[tu];
-        for (const auto &v : models[tu].getVariables())
+        for (const auto &v : models[tu].variables())
         {
             bool is_field = std::holds_alternative<Core::FieldVariable>(v.data);
             if (!is_field)
@@ -433,7 +433,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
                 // fall through to import
                 Core::Variable *vp = merged.createVariable();
                 *vp = v;
-                vp->id = Core::VariableId{merged.getVariables().size() - 1};
+                vp->id = Core::VariableId{merged.variables().size() - 1};
                 maps.var_map[v.id] = vp->id;
                 extern_vars[v.name] = vp->id;
                 continue;
@@ -442,7 +442,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
             // field var, or INTERNAL/NONE standard var - always import
             Core::Variable *vp = merged.createVariable();
             *vp = v;
-            vp->id = Core::VariableId{merged.getVariables().size() - 1};
+            vp->id = Core::VariableId{merged.variables().size() - 1};
             maps.var_map[v.id] = vp->id;
         }
     }
@@ -460,7 +460,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
     for (size_t tu = 0; tu < models.size(); tu++)
     {
         const IdMaps &maps = id_maps[tu];
-        for (const auto &v : models[tu].getVariables())
+        for (const auto &v : models[tu].variables())
         {
             Core::VariableId merged_vid = maps.var_map.at(v.id);
             Core::Variable *mv = merged.getVariableMutable(merged_vid);
@@ -479,7 +479,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
     for (size_t tu = 0; tu < models.size(); tu++)
     {
         IdMaps &maps = id_maps[tu];
-        for (const auto &f : models[tu].getFunctions())
+        for (const auto &f : models[tu].functions())
         {
             auto it = extern_funcs.find(f.name);
             if (it != extern_funcs.end())
@@ -525,7 +525,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
 
             Core::Function *fp = merged.createFunction();
             *fp = mf;
-            fp->id = Core::FunctionId{merged.getFunctions().size() - 1};
+            fp->id = Core::FunctionId{merged.functions().size() - 1};
             maps.func_map[f.id] = fp->id;
             extern_funcs[f.name] = fp->id;
         }
@@ -536,7 +536,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
     for (size_t tu = 0; tu < models.size(); tu++)
     {
         IdMaps &maps = id_maps[tu];
-        for (const auto &b : models[tu].getBlocks())
+        for (const auto &b : models[tu].blocks())
         {
             Core::Block mb;
             mb.parent = remapFunc(b.parent, maps);
@@ -544,7 +544,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
             // predecessors/successors/instruction_ids filled in connectivity fixup
             Core::Block *bp = merged.createBlock();
             *bp = mb;
-            bp->id = Core::BlockId{merged.getBlocks().size() - 1};
+            bp->id = Core::BlockId{merged.blocks().size() - 1};
             maps.block_map[b.id] = bp->id;
         }
     }
@@ -554,7 +554,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
     for (size_t tu = 0; tu < models.size(); tu++)
     {
         IdMaps &maps = id_maps[tu];
-        for (const auto &instr : models[tu].getInstructions())
+        for (const auto &instr : models[tu].instructions())
         {
             Core::Instruction mi = instr;
             mi.parent_block_id = remapBlock(instr.parent_block_id, maps);
@@ -562,7 +562,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
 
             Core::Instruction *ip = merged.createInstruction();
             *ip = mi;
-            ip->id = Core::InstructionId{merged.getInstructions().size() - 1};
+            ip->id = Core::InstructionId{merged.instructions().size() - 1};
             maps.instr_map[instr.id] = ip->id;
         }
     }
@@ -573,7 +573,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
         const IdMaps &maps = id_maps[tu];
         const auto &model = models[tu];
 
-        for (const auto &b : model.getBlocks())
+        for (const auto &b : model.blocks())
         {
             Core::Block *mb = merged.getBlockMutable(maps.block_map.at(b.id));
             for (const auto &pred : b.predecessors)
@@ -590,7 +590,7 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
             }
         }
 
-        for (const auto &f : model.getFunctions())
+        for (const auto &f : model.functions())
         {
             Core::Function *mf = merged.getFunctionMutable(maps.func_map.at(f.id));
             for (const auto &bid : f.block_ids)

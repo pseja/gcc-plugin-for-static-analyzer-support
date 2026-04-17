@@ -29,7 +29,7 @@ CallGraph CallGraph::build(const Core::CodeModel &model)
 void CallGraph::buildGraph(CallGraph &graph, const Core::CodeModel &model)
 {
     std::unordered_map<std::string, Core::FunctionId> function_name_to_id;
-    for (const Core::Function &function : model.getFunctions())
+    for (const Core::Function &function : model.functions())
     {
         function_name_to_id[function.name] = function.id;
         graph.nodes[function.id].function_id = function.id;
@@ -50,7 +50,7 @@ void CallGraph::buildGraph(CallGraph &graph, const Core::CodeModel &model)
         }
     };
 
-    for (const Core::Function &function : model.getFunctions())
+    for (const Core::Function &function : model.functions())
     {
         Core::FunctionId caller_id = function.id;
 

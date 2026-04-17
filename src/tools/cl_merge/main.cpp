@@ -120,9 +120,9 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    std::cerr << "Successfully exported: Types=" << merged.getTypes().size()
-              << " Variables=" << merged.getVariables().size() << " Functions=" << merged.getFunctions().size()
-              << " Blocks=" << merged.getBlocks().size() << " Instructions=" << merged.getInstructions().size() << "\n";
+    std::cerr << "Successfully exported: Types=" << merged.types().size() << " Variables=" << merged.variables().size()
+              << " Functions=" << merged.functions().size() << " Blocks=" << merged.blocks().size()
+              << " Instructions=" << merged.instructions().size() << "\n";
 
     return EXIT_SUCCESS;
 }
