@@ -235,7 +235,7 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     // DOT export
     if (args->gen_dot_file.has_value())
     {
-        CodeListener::Exporters::DOTExporter dot_exporter(args->gen_dot_file.value());
+        CodeListener::Exporters::DOTExporter dot_exporter(args->gen_dot_file.value(), args->gen_dot_verbosity);
         dot_exporter.exportModel(model);
         reporter.report(Core::DiagnosticLevel::Info, "Exported DOT to " + args->gen_dot_file.value());
     }

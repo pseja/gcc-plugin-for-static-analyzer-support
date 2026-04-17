@@ -7,6 +7,7 @@
 #include <gcc-plugin.h> // plugin_name_args
 
 #include "DiagnosticReporter.hpp"
+#include "DOTExporter.hpp"
 
 namespace CodeListener::CompilerAbstractionLayer
 {
@@ -30,6 +31,7 @@ struct PluginArgs
     std::optional<std::string> dump_pp_file;
     std::optional<std::string> gen_json_file;
     std::optional<std::string> gen_dot_file;
+    Exporters::DotVerbosity gen_dot_verbosity{Exporters::DotVerbosity::CLEAN};
     std::optional<std::string> pid_file;
     std::optional<std::string> type_dot_file;
 

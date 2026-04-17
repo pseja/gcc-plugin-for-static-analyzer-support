@@ -76,6 +76,26 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticRepo
         {
             gen_dot_file = value;
         }
+        else if (key == "gen-dot-verbosity")
+        {
+            if (value == "CLEAN")
+            {
+                gen_dot_verbosity = Exporters::DotVerbosity::CLEAN;
+            }
+            else if (value == "COMPACT")
+            {
+                gen_dot_verbosity = Exporters::DotVerbosity::COMPACT;
+            }
+            else if (value == "FULL" || value.empty())
+            {
+                gen_dot_verbosity = Exporters::DotVerbosity::FULL;
+            }
+            else
+            {
+                reporter.report(Core::DiagnosticLevel::Warning, std::string("Unknown gen-dot-verbosity value '") +
+                                                                    std::string(value) + "'; using FULL");
+            }
+        }
         else if (key == "gen-json")
         {
             gen_json_file = value;
