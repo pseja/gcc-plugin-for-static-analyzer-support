@@ -7,7 +7,7 @@
 #include <gcc-plugin.h> // plugin_name_args
 
 #include "DiagnosticReporter.hpp"
-#include "DOTExporter.hpp"
+#include "DOTVerbosity.hpp"
 
 namespace CodeListener::CompilerAbstractionLayer
 {

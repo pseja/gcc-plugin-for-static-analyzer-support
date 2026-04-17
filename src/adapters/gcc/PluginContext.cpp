@@ -10,10 +10,11 @@
 
 #include "DOTExporter.hpp"
 #include "JSONExporter.hpp"
-#include "PPExporter.hpp"
-#include "PredatorAdapter.hpp"
+#include "LegacyPredatorBridge.hpp"
+#include "NativeAnalyzerBridge.hpp"
 #include "Pass.hpp"
 #include "PluginContext.hpp"
+#include "PPExporter.hpp"
 
 namespace CodeListener::CompilerAbstractionLayer
 {
@@ -100,16 +101,6 @@ GCCAdapter *PluginContext::getAdapter()
     return adapter.get();
 }
 
-struct cl_code_listener *PluginContext::getAnalyzerListener() const
-{
-    return analyzer_listener;
-}
-
-const cl_native_analyzer_api_t *PluginContext::getNativeAnalyzerApi() const
-{
-    return native_analyzer_api;
-}
-
 void PluginContext::load_analyzer(const std::string &path, const std::string &analyzer_args,
                                   const std::string &plugin_full_name)
 {
@@ -130,9 +121,9 @@ void PluginContext::load_analyzer(const std::string &path, const std::string &an
         const cl_native_analyzer_api_t *napi = get_native();
         if (napi && napi->api_version == CL_NATIVE_API_VERSION)
         {
-            native_analyzer_api = napi;
+            analyzers.push_back(std::make_unique<NativeAnalyzerBridge>(napi, analyzer_args));
             reporter.report(Core::DiagnosticLevel::Info, "Native analyzer loaded from '" + path + "'");
-            return; // native analyzer: no cl_code_listener needed
+            return;
         }
         else if (napi)
         {
@@ -174,7 +165,7 @@ void PluginContext::load_analyzer(const std::string &path, const std::string &an
         return;
     }
 
-    analyzer_listener = listener;
+    analyzers.push_back(std::make_unique<LegacyPredatorBridge>(listener));
 
     // legacy analyzer may also optionally export the native API
     if (get_native)
@@ -182,7 +173,7 @@ void PluginContext::load_analyzer(const std::string &path, const std::string &an
         const cl_native_analyzer_api_t *napi = get_native();
         if (napi && napi->api_version == CL_NATIVE_API_VERSION)
         {
-            native_analyzer_api = napi;
+            analyzers.push_back(std::make_unique<NativeAnalyzerBridge>(napi, analyzer_args));
             reporter.report(Core::DiagnosticLevel::Info, "Native analyzer API loaded from '" + path + "'");
         }
         else if (napi)
@@ -248,21 +239,10 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
         reporter.report(Core::DiagnosticLevel::Info, "Exported PP to " + args->dump_pp_file.value());
     }
 
-    // feed the model to a loaded analyzer (e.g. predator via libsl_analyzer.so)
-    struct cl_code_listener *listener = PluginContext::getInstance().getAnalyzerListener();
-    if (listener)
+    // feed the model to every loaded analyzer
+    for (auto &analyzer : PluginContext::getInstance().analyzers)
     {
-        CodeListener::Adapters::PredatorAdapter pa(model, listener);
-        pa.emit();
-    }
-
-    // feed the model to a native (CodeModel-level) analyzer if one was loaded
-    const cl_native_analyzer_api_t *napi = PluginContext::getInstance().getNativeAnalyzerApi();
-    if (napi && napi->analyze)
-    {
-        const PluginArgs *pa = PluginContext::getInstance().getArgs();
-        const char *an_args = (pa && pa->analyzer_args.has_value()) ? pa->analyzer_args.value().c_str() : nullptr;
-        napi->analyze(model, an_args);
+        analyzer->analyze(model);
     }
 
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished");
