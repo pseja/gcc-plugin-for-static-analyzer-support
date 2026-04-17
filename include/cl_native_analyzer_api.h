@@ -5,9 +5,10 @@
 
 #ifdef __cplusplus
 
+#include "AnalysisContext.hpp"
 #include "CodeModel.hpp"
 
-#define CL_NATIVE_API_VERSION 1
+#define CL_NATIVE_API_VERSION 2
 
 struct cl_native_analyzer_api_t
 {
@@ -22,9 +23,10 @@ struct cl_native_analyzer_api_t
      * Called once per compilation unit after GCC finishes.
      *
      * @param model The fully populated CodeModel for the translation unit.
+     * @param ctx   Services available to the analyzer.
      * @param args  Value of -fplugin-arg-<plugin>-args=VALUE. May be NULL.
      */
-    void (*analyze)(const CodeListener::Core::CodeModel &model, const char *args);
+    void (*analyze)(const CodeListener::Core::CodeModel &model, CodeListener::AnalysisContext &ctx, const char *args);
 };
 
 extern "C"

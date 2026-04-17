@@ -1,5 +1,7 @@
 /**
- * @brief run a native CodeListener analyzer on a multi TU JSON CodeModel
+ * @file main.cpp
+ * @author Lukáš Pšeja <xpsejal00@vutbr.cz>
+ * @brief Run a native CodeListener analyzer on a multi TU JSON CodeModel.
  *
  * Usage:
  *   cl_analyze <model.json> --analyzer=<path/to/libanalyzer.so> [--args=<string>]
@@ -7,6 +9,23 @@
  * Example (generate a whole-program call graph):
  *   cl_merge a.json b.json c.json -o merged.json
  *   cl_analyze merged.json --analyzer=libcl_callgraph_dot.so --args=whole-program-cg.dot
+ *
+ * @date 2026-04-16
+ *
+ * @copyright Copyright (c) 2026 Lukáš Pšeja
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <cstdlib>
@@ -16,10 +35,13 @@
 
 #include <cl_native_analyzer_api.h>
 
+#include "AnalysisContext.hpp"
+#include "AnalysisManager.hpp"
 #include "CodeModel.hpp"
 #include "DOTExporter.hpp"
 #include "JSONImporter.hpp"
 #include "PPExporter.hpp"
+#include "StderrDiagnosticReporter.hpp"
 
 static void printUsage(const char *program_name)
 {
@@ -108,7 +130,7 @@ int main(int argc, char *argv[])
     }
     if (analyzer_path.empty() && gen_dot_file.empty() && gen_pp_file.empty())
     {
-        std::cerr << "Error: nothing to do — specify --analyzer, --gen-dot, or --gen-pp\n";
+        std::cerr << "Error: nothing to do, specify --analyzer, --gen-dot, or --gen-pp\n";
         printUsage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -192,8 +214,11 @@ int main(int argc, char *argv[])
     // run the native analyzer (optional)
     if (!analyzer_path.empty())
     {
+        CodeListener::Core::StderrDiagnosticReporter stderr_reporter;
+        CodeListener::AnnotationServices::AnalysisManager am;
+        CodeListener::AnalysisContext ctx(stderr_reporter, am);
         const char *args_cstr = analyzer_args.empty() ? nullptr : analyzer_args.c_str();
-        api->analyze(model, args_cstr);
+        api->analyze(model, ctx, args_cstr);
         dlclose(handle);
     }
 

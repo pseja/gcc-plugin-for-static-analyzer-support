@@ -28,16 +28,16 @@
 
 using namespace CodeListener;
 
-static void callgraph_analyze(const Core::CodeModel &model, const char *args)
+static void callgraph_analyze(const Core::CodeModel &model, AnalysisContext &ctx, const char *args)
 {
     const std::string outpath = (args && args[0] != '\0') ? args : "callgraph.dot";
 
-    const auto &cg = AnnotationServices::CallGraph::build(model);
+    const auto &cg = ctx.analysis_manager.getAnnotation<AnnotationServices::CallGraph>(model);
 
     std::ofstream out(outpath);
     if (!out.is_open())
     {
-        fprintf(stderr, "callgraph_dot: cannot open output file '%s'\n", outpath.c_str());
+        ctx.reporter.report(Core::DiagnosticLevel::Error, "callgraph_dot: cannot open output file '" + outpath + "'");
         return;
     }
 

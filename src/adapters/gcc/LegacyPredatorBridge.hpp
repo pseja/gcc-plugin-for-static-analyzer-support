@@ -15,7 +15,7 @@ class LegacyPredatorBridge : public Core::IAnalyzer
   public:
     explicit LegacyPredatorBridge(struct cl_code_listener *listener);
 
-    void analyze(const Core::CodeModel &model) override;
+    void analyze(const Core::CodeModel &model, AnalysisContext &ctx) override;
 
   private:
     struct cl_code_listener *listener;

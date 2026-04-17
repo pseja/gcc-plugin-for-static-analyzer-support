@@ -6,6 +6,8 @@
 #include <gcc-plugin.h>
 #include <tree-pass.h> // register_pass_info
 
+#include "AnalysisContext.hpp"
+#include "AnalysisManager.hpp"
 #include "CodeModel.hpp"
 #include "DiagnosticReporter.hpp"
 #include "GCCAdapter.hpp"
@@ -41,6 +43,7 @@ class PluginContext
 
     void *analyzer_dl_handle{nullptr};
     std::vector<std::unique_ptr<Core::IAnalyzer>> analyzers;
+    AnnotationServices::AnalysisManager shared_analysis_manager;
 
     PluginContext() = default;
 

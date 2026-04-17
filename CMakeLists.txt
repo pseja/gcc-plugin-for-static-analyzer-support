@@ -42,7 +42,7 @@ file(GLOB_RECURSE CORE_SOURCES src/core/*.cpp src/exporters/*.cpp
 add_library(cl_core SHARED ${CORE_SOURCES})
 
 target_include_directories(cl_core PUBLIC src/core src/exporters
-                                          src/annotation_services)
+                                          src/annotation_services include)
 
 target_link_libraries(cl_core PUBLIC nlohmann_json::nlohmann_json)
 

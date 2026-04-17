@@ -1,4 +1,3 @@
-#include <fstream>
 #include <dlfcn.h>
 
 #include <cl_analyzer_api.h>
@@ -8,6 +7,7 @@
 #include <context.h>
 #include <tree-pass.h>
 
+#include "AnalysisContext.hpp"
 #include "DOTExporter.hpp"
 #include "JSONExporter.hpp"
 #include "LegacyPredatorBridge.hpp"
@@ -239,10 +239,11 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
         reporter.report(Core::DiagnosticLevel::Info, "Exported PP to " + args->dump_pp_file.value());
     }
 
-    // feed the model to every loaded analyzer
+    // feed the model to every loaded analyzer via a shared AnalysisContext
+    AnalysisContext ctx(reporter, PluginContext::getInstance().shared_analysis_manager);
     for (auto &analyzer : PluginContext::getInstance().analyzers)
     {
-        analyzer->analyze(model);
+        analyzer->analyze(model, ctx);
     }
 
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished");
