@@ -29,6 +29,7 @@
 #include "Scope.hpp"
 #include "StandardVariable.hpp"
 #include "SwitchInstruction.hpp"
+#include "SwitchToIf.hpp"
 #include "Type.hpp"
 #include "UnknownInstruction.hpp"
 #include "UnreachableInstruction.hpp"
@@ -48,14 +49,6 @@ PPExporter::PPExporter(const std::string &filepath) : file_os(filepath), os(file
 
 void PPExporter::onBeginFunction(const Core::CodeModel &model, const Core::Function &func)
 {
-    // reset per-function counters
-    // NOTE: switch_counter is intentionally NOT reset here; it must be unique
-    // across all functions in a file so that %rGcondN / %rGswN variable names
-    // don't collide across functions (the normalizer treats them as the same variable).
-    // synth_label_counter CAN reset because L-labels are prefixed with the function
-    // name by the normalizer before block-label normalization.
-    synth_label_counter = 0;
-
     // print function header: name(%arg1: VAR, %arg2: VAR, ...):
     os << func.name << "(";
     for (std::size_t i = 0; i < func.parameter_ids.size(); ++i)
@@ -179,7 +172,7 @@ void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::In
                         os << "abs(" << rhs1 << ")\n";
                         break;
                     case Core::OpCode::CAST: {
-                        // determine if this is an int→float cast (CL_UNOP_FLOAT)
+                        // determine if this is an int->float cast (CL_UNOP_FLOAT)
                         bool is_float_cast = false;
                         const auto *lhs_var = std::get_if<Core::VariableOperand>(&a.lhs);
                         const auto *rhs_var = std::get_if<Core::VariableOperand>(&a.rhs1.value());
@@ -192,7 +185,9 @@ void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::In
                                 const auto *lt = model.getType(lv->type_id);
                                 const auto *rt = model.getType(rv->type_id);
                                 if (lt && rt && lt->kind == Core::TypeKind::REAL && rt->kind == Core::TypeKind::INTEGER)
+                                {
                                     is_float_cast = true;
+                                }
                             }
                         }
                         else if (lhs_var)
@@ -204,7 +199,9 @@ void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::In
                                 const auto *lt = model.getType(lv->type_id);
                                 const auto *rt = model.getType(rhs_cst->type_id);
                                 if (lt && rt && lt->kind == Core::TypeKind::REAL && rt->kind == Core::TypeKind::INTEGER)
+                                {
                                     is_float_cast = true;
+                                }
                             }
                         }
                         if (is_float_cast)
@@ -251,9 +248,8 @@ void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::In
                 // if opcode==NONE, just: if (LHS) ...
                 if (cond.opcode != Core::OpCode::NONE)
                 {
-                    // we need a synthetic temp for the comparison result
-                    // use a fresh temp name unique to this cond in the function
-                    std::string tmp = "%rGcond" + std::to_string(switch_counter++);
+                    const auto &norm = analysis_manager.getAnnotation<AnnotationServices::SwitchToIf>(model);
+                    const std::string &tmp = norm.conds.at(inst.id).synth_comp_temp;
                     std::string lhs = fmtOperand(cond.lhs, model);
                     std::string rhs = fmtOperand(cond.rhs, model);
                     os << "\t\t" << tmp << " := (" << lhs << " " << binopSym(cond.opcode) << " " << rhs << ")\n";
@@ -280,7 +276,7 @@ void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::In
             },
             [&](const Core::SwitchInstruction &sw) {
                 block_has_terminator = true;
-                emitSwitchUnfolded(sw, model);
+                emitSwitchUnfolded(sw, inst.id, model);
             },
             [&](const Core::AbortInstruction &) {
                 block_has_terminator = true;
@@ -326,157 +322,47 @@ void PPExporter::onEndModel(const Core::CodeModel & /*model*/)
     os << "\n"; // file_close blank line
 }
 
-void PPExporter::emitSwitchUnfolded(const Core::SwitchInstruction &sw, const Core::CodeModel &model)
+void PPExporter::emitSwitchUnfolded(const Core::SwitchInstruction &sw, Core::InstructionId inst_id,
+                                    const Core::CodeModel &model)
 {
-    std::string index_str = fmtOperand(sw.index, model);
+    const std::string index_str = fmtOperand(sw.index, model);
+    const auto &norm = analysis_manager.getAnnotation<AnnotationServices::SwitchToIf>(model);
+    const auto &data = norm.switches.at(inst_id);
 
-    // separate default from regular cases
-    std::string default_target;
-    std::vector<const Core::SwitchCase *> regular_cases;
-
-    for (const auto &c : sw.cases)
+    if (data.checks.empty())
     {
-        if (!c.low_value.has_value())
+        if (!data.default_target_block_name.empty())
         {
-            const auto *bb = model.getBlock(c.target_block_id);
-            default_target = bb ? bb->name : "";
-        }
-        else
-        {
-            regular_cases.push_back(&c);
-        }
-    }
-
-    if (regular_cases.empty())
-    {
-        if (!default_target.empty())
-        {
-            os << "\t\tgoto " << default_target << "\n";
+            os << "\t\tgoto " << data.default_target_block_name << "\n";
         }
         return;
     }
 
-    // expand all cases (including ranges) into a flat list of single-value checks
-    struct ValueCheck
-    {
-        long value;
-        bool is_unsigned;
-        std::string target;
-    };
-    std::vector<ValueCheck> flat;
+    const int base = data.synth_label_base;
 
-    for (const auto *c : regular_cases)
-    {
-        const auto *target_bb = model.getBlock(c->target_block_id);
-        std::string case_target = target_bb ? target_bb->name : "L_unknown";
-
-        // determine type info for formatting
-        bool is_unsigned = false;
-        if (const auto *lo_cst = std::get_if<Core::ConstantOperand>(&*c->low_value))
-        {
-            const auto *tp = model.getType(lo_cst->type_id);
-            if (tp)
-            {
-                if (const auto *it = std::get_if<Core::IntegerType>(&tp->data))
-                {
-                    is_unsigned = it->is_unsigned;
-                }
-                else if (const auto *et = std::get_if<Core::EnumType>(&tp->data))
-                {
-                    is_unsigned = et->is_unsigned;
-                }
-            }
-        }
-
-        // parse lo value
-        long lo_val = 0;
-        if (const auto *lo_cst = std::get_if<Core::ConstantOperand>(&*c->low_value))
-        {
-            if (is_unsigned)
-            {
-                lo_val = static_cast<long>(std::strtoull(lo_cst->value.c_str(), nullptr, 10));
-            }
-            else
-            {
-                lo_val = std::strtol(lo_cst->value.c_str(), nullptr, 10);
-            }
-        }
-
-        // parse hi value (same as lo for single-value cases)
-        long hi_val = lo_val;
-        if (c->high_value.has_value())
-        {
-            if (const auto *hi_cst = std::get_if<Core::ConstantOperand>(&*c->high_value))
-            {
-                if (is_unsigned)
-                {
-                    hi_val = static_cast<long>(std::strtoull(hi_cst->value.c_str(), nullptr, 10));
-                }
-                else
-                {
-                    hi_val = std::strtol(hi_cst->value.c_str(), nullptr, 10);
-                }
-            }
-        }
-
-        for (long v = lo_val; v <= hi_val; v++)
-        {
-            flat.push_back({v, is_unsigned, case_target});
-        }
-    }
-
-    // single synthetic temp variable reused across all comparison blocks
-    std::string tmp = "%rGsw" + std::to_string(switch_counter++);
-
-    // allocate N labels: one per case check block (the else-branch block for each check)
-    // the last label becomes an empty block containing just 'goto default_target'
-    // this matches old clf_unswitch.cc behaviour: emitCase always opens a new block,
-    // and emitDefault() emits goto from that last block
-    int base = 1000000 + synth_label_counter;
-    synth_label_counter += static_cast<int>(flat.size());
-
-    for (std::size_t i = 0; i < flat.size(); ++i)
+    for (std::size_t i = 0; i < data.checks.size(); ++i)
     {
         if (i > 0)
         {
             os << "\n\tL" << (base + static_cast<int>(i) - 1) << ":\n";
         }
 
-        const auto &vc = flat[i];
+        const std::string else_target = "L" + std::to_string(base + static_cast<int>(i));
 
-        // format the case constant value
-        unsigned long uval = static_cast<unsigned long>(vc.value);
-        std::string val_str = std::to_string(uval);
-        if (vc.is_unsigned)
-        {
-            val_str += "U";
-        }
-        if (vc.value < 0)
-        {
-            val_str = "(" + val_str + ")";
-        }
-
-        // the else branch always goes to the next synthetic label
-        std::string else_target = "L" + std::to_string(base + static_cast<int>(i));
-
-        os << "\t\t" << tmp << " := (" << index_str << " == " << val_str << ")\n";
-        os << "\t\tif (" << tmp << ")\n";
-        os << "\t\t\tgoto " << vc.target << "\n";
+        os << "\t\t" << data.synth_comp_temp << " := (" << index_str << " == " << data.checks[i].formatted_case_constant
+           << ")\n";
+        os << "\t\tif (" << data.synth_comp_temp << ")\n";
+        os << "\t\t\tgoto " << data.checks[i].target_block_name << "\n";
         os << "\t\telse\n";
         os << "\t\t\tgoto " << else_target << "\n";
     }
 
-    // emit the final empty block: Lbase+N-1 → goto default (matches old emitDefault())
-    os << "\n\tL" << (base + static_cast<int>(flat.size()) - 1) << ":\n";
-    if (!default_target.empty())
+    // final empty block -> goto default (matches old emitDefault())
+    os << "\n\tL" << (base + static_cast<int>(data.checks.size()) - 1) << ":\n";
+    if (!data.default_target_block_name.empty())
     {
-        os << "\t\tgoto " << default_target << "\n";
+        os << "\t\tgoto " << data.default_target_block_name << "\n";
     }
-}
-
-std::string PPExporter::nextSynthLabel()
-{
-    return "L" + std::to_string(1000000 + synth_label_counter++);
 }
 
 std::string PPExporter::fmtOperand(const Core::Operand &op, const Core::CodeModel &model) const
@@ -489,7 +375,7 @@ std::string PPExporter::fmtOperand(const Core::Operand &op, const Core::CodeMode
                                          return "%unknown";
                                      }
 
-                                     // function-typed variable → output as function name (constant reference)
+                                     // function-typed variable -> output as function name (constant reference)
                                      const auto *type = model.getType(var->type_id);
                                      if (type && type->kind == Core::TypeKind::FUNCTION)
                                      {
@@ -510,14 +396,17 @@ std::string PPExporter::fmtVar(Core::VariableId id, const std::vector<Core::Acce
         return "%unknown";
     }
 
-    // Strip leading (AddressOf, Deref) pairs: MEM_REF(ADDR_EXPR(v), 0) cancels to a direct variable access
+    // strip leading (AddressOf, Deref) pairs: MEM_REF(ADDR_EXPR(v), 0) cancels to a direct variable access
     std::vector<Core::Accessor> eff_storage;
     const std::vector<Core::Accessor> *effp = &accessors;
     {
         std::size_t skip = 0;
         while (skip + 1 < accessors.size() && std::holds_alternative<Core::AddressOfAccessor>(accessors[skip].data) &&
                std::holds_alternative<Core::DerefAccessor>(accessors[skip + 1].data))
+        {
             skip += 2;
+        }
+
         if (skip > 0)
         {
             eff_storage.assign(accessors.begin() + skip, accessors.end());
@@ -630,7 +519,7 @@ std::string PPExporter::fmtVar(Core::VariableId id, const std::vector<Core::Acce
                                   while (i + 1 < ac.size() &&
                                          std::holds_alternative<Core::FieldAccessor>(ac[i + 1].data))
                                   {
-                                      ++i;
+                                      i++;
                                       get_field_info(std::get<Core::FieldAccessor>(ac[i].data).field_id);
                                   }
 

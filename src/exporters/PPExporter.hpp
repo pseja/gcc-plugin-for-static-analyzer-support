@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Exporter.hpp"
+#include "InstructionId.hpp"
 #include "Operand.hpp"
 
 namespace CodeListener::Exporters
@@ -14,9 +15,9 @@ namespace CodeListener::Exporters
  * Exports the CodeModel in the 3AC "pp" text format produced by the old cl_pp.cc listener.
  * This is the primary replacement for libcl.a's "pp" listener.
  *
- * Switch instructions are unfolded to if-else chains inline (replicating the
- * unfold_switch filter from the old libcl.a), so that the output matches the
- * format expected by the comparison tests.
+ * Switch instructions are unfolded to if-else chains by consuming the
+ * SwitchToIf annotation (via the inherited analysis_manager), so the
+ * same normalized form is available to any other consumer.
  */
 class PPExporter : public Exporter
 {
@@ -42,12 +43,6 @@ class PPExporter : public Exporter
     // tracks whether the current block already has an explicit terminator
     bool block_has_terminator = false;
 
-    // counter for synthetic block labels (L1000000, L1000001, ...) in switch unfolding
-    int synth_label_counter = 0;
-
-    // counter for synthetic temp-variable names per switch within a function
-    int switch_counter = 0;
-
     // operand formatting
     std::string fmtOperand(const Core::Operand &op, const Core::CodeModel &model) const;
     std::string fmtVar(Core::VariableId id, const std::vector<Core::Accessor> &accessors,
@@ -59,10 +54,8 @@ class PPExporter : public Exporter
     static bool isBinOp(Core::OpCode op);
 
     // emit switch unfolded as a sequence of equality checks + if-else jumps
-    // TODO: figure out, how to do this with the help of the annotations instead
-    void emitSwitchUnfolded(const Core::SwitchInstruction &sw, const Core::CodeModel &model);
-
-    std::string nextSynthLabel();
+    void emitSwitchUnfolded(const Core::SwitchInstruction &sw, Core::InstructionId inst_id,
+                            const Core::CodeModel &model);
 
     void onEndBlock(const Core::CodeModel &model, const Core::Block &block) override;
 };
