@@ -31,7 +31,9 @@
 #include <cstdlib>
 #include <dlfcn.h>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include <cl_native_analyzer_api.h>
 
@@ -39,7 +41,9 @@
 #include "AnalysisManager.hpp"
 #include "CodeModel.hpp"
 #include "DOTExporter.hpp"
+#include "JSONFrontend.hpp"
 #include "JSONImporter.hpp"
+#include "NativeAnalyzerBridge.hpp"
 #include "PPExporter.hpp"
 #include "StderrDiagnosticReporter.hpp"
 
@@ -183,42 +187,48 @@ int main(int argc, char *argv[])
         }
     }
 
-    // import the CodeModel
-    CodeListener::Core::CodeModel model;
-    try
+    // import the CodeModel for built-in exports (DOT, PP)
+    // the analyzer path re-imports via JSONFrontend::run() to keep the pipeline self-contained
+    if (!gen_dot_file.empty() || !gen_pp_file.empty())
     {
-        model = CodeListener::Exporters::JSONImporter::importFromFile(model_path);
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Error importing '" << model_path << "': " << e.what() << "\n";
-        if (!analyzer_path.empty())
+        CodeListener::Core::CodeModel model;
+        try
         {
-            dlclose(handle);
+            model = CodeListener::Exporters::JSONImporter::importFromFile(model_path);
         }
-        return EXIT_FAILURE;
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error importing '" << model_path << "': " << e.what() << "\n";
+            if (handle)
+                dlclose(handle);
+            return EXIT_FAILURE;
+        }
+
+        if (!gen_dot_file.empty())
+        {
+            CodeListener::Exporters::DOTExporter dot_exporter(gen_dot_file, dot_verbosity);
+            dot_exporter.exportModel(model);
+        }
+        if (!gen_pp_file.empty())
+        {
+            CodeListener::Exporters::PPExporter pp_exporter(gen_pp_file);
+            pp_exporter.exportModel(model);
+        }
     }
 
-    // built-in exports (do not require --analyzer)
-    if (!gen_dot_file.empty())
-    {
-        CodeListener::Exporters::DOTExporter dot_exporter(gen_dot_file, dot_verbosity);
-        dot_exporter.exportModel(model);
-    }
-    if (!gen_pp_file.empty())
-    {
-        CodeListener::Exporters::PPExporter pp_exporter(gen_pp_file);
-        pp_exporter.exportModel(model);
-    }
-
-    // run the native analyzer (optional)
+    // run the native analyzer via the IFrontend pipeline (optional)
     if (!analyzer_path.empty())
     {
         CodeListener::Core::StderrDiagnosticReporter stderr_reporter;
         CodeListener::AnnotationServices::AnalysisManager am;
         CodeListener::AnalysisContext ctx(stderr_reporter, am);
-        const char *args_cstr = analyzer_args.empty() ? nullptr : analyzer_args.c_str();
-        bool ok = api->analyze(model, ctx, args_cstr);
+
+        std::vector<std::unique_ptr<CodeListener::Core::IAnalyzer>> analyzers;
+        analyzers.push_back(
+            std::make_unique<CodeListener::CompilerAbstractionLayer::NativeAnalyzerBridge>(api, analyzer_args));
+
+        CodeListener::Exporters::JSONFrontend frontend(model_path);
+        bool ok = frontend.run(analyzers, ctx);
         dlclose(handle);
         if (!ok || stderr_reporter.hadError())
         {

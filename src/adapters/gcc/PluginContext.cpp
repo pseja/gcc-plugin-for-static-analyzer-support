@@ -9,6 +9,7 @@
 
 #include "AnalysisContext.hpp"
 #include "DOTExporter.hpp"
+#include "GCCFrontend.hpp"
 #include "JSONExporter.hpp"
 #include "LegacyPredatorBridge.hpp"
 #include "NativeAnalyzerBridge.hpp"
@@ -239,18 +240,10 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
         reporter.report(Core::DiagnosticLevel::Info, "Exported PP to " + args->dump_pp_file.value());
     }
 
-    // feed the model to every loaded analyzer via a shared AnalysisContext
-    bool analysis_succeeded{true};
+    // feed the model to every loaded analyzer via GCCFrontend
+    GCCFrontend frontend(model);
     AnalysisContext ctx(reporter, PluginContext::getInstance().shared_analysis_manager);
-    for (auto &analyzer : PluginContext::getInstance().analyzers)
-    {
-        if (!analyzer->analyze(model, ctx))
-        {
-            analysis_succeeded = false;
-        }
-    }
-
-    if (!analysis_succeeded)
+    if (!frontend.run(PluginContext::getInstance().analyzers, ctx))
     {
         reporter.report(Core::DiagnosticLevel::Error, "One or more analyzers reported errors");
     }
