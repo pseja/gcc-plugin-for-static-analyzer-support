@@ -31,6 +31,11 @@ static std::string getProjectRelativePath(const std::string &path)
 void GCCDiagnosticReporter::report(Core::DiagnosticLevel level, const Core::SourceLocation &source_location,
                                    const std::string &msg)
 {
+    if (level < verbosity_level)
+    {
+        return;
+    }
+
     location_t gcc_source_location = UNKNOWN_LOCATION;
     if (source_location.native_handle)
     {
@@ -79,6 +84,11 @@ void GCCDiagnosticReporter::report(Core::DiagnosticLevel level, const Core::Sour
 void GCCDiagnosticReporter::report(CodeListener::Core::DiagnosticLevel level, const std::string &msg,
                                    const std::source_location &source_location)
 {
+    if (level < verbosity_level)
+    {
+        return;
+    }
+
     if (level == CodeListener::Core::DiagnosticLevel::Debug)
     {
         CodeListener::Core::SourceLocation sloc(source_location.file_name(), source_location.function_name(),
@@ -87,8 +97,19 @@ void GCCDiagnosticReporter::report(CodeListener::Core::DiagnosticLevel level, co
     }
     else
     {
-        report(level, CodeListener::Core::SourceLocation(), msg);
+        CodeListener::Core::SourceLocation sloc;
+        sloc.native_handle = reinterpret_cast<void *>(static_cast<uintptr_t>(input_location));
+        report(level, sloc, msg);
     }
+}
+
+void GCCDiagnosticReporter::setVerbosityLevel(Core::DiagnosticLevel level)
+{
+    verbosity_level = level;
+}
+Core::DiagnosticLevel GCCDiagnosticReporter::getVerbosityLevel() const
+{
+    return verbosity_level;
 }
 
 } // namespace CodeListener::CompilerAbstractionLayer

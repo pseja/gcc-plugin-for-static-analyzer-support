@@ -79,6 +79,16 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
         load_analyzer(args->load_analyzer.value(), an_args, plugin_info->full_name ? plugin_info->full_name : "");
     }
 
+    // apply verbosity setting to reporter
+    if (args->verbose >= 2)
+    {
+        reporter.setVerbosityLevel(Core::DiagnosticLevel::Debug);
+    }
+    else if (args->verbose >= 1)
+    {
+        reporter.setVerbosityLevel(Core::DiagnosticLevel::Info);
+    }
+
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin initialized");
 }
 
