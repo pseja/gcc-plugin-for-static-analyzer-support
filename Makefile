@@ -5,6 +5,7 @@ JOBS := $(shell nproc)
 PLUGIN := $(BUILD)/libcl_gcc.so
 CALLGRAPH := $(BUILD)/libcl_callgraph_dot.so
 JSON_DUMP := $(BUILD)/libcl_json_dump.so
+RECURSION_CHECK := $(BUILD)/libcl_recursion_check.so
 CL_MERGE := $(BUILD)/cl_merge
 CL_ANALYZE := $(BUILD)/cl_analyze
 PREDATOR_SRC := analyzers/predator
@@ -23,9 +24,9 @@ DIR ?=
 VERBOSITY ?= CLEAN
 
 # MAKEFLAGS += --no-builtin-rules
-.PHONY: all build configure callgraph json predator \
+.PHONY: all build configure callgraph json recursion predator \
         json-multi merge dot-multi \
-        test-predator test-cl-adapter test-codemodel test clean help FORCE
+        test-predator test-cl-adapter test-codemodel test-cl-analyze test clean help FORCE
 
 # silently check that FILE was provided before an analyzer target runs
 define require_file
@@ -76,6 +77,13 @@ callgraph:
 json:
 	$(call require_file)
 	$(call run_analyzer,$(JSON_DUMP),)
+
+## recursion FILE=<src> [ARGS=<output.txt>]
+##   detect direct and mutual recursion; write a plain-text report
+##   default output: recursion_report.txt
+recursion:
+	$(call require_file)
+	$(call run_analyzer,$(RECURSION_CHECK),)
 
 ## predator FILE=<src> [ARGS=<predator-args>]
 ##   run the Predator heap-shape / memory-safety analyzer
@@ -139,8 +147,12 @@ test-cl-adapter:
 test-codemodel:
 	ctest --test-dir $(BUILD) -L codemodel -j$(JOBS) --output-on-failure --progress
 
+## run cl_analyze pipeline tests
+test-cl-analyze:
+	ctest --test-dir $(BUILD) -L cl-analyze -j$(JOBS) --output-on-failure --progress
+
 ## run all test suites
-test: test-cl-adapter test-predator test-codemodel
+test: test-cl-adapter test-predator test-codemodel test-cl-analyze
 
 # cleanup
 
@@ -163,9 +175,10 @@ help:
 	@echo "     make clean-predator - reset the Predator submodule to a clean state"
 	@echo ""
 	@echo " Analyzers (single translation unit):"
-	@echo "     make callgraph FILE=foo.c [ARGS=callgraph.dot]     - emit a Graphviz call-graph DOT file"
-	@echo "     make json      FILE=foo.c [ARGS=dump.json]         - dump the full CodeModel as JSON"
-	@echo "     make predator  FILE=foo.c [ARGS=error_label:ERROR] - run the Predator heap-shape / memory-safety analyzer"
+	@echo "     make callgraph  FILE=foo.c [ARGS=callgraph.dot]     - emit a Graphviz call-graph DOT file"
+	@echo "     make json       FILE=foo.c [ARGS=dump.json]         - dump the full CodeModel as JSON"
+	@echo "     make recursion  FILE=foo.c [ARGS=report.txt]        - detect direct/mutual recursion; write plain-text report"
+	@echo "     make predator   FILE=foo.c [ARGS=error_label:ERROR] - run the Predator heap-shape / memory-safety analyzer"
 	@echo ""
 	@echo " Multi-TU workflow:"
 	@echo "     make json-multi DIR=path/ - compile all .c files in DIR to JSON, merge into DIR/merged.json"
@@ -176,4 +189,5 @@ help:
 	@echo "     make test-predator   - run all Predator regression tests"
 	@echo "     make test-cl-adapter - run all old CL GCC-adapter C tests via libcl_gcc.so"
 	@echo "     make test-codemodel  - run all CodeModel tests"
+	@echo "     make test-cl-analyze - run cl_analyze pipeline tests"
 	@echo "     make test            - run all of the above"

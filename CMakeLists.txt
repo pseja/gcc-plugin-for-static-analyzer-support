@@ -108,6 +108,8 @@ endfunction()
 
 add_cl_analyzer(cl_callgraph_dot analyzers/callgraph_dot/callgraph_dot.cpp)
 add_cl_analyzer(cl_json_dump analyzers/json_dump/json_dump.cpp)
+add_cl_analyzer(cl_recursion_check
+                analyzers/recursion_check/recursion_check.cpp)
 
 # standalone tools (cl_merge, cl_analyze)
 function(add_cl_tool target)
@@ -189,3 +191,5 @@ add_subdirectory(tests/integration_tests)
 # CL-Adapter (gcc-adapter) tests (predator's original test suite with jq
 # assertions)
 add_subdirectory(tests/cl_adapter_tests)
+# cl_analyze pipeline tests (JSONFrontend + NativeAnalyzerBridge end-to-end)
+add_subdirectory(tests/cl_analyze_tests)
