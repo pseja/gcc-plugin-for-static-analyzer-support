@@ -216,7 +216,7 @@
 % Kompilace po částech (rychlejší, ale v náhledu nemusí být vše aktuální)
 % Compilation piecewise (faster, but not all parts in preview will be up-to-date)
 % Další informace viz / For more information see https://www.overleaf.com/learn/latex/Multi-file_LaTeX_projects
-% \usepackage{subfiles}
+\usepackage{subfiles}
 
 % Nechcete-li, aby se u oboustranného tisku roztahovaly mezery pro zaplnění stránky, odkomentujte následující řádek / If you do not want enlarged spacing for filling of the pages in case of duplex printing, uncomment the following line
 % \raggedbottom
@@ -292,7 +292,12 @@
   % Text prace / Thesis text
   % ----------------------------------------------
   \ifenglish
-    \input{xpsejal00-gcc-plugin-01-kapitoly-chapters-en}
+    \subfile{01-introduction}
+    \subfile{02-state-of-the-art}
+    \subfile{03-design}
+    \subfile{04-implementation}
+    \subfile{05-testing}
+    \subfile{06-conclusion}
   \else
     \input{xpsejal00-gcc-plugin-01-kapitoly-chapters}
   \fi
