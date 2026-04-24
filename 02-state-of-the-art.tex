@@ -4,8 +4,13 @@
 
 \chapter{State of the Art}\label{chap:sota}
 
-This chapter provides a detailed account of the existing Code Listener infrastructure in the Predator repository~\cite{PredatorSuite2016,PredatorHP2020} and as described in the original publication~\cite{CodeListener2012}.
+This chapter provides a detailed account of the existing Code Listener infrastructure in the Predator GitHub repository~\footnote{https://github.com/kdudka/predator} and as described in the original publication~\cite{CodeListener2012}.
 Understanding the design decisions and limitations of the current implementation is necessary background for the design choices made in this thesis.
+
+To provide this context, the chapter first introduces the Code Listener infrastructure and compares it to similar projects within the broader static analysis ecosystem in Section~\ref{sec:cl-infrastructure} on page~\pageref{sec:cl-infrastructure}.
+It then details the underlying GCC compiler architecture and its GIMPLE intermediate representation, from which the program semantics are initially extracted in Section~\ref{sec:gcc-gimple} on page~\pageref{sec:gcc-gimple}.
+Following this, the internal architecture of the Code Listener and the importance of data structure visualization are examined in Section~\ref{sec:cl-architecture} on page~\pageref{sec:cl-architecture}.
+Finally, the chapter concludes with Section~\ref{sec:limitations} on page~\pageref{sec:limitations} by identifying the critical limitations of the legacy implementation, directly motivating the architectural modernization proposed in the subsequent chapter.
 
 \section{The Code Listener Infrastructure}\label{sec:cl-infrastructure}
 
@@ -40,14 +45,14 @@ The architecture of the original Code Listener is highly modular, effectively ac
     Block diagram of the legacy Code Listener infrastructure.
     The system is divided into interconnected modules, beginning with the code parser interface, which extracts intermediate representations from compilers such as GCC or Sparse. % TODO: reproduced from~\cite{CodeListener2012}.
     This data flows through optional filters, such as \texttt{switch to if} transformations, and listeners like the CFG plotters before being aggregated into a persistent object model within the code storage component.
-    Finally, static analyzers such as Predator and Forester can query this code storage to perform formal verification, routing any discovered defects back through the code parser interface and the code parser's error stream to maintain consistent compiler-like error reporting\cite{CodeListener2012}.
+    Finally, static analyzers such as Predator and Forester can query this code storage to perform formal verification, routing any discovered defects back through the code parser interface and the code parser's error stream to maintain consistent compiler-like error reporting~\cite{CodeListener2012}.
   }\label{fig:old-architecture}
 \end{figure}
 
 The utility of the Code Listener infrastructure is demonstrated by the advanced verification tools that rely on it.
 The two primary analyzers built on top of Code Listener are Predator~\cite{PredatorSuite2016} and Forester~\cite{CodeListener2012}.
-Predator is a tool for automated formal verification of low-level C programs that manipulate dynamic, pointer-like data structures, such as linked lists\cite{PredatorWebsite}.
-Forester focuses on verifying programs that manipulate complex dynamic data structures using tree automata\cite{ForesterWebsite}.
+Predator is a tool for automated formal verification of low-level C programs that manipulate dynamic, pointer-like data structures, such as linked lists~\cite{PredatorWebsite}.
+Forester focuses on verifying programs that manipulate complex dynamic data structures using tree automata~\cite{ForesterWebsite}.
 By using Code Listener as a compiler plugin, these tools can seamlessly analyze anything the compiler can process.
 This ensures that the user does not need to manually preprocess source code or modify standard build systems to run the analyzers~\cite{CodeListener2012}, which is a significant advantage for usability and integration with existing development workflows.
 
@@ -68,6 +73,10 @@ However, the LLVM core provides a highly optimized, typed, Static Single Assignm
 Notably, modern LLVM utilizes an \texttt{AnalysisManager} approach that elegantly solves the \uv{God Object} anti-pattern observed in the legacy Code Listener, which is described in Section~\ref{sub:ir-pollution} on page~\pageref{sub:ir-pollution}.
 Instead of polluting the core Intermediate Representation (IR) with analysis results, LLVM's \texttt{AnalysisManager} computes results lazily and stores them externally, keyed by the IR node identity~\cite{LLVMCompilationFramework}.
 This clean separation of concerns heavily inspires the modernized architecture proposed in this thesis.
+
+Outside the C and C++ domain, the Soot framework provides a highly successful, conceptually similar infrastructure for the static analysis of Java programs~\cite{SootFramework2011}.
+Much like Code Listener acts as an abstraction layer over native compiler structures, Soot addresses the difficulty of directly analyzing stack-based Java Virtual Machine (JVM) bytecode by transforming it into a simplified, typed three-address intermediate representation known as Jimple~\cite{SootFramework2011}.
+By exposing local data flow along a Control Flow Graph (CFG), Soot isolates researchers from the complexities of the underlying bytecode, paralleling Code Listener's decoupling of analyzers from GCC~\cite{SootFramework2011}.
 
 \section{The GCC Architecture and GIMPLE Representation}\label{sec:gcc-gimple}
 
