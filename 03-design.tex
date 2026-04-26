@@ -2,11 +2,6 @@
 \documentclass[xpsejal00-gcc-plugin.tex]{subfiles}
 \begin{document}
 
-% - first, a section on design goals and the high-level block diagram;
-% - then the Compiler Abstraction Layer covering the GCC plugin lifecycle, Pass registration, the adapter classes, and the analyzer hierarchy;
-% - next, the Core section split into the Code Model (the persistent IR and entity pools) and the Query System (the range-based navigation API);
-% - finally, Annotation Services with the AnalysisManager and the CRTP pattern.
-
 \chapter{Design}\label{chap:design}
 
 This chapter details the architectural modernization of the Code Listener infrastructure.
@@ -102,7 +97,7 @@ There are two concrete implementations of this interface:
   \includegraphics[width=0.85\textwidth]{obrazky-figures/IFrontend_inherit_graph.pdf}
   \caption{
     Class diagram of the \texttt{IFrontend} Strategy pattern~\cite{GoF}.
-    The interface abstracts the source of the program model, allowing the analysis backend to operate identically whether running as a live GCC compiler plugin through \texttt{GCCFrontend} or as a standalone offline tool parsing JSON data through \texttt{JSONFrontend}.
+    The interface abstracts the source of the program model, allowing the analysis backend to operate identically whether running as a live GCC compiler plugin via \texttt{GCCFrontend} or as a standalone offline tool parsing JSON data via \texttt{JSONFrontend}.
   }\label{fig:ifrontend-inherit-graph}
 \end{figure}
 
@@ -127,11 +122,11 @@ Any auxiliary analysis results are now computed and managed entirely externally 
 \subsection*{Entity Pools and ID-Based References}\label{sub:entity-pools}
 
 % TODO: object pool pattern instead?
-To store the program's data efficiently, the \texttt{CodeModel} employs an Entity Pool pattern inspired by Data-Oriented Design (DOD) principles.
+To efficiently store the program's data, the \texttt{CodeModel} employs an Entity Pool pattern inspired by Data-Oriented Design (DOD) principles.
 Instead of allocating individual nodes on the heap and linking them with fragile raw pointers, the model is flattened into five central pools: types, variables, functions, basic blocks, and instructions.
-These pools are implemented using \texttt{std::deque<T>} containers, which guarantee that memory addresses remain stable even as the pools grow dynamically.
+These pools use \texttt{std::deque<T>} containers, which guarantee that memory addresses remain stable as the pools grow dynamically.
 
-Entities reference each other exclusively through lightweight, strongly-typed identifiers, namely \texttt{TypeId}, \texttt{VariableId}, \texttt{FunctionId}, \texttt{BlockId}, and \texttt{InstructionId}.
+Entities reference each other exclusively through lightweight, strongly typed identifiers: \texttt{TypeId}, \texttt{VariableId}, \texttt{FunctionId}, \texttt{BlockId}, and \texttt{InstructionId}.
 This ID-based referencing provides several major advantages: it completely eliminates the risk of dangling pointers, vastly simplifies memory ownership, and trivially enables the serialization of the entire model, such as exporting the parsed program to JSON.\@
 
 \begin{figure}[H]
@@ -139,7 +134,7 @@ This ID-based referencing provides several major advantages: it completely elimi
   \includegraphics[width=1\textwidth]{obrazky-figures/codemodel-erd.pdf}
   \caption{
     Entity relationship diagram of the Code Model.
-    The model utilizes a flat, data-oriented structure where all types, variables, functions, blocks, and instructions reside in centralized pools.
+    The model uses a flat, data-oriented structure in which all types, variables, functions, blocks, and instructions reside in centralized pools.
     Entities navigate the graph by storing lightweight IDs.
     For example, a \texttt{Function} holds a vector of \texttt{BlockId}s rather than raw memory pointers, ensuring safe serialization and decoupling.
   }\label{fig:code-model-entity-relationship}
@@ -163,7 +158,7 @@ Analyzers that require raw switch semantics can now access them directly, wherea
 
 Rather than introducing a separate, disjoint \uv{Query System} component, the querying mechanisms are seamlessly built directly into the public interface of the \texttt{CodeModel}.
 The API provides direct $O(1)$ lookups by ID.\@
-These include, but are not limited to functions like \texttt{getType(TypeId)} or \texttt{getFunction(FunctionId)} alongside modern C++20 range-based traversal views.
+These include, but are not limited to, functions such as \texttt{getType(TypeId)} and \texttt{getFunction(FunctionId)}, alongside modern C++20 range-based traversal views.
 
 This allows an analyzer to intuitively and efficiently traverse the control flow graph using standard range-based \texttt{for} loops.
 For example, iterating over all instructions within all blocks of a function can be concisely expressed using \texttt{model.blocksOf(func)} and \texttt{model.instructionsOf(block)}.
@@ -175,7 +170,7 @@ In the legacy Code Listener infrastructure, the \texttt{ClEasy} interface forced
 This eager evaluation wasted computational resources and forced the core Intermediate Representation (IR) to act as a container for analysis results.
 
 The modernized architecture resolves this by introducing a lazy evaluation system driven by Annotation Services.
-In this design, the \texttt{CodeModel} remains a pure structural representation of the program, while auxiliary analysis results are computed exclusively on-demand and cached externally.
+In this design, the \texttt{CodeModel} remains a pure structural representation of the program, while auxiliary analysis results are computed exclusively on demand and cached externally.
 
 \subsection*{The \texttt{AnalysisManager} and Lazy Evaluation}\label{sub:analysis-manager}
 
@@ -226,12 +221,12 @@ Currently, the infrastructure implements two primary annotation services:
   \item \textbf{CallGraph:} This service analyzes the \texttt{CodeModel} to construct a directed graph of function invocations.
     Using Tarjan's strongly connected components (SCC) algorithm~\cite{Tarjan1972}, it computes topological orderings, identifies root functions, which are functions with no callers, and leaf functions.
   \item \textbf{SwitchToIf:} This service computes synthetic variable names and block-label allocations required to safely unfold \texttt{SWITCH} instructions into chains of conditional jumps.
-    Crucially, unlike the legacy \texttt{unfold\_switch} filter which destructively mutated the IR, this service only precomputes the textual rendering data.
+    Crucially, unlike the legacy \texttt{unfold\_switch} filter, which destructively mutated the IR, this service only precomputes the textual rendering data.
     The pure \texttt{SwitchInstruction} remains perfectly intact within the \texttt{CodeModel} for any analyzer that natively supports it.
 \end{itemize}
 
 It is worth noting that the legacy pre-analyses for variable liveness, points-to graphs, and loop-closing edges were not ported as individual annotation services.
-Because the modernized infrastructure preserves the purity of the \texttt{CodeModel}, advanced analyzers, such as the Predator verification kernel, prefer to execute their own highly specialized, internal versions of these analyses rather than relying on generic framework approximations.
+Because the modernized infrastructure preserves the purity of the \texttt{CodeModel}, advanced analyzers, such as the Predator verification kernel, prefer to execute their own highly specialized, internal versions of these analyses rather than rely on generic framework approximations.
 
 \section{Exporters and Standalone Tools}\label{sec:exporters}
 
@@ -269,7 +264,7 @@ The infrastructure implements two exporters primarily designed for human inspect
 
 \begin{itemize}
   \item \textbf{DOTExporter:} This component generates a Graphviz \texttt{.dot} representation of the Control Flow Graph (CFG) for each parsed function.
-    It is parameterized by a \texttt{DotVerbosity} flag, which allows the user to toggle the inclusion of detailed type information and unique variable identifiers.
+    It is parameterized by a \texttt{DotVerbosity} flag, that allows the user to toggle the inclusion of detailed type information and unique variable identifiers.
     This fulfills the program graph visualization requirement, providing analysts with immediate visual confirmation of the extracted execution paths~\cite{CleanArchitecture}.
   \item \textbf{PPExporter:} Serving as a direct, modernized replacement for the legacy \texttt{cl\_pp} listener, the Pretty Printer exporter outputs a human-readable, three-address code (3AC) listing of the program.
 \end{itemize}
@@ -341,7 +336,7 @@ The framework provides two built-in implementations of this interface that bridg
   \includegraphics[width=1\textwidth]{obrazky-figures/IAnalyzer_inherit_graph.pdf}
   \caption{
     Class diagram of the \texttt{IAnalyzer} interface.
-    The \texttt{NativeAnalyzerBridge} provides a modern integration path for dynamically loaded tools, while the \texttt{LegacyPredatorBridge} encapsulates the backward compatibility layer.
+    The \texttt{NativeAnalyzerBridge} provides a modern integration path for dynamically loaded tools, while the \texttt{LegacyPredatorBridge} provides a backward-compatibility layer.
   }\label{fig:ianalyzer-inheritance}
 \end{figure}
 
@@ -352,13 +347,13 @@ An external analyzer is compiled as a shared library (\texttt{.so}) that exports
 The GCC plugin loads this library at runtime using \texttt{dlopen}, which is configured via the \texttt{--load-analyzer} command-line flag.
 
 Crucially, when the \texttt{NativeAnalyzerBridge} delegates execution to the dynamically loaded analyzer, it forwards the complete \texttt{AnalysisContext}.
-This means the external analyzer has full, unrestricted access to the \texttt{AnalysisManager}, by extenstion he can lazily request annotations like the \texttt{CallGraph}, use the \texttt{DiagnosticReporter} to emit compiler-formatted warnings, and also use the unified export helpers.
-To demonstrate this modern capability, the infrastructure includes a reference \texttt{RecursionCheck} analyzer, which successfully utilizes the \texttt{CallGraph} annotation to detect cyclic function calls on-demand.
+This means the external analyzer has full, unrestricted access to the \texttt{AnalysisManager}; by extension, it can lazily request annotations like the \texttt{CallGraph}, use the \texttt{DiagnosticReporter} to emit compiler-formatted warnings, and also use the unified export helpers.
+To demonstrate this modern capability, the infrastructure includes a reference \texttt{RecursionCheck} analyzer, that successfully uses the \texttt{CallGraph} annotation to detect cyclic function calls on demand.
 
 \subsection*{Legacy Predator Compatibility and the Adapter Pattern}\label{sub:legacy-predator-bridge}
 
 The most critical constraint of the modernization effort was ensuring that the VeriFIT group's primary tool, the Predator shape analyzer, continued to function without requiring any modifications to its own source code.
-Predator expects its input in the form of the legacy \texttt{cl\_code\_listener} C API, which is a stream of sequential function pointer callbacks like \texttt{fnc\_open}, \texttt{insn}, or \texttt{fnc\_close}.
+Predator expects its input in the form of the legacy \texttt{cl\_code\_listener} C API, which is a stream of sequential function-pointer callbacks such as \texttt{fnc\_open}, \texttt{insn}, or \texttt{fnc\_close}.
 
 To bridge this fundamental architectural gap, the infrastructure implements the classic Adapter design pattern~\cite{DesignPatterns}.
 The \texttt{LegacyPredatorBridge} instantiates a \texttt{PredatorAdapter}, which systematically traverses the new, object-oriented \texttt{CodeModel} and translates its entities back into the legacy stream of C callbacks.
@@ -378,7 +373,7 @@ An important architectural asymmetry exists between the two bridges.
 While the \texttt{NativeAnalyzerBridge} exposes the full \texttt{AnalysisContext} to modern tools, the \texttt{LegacyPredatorBridge::analyze()} method explicitly discards the context.
 Because Predator predates the \texttt{AnalysisManager}, it cannot dynamically request framework annotations.
 
-Instead, the \texttt{PredatorAdapter} relies on the \texttt{CallGraph} annotation service purely internally to determine the topological ordering of root functions (functions with no callers), ensuring they are emitted to Predator in the correct sequence.
+Instead, the \texttt{PredatorAdapter} relies solely on the \texttt{CallGraph} annotation service to determine the topological ordering of root functions (functions with no callers), ensuring they are emitted to Predator in the correct sequence.
 Once the adapter fires the final \texttt{acknowledge()} callback, the handoff is complete.
 
 This elegantly resolves the \uv{mandatory pre-analyses} problem identified in the legacy architecture.
