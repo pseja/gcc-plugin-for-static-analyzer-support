@@ -4,7 +4,7 @@
 
 \chapter{State of the Art}\label{chap:sota}
 
-This chapter provides a detailed account of the existing Code Listener infrastructure in the Predator GitHub repository~\footnote{https://github.com/kdudka/predator} and as described in the original publication~\cite{CodeListener2012}.
+This chapter provides a detailed account of the existing Code Listener infrastructure in the Predator GitHub repository~\footnote{\url{https://github.com/kdudka/predator}} and as described in the original publication~\cite{CodeListener2012}.
 Understanding the design decisions and limitations of the current implementation is necessary background for the design choices made in this thesis.
 
 To provide this context, the chapter first introduces the Code Listener infrastructure and compares it to similar projects within the broader static analysis ecosystem in Section~\ref{sec:cl-infrastructure} on page~\pageref{sec:cl-infrastructure}.
@@ -15,7 +15,7 @@ Finally, the chapter concludes with Section~\ref{sec:limitations} on page~\pager
 \section{The Code Listener Infrastructure}\label{sec:cl-infrastructure}
 
 The Code Listener (CL) infrastructure is an open-source middleware designed to simplify the construction of static analysis tools for C~\cite{CodeListener2012} and, by extension, C++~\cite{CppExtension2014} programs.
-It was developed by the VeriFIT research group~\footnote{https://www.fit.vut.cz/research/group/verifit/.en} at Brno University of Technology mainly in the years 2009--2015, with some contributors continuing work on it until the present~\footnote{https://github.com/kdudka/predator/graphs/contributors}.
+It was developed by the VeriFIT research group~\footnote{\url{https://www.fit.vut.cz/research/group/verifit/.en}} at Brno University of Technology mainly in the years 2009--2015, with some contributors continuing work on it until the present~\footnote{\url{https://github.com/kdudka/predator/graphs/contributors}}.
 Its primary goal is to wrap the complex and often undocumented interfaces of existing code parsers to provide a unified, well-documented, and object-oriented Application Programming Interface (API) for static analysis tool developers~\cite{CodeListener2012}.
 By transforming the native internal representations of compilers into its own simplified format, the Code Listener API exposed to static analyzers becomes completely independent of the underlying parser.
 This abstraction layer allows the same analysis tool to run across different compilers without requiring modifications to the analyzer's source code~\cite{CodeListener2012}.

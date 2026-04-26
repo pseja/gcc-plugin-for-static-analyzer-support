@@ -1,0 +1,91 @@
+digraph "PredatorAdapterFlow"
+{
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  rankdir=TB;
+  nodesep=0.45;
+  ranksep=0.55;
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10,color="gray40"];
+  node [fontname=Helvetica,fontsize=10,style="filled",fillcolor="white",color="gray40"];
+
+  Start [shape=oval, fillcolor="grey60", fontcolor="black",
+         label="PredatorAdapter::emit()"];
+
+  PreTypes  [shape=rectangle,
+             label="Pre-pass 1: register all Types\n(build type_map: TypeId -> cl_type + items)"];
+  PreVars   [shape=rectangle,
+             label="Pre-pass 2: register all Variables\n(build var_map: VariableId -> cl_var,\nconstruct cl_initializer chains)"];
+  PreFnUIDs [shape=rectangle,
+             label="Pre-pass 3: populate\nfunction name -> UID map"];
+
+  FileOpen  [shape=rectangle, label="file_open(source filename)"];
+
+  FuncCheck [shape=diamond,   label="next\nfunction?"];
+  FncOpen   [shape=rectangle, label="fnc_open(func_operand)"];
+  FncArgs   [shape=rectangle, label="fnc_arg_decl(id, operand)\nfor each parameter"];
+  EntryJmp  [shape=rectangle, label="insn(CL_INSN_JMP) to first real block"];
+
+  BlockCheck [shape=diamond,   label="next block?\n(skip ENTRY / EXIT)"];
+  BbOpen     [shape=rectangle, label="bb_open(block label)"];
+
+  InsnCheck [shape=diamond,   label="next\ninstruction?"];
+  EmitInsn  [shape=rectangle, fillcolor="lightgrey",
+             label="emitInstruction(inst)\n-> translate to one or more cl callbacks"];
+
+  HasTerm   [shape=diamond,   label="block has\nterminator?"];
+  SynthTerm [shape=rectangle,
+             label="synthesize fallthrough:\ninsn(CL_INSN_JMP) or insn(CL_INSN_RET)"];
+
+  FncClose  [shape=rectangle, label="fnc_close()"];
+  FileClose [shape=rectangle, label="file_close()"];
+
+  End [shape=oval, fillcolor="grey60", fontcolor="black", label="acknowledge()"];
+
+  // ---- main spine ----
+  Start      -> PreTypes;
+  PreTypes   -> PreVars;
+  PreVars    -> PreFnUIDs;
+  PreFnUIDs  -> FileOpen;
+  FileOpen   -> FuncCheck;
+
+  FuncCheck  -> FncOpen     [label="yes"];
+  FncOpen    -> FncArgs;
+  FncArgs    -> EntryJmp;
+  EntryJmp   -> BlockCheck;
+
+  BlockCheck -> BbOpen      [label="yes"];
+  BbOpen     -> InsnCheck;
+  InsnCheck  -> EmitInsn    [label="yes"];
+  EmitInsn   -> InsnCheck;
+  InsnCheck  -> HasTerm     [label="no"];
+  HasTerm    -> BlockCheck  [label="yes"];
+  HasTerm    -> SynthTerm   [label="no"];
+  SynthTerm  -> BlockCheck;
+
+  BlockCheck -> FncClose    [label="no"];
+  FncClose   -> FuncCheck;
+
+  FuncCheck  -> FileClose   [label="no"];
+  FileClose  -> End;
+
+  // ---- instruction dispatch legend (same rank as EmitInsn) ----
+  subgraph cluster_dispatch {
+    label="emitInstruction dispatch";
+    labeljust=l;
+    fontname=Helvetica; fontsize=10;
+    style=dashed; color="gray60";
+
+    D_ASSIGN  [shape=rectangle, label="Assign  -> insn(UNOP | BINOP)"];
+    D_CALL    [shape=rectangle, label="Call    -> insn_call_open\n           + insn_call_arg xN\n           + insn_call_close"];
+    D_GOTO    [shape=rectangle, label="Goto    -> insn(JMP)"];
+    D_COND    [shape=rectangle, label="Cond    -> [insn(BINOP) +] insn(COND)"];
+    D_RET     [shape=rectangle, label="Return  -> insn(RET)"];
+    D_SWITCH  [shape=rectangle, label="Switch  -> insn_switch_open\n           + insn_switch_case xN\n           + insn_switch_close"];
+    D_CLOB    [shape=rectangle, label="Clobber -> insn(CLOBBER)"];
+    D_LABEL   [shape=rectangle, label="Label   -> insn(LABEL)  [if user-visible]"];
+
+    D_ASSIGN -> D_CALL -> D_GOTO -> D_COND -> D_RET -> D_SWITCH -> D_CLOB -> D_LABEL [style=invis];
+  }
+
+  EmitInsn -> D_ASSIGN [style=dashed, lhead=cluster_dispatch, label="dispatch"];
+}

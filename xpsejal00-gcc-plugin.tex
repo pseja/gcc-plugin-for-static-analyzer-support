@@ -44,7 +44,19 @@
 % Základní balíčky jsou dole v souboru šablony fitthesis.cls
 % Basic packages are at the bottom of template file fitthesis.cls
 % zde můžeme vložit vlastní balíčky / you can place own packages here
+\usepackage{xcolor}
+\usepackage{listings}
 
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red},
+    commentstyle=\color{green!50!black},
+    morekeywords={vector, unique_ptr, IAnalyzer, AnalysisContext, CodeModel},
+    breaklines=true,
+    % frame=tb % Adds a line at the top and bottom
+}
 
 % Pro seznam zkratek lze využít balíček Glossaries - nutno odkomentovat i níže a při kompilaci z konzoly i v Makefile (plnou verzi pro Perl, nebo lite)
 % The Glossaries package can be used for the list of abbreviations - it is necessary to uncomment also below. When compiling from the console also in the Makefile (full version for Perl or lite)
@@ -71,6 +83,7 @@
 \csdoublequotesoff
 
 \usepackage{url}
+\usepackage{subcaption}
 
 % =======================================================================
 % balíček "hyperref" vytváří klikací odkazy v pdf, pokud tedy použijeme pdflatex
