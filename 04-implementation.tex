@@ -1,9 +1,208 @@
+% !TeX root = xpsejal00-gcc-plugin.tex
 \documentclass[xpsejal00-gcc-plugin.tex]{subfiles}
 \begin{document}
 
-\chapter{Implementation}
-\label{chap:implementation}
+\chapter{Implementation}\label{chap:implementation}
 
-% TODO: implementation chapter
+Building on the conceptual and architectural design outlined previously, this chapter details the practical implementation of the modernized Code Listener.
+It emphasizes the engineering decisions, programming techniques, and build systems that translated the object-oriented design into a functional prototype.
+
+The structure of this chapter follows the software's logical execution path.
+Section~\ref{sec:dev-env} addresses the development environment and build artifacts, while Section~\ref{sec:build-system} describes the physical source code organization.
+Subsequent sections cover the live GCC plugin pipeline (Section~\ref{sec:gcc-plugin-pipeline}), the compiler-independent core and analyzer interfaces (Section~\ref{sec:core-representation}), and the offline serialization path (Section~\ref{sec:serialization}).
+The chapter concludes with implemented testing and tooling support (Section~\ref{sec:testing}), current extension points and limitations (Section~\ref{sec:implementation-limitations}), and the size of the authored implementation (Section~\ref{sec:implementation-size}).
+In accordance with software engineering best practices, exhaustive source code listings are omitted from the main text and are instead provided on the attached digital medium or on GitHub~\footnote{\url{https://github.com/pseja/gcc-plugin-for-static-analyzer-support}}.
+
+\section{Development Environment and Platform Constraints}\label{sec:dev-env}
+
+Developing a compiler plugin imposes strict platform and toolchain constraints.
+Like the original Predator toolchain, the modernized infrastructure targets Linux environments.
+Because the plugin is compiled as a shared object and loaded directly into the GCC process memory space, it is intrinsically tied to the GCC Plugin API.\@
+The build system must match the exact GCC installation used at runtime and compile against that specific version's plugin headers.
+This constraint is managed via a \texttt{TARGET\_GCC} CMake variable.
+By default, it is set to \texttt{gcc-12}.
+If the required compiler headers are missing during configuration, the build is designed to abort immediately rather than producing a partially or silently broken binary.
+
+The implementation utilizes C++23, the latest stable version of the C++ standard available during development~\cite{gccCxxStatus}.
+This choice enables the internal models to leverage standard library facilities, thereby avoiding reliance on complex, custom framework code.
+For instance, \texttt{std::variant} was employed for closed type and instruction hierarchies, \texttt{std::optional} was used to safely handle incomplete compiler metadata, and modern range-based traversal was applied where appropriate within the Code Model.
+
+To ensure safety and compatibility, the generated binaries are compiled conservatively.
+All plugin-facing targets are compiled with \texttt{-fPIC} to support dynamic loading.
+Furthermore, the codebase uses \texttt{-fno-rtti} to avoid the overhead of runtime type information, and enforces strict compilation checks via \texttt{-Wall}, \texttt{-Wextra}, \texttt{-Werror}, and \texttt{-pedantic} to catch potential defects at compile time.
+
+External dependencies were kept to an absolute minimum.
+Persistent JSON storage is handled by the header-only \texttt{nlohmann/json} library, avoiding the introduction of shared-library dependencies that could cause symbol collisions inside the GCC process~\cite{nlohmannJson}.
+Additionally, the standard \texttt{patch} utility is required during the build configuration to automatically apply compatibility shims to the legacy Predator codebase, ensuring the experiment is reproducible from a clean repository checkout.
+
+\section{Build System and Source Code Organization}\label{sec:build-system}
+
+A two-layered build system is employed in the implementation.
+CMake manages the complex target graph, dependencies, and test registrations, while a top-level Makefile offers concise commands for standard development workflows, including \texttt{make build}, \texttt{make test}, \texttt{make json}, \texttt{make callgraph}, and others.
+
+The build process produces five distinct categories of artifacts:
+
+\begin{enumerate}
+  \item \texttt{cl\_core}: The compiler-independent static library housing the Code Model.
+  \item \texttt{cl\_gcc}: The shared library that GCC dynamically loads as the actual plugin.
+  \item \textbf{Analyzer Libraries:} Dedicated shared libraries including \texttt{cl\_callgraph\_dot} and \texttt{cl\_recursion\_check}, with additional analyzers built in the same way.
+  \item \textbf{Standalone Executables:} The offline tools \texttt{cl\_merge} and \texttt{cl\_analyze}.
+  \item \textbf{Auxiliary Outputs:} Generated Doxygen documentation, class diagrams, and CTest registrations.
+\end{enumerate}
+
+To maintain the architectural boundaries defined in the design phase, the physical directory layout strictly mirrors the separation of concerns:
+
+\begin{itemize}
+  \item \texttt{src/core/}: Contains the compiler-independent Code Model, entity pools, and analyzer interfaces.
+  \item \texttt{src/adapters/gcc/}: Houses the GCC plugin registration, the GIMPLE translation logic, and argument parsing.
+  \item \texttt{src/adapters/predator/}: Contains the legacy compatibility layer for Predator.
+  \item \texttt{src/annotation\_services/}: Implements the lazily evaluated analyses, most importantly the Call Graph service used by multiple analyzers.
+  \item \texttt{src/exporters/}: Contains the DOT, JSON, and pretty-printed export pipelines, together with the JSON frontend and merger.
+  \item \texttt{src/tools/}: Holds the entry points for the \texttt{cl\_merge} and \texttt{cl\_analyze} executables.
+  \item \texttt{include/}: Exposes the C and C++ analyzer Application Binary Interfaces (ABIs).
+  \item \texttt{tests/}: Contains the native regression test suites.
+\end{itemize}
+
+This directory structure enforces the most critical implementation rule of the entire project: GCC headers must never leak into compiler-independent code.
+All direct dependencies on the GCC API are quarantined entirely within \texttt{src/adapters/gcc/}.
+This physical boundary makes it possible to compile the offline \texttt{cl\_analyze} tool and the Code Model without requiring the GCC runtime data structures.
+
+\section{Realizing the GCC Plugin Pipeline}\label{sec:gcc-plugin-pipeline}
+
+The live compiler plugin represents the first of the three primary execution paths.
+Its entry point was implemented in \texttt{register\_plugin.cpp}.
+Its sole responsibility is to verify that the runtime GCC version matches the compiled version before delegating initialization to the \texttt{PluginContext} singleton.
+Inside \texttt{PluginContext.cpp}, the plugin registers its custom GIMPLE pass immediately following GCC's native \texttt{cfg} pass.
+It records the current input file at the \texttt{PLUGIN\_START\_UNIT} event and finally installs a \texttt{PLUGIN\_FINISH} callback that triggers the model export and analyzer invocation at the end of the compilation unit.
+
+Command-line argument parsing is centralized in \texttt{PluginArgs.cpp}.
+It parses the raw GCC plugin arguments, converts typed values, like exporter verbosities, and validates them.
+The arguments currently wired into runtime behavior cover verbosity selection, analyzer loading, forwarded analyzer arguments, and the JSON, DOT, and PP export requests.
+The parser also recognizes flags intended as future work hooks, such as \texttt{help}, \texttt{version}, \texttt{dry-run}, \texttt{dump-types}, \texttt{preserve-ec}, \texttt{pid-file}, and \texttt{type-dot}, preventing the need to hardwire ad hoc conditionals throughout the plugin logic later.
+
+The custom GCC pass is defined in \texttt{Pass.cpp}.
+For every function, its execute method forwards work directly to \texttt{GCCAdapter::processFunction}.
+\texttt{GCCAdapter.cpp} is the largest single implementation file in the project.
+It incrementally populates the new Code Model by traversing the GCC trees and GIMPLE statements.
+To optimize this translation:
+
+\begin{itemize}
+  \item Compiler types are memoized using a cache keyed by the GCC tree nodes, ensuring that recursive types are represented only once.
+  \item Anonymous compiler aggregates are assigned synthetic location-based names, significantly improving the readability of diagnostic and JSON outputs.
+  \item Source locations are aggressively normalized via helper functions to recover coordinates even for GIMPLE statements missing complete metadata, providing the best possible information for diagnostics and analysis.
+  \item The adapter stores only internal identifiers, entirely stripping away the raw GCC memory pointers so that the resulting Code Model outlives the compiler process.
+\end{itemize}
+
+Finally, diagnostic messages are routed through \texttt{GCCDiagnosticReporter.cpp}.
+This class maps framework diagnostics into native GCC calls, specifically \texttt{inform}, \texttt{warning\_at}, \texttt{error\_at}, \texttt{fatal\_error}, ensuring that any bugs found by an analyzer appear to the user exactly like standard compiler errors.
+Since GCC has no built-in debug-level reporting channel, the plugin provides a development-only path that prints grey \texttt{stderr} lines containing the relative file path, line number, function name, and message text.
+These messages are emitted only when the verbosity level is set to 2 or higher, allowing adapter debugging to remain available on demand without affecting ordinary analyzer runs.
+
+\section{Core Representation and Analyzer Interfaces}\label{sec:core-representation}
+
+The internal Code Model is driven by centralized entity pools.
+In the implementation, these pools for types, variables, functions, blocks, and instructions are instantiated as \texttt{std::deque} containers.
+A \texttt{std::deque} allocates memory in fixed chunks, meaning that as the GCC adapter incrementally populates the model and holds temporary references, the memory addresses of previously inserted entities remain perfectly stable~\cite{boostedCppDeque}.
+This avoids the pointer-invalidation issues common to \texttt{std::vector} reallocations.
+
+Because deep inheritance trees were avoided, instruction and type payloads are implemented using C++23 \texttt{std::variant}.
+This allows each instruction to be stored as a plain value type.
+Later processing, such as exporting or analyzing the model, is performed cleanly by branching over the closed set of alternatives using \texttt{std::visit}.
+
+To load the analysis logic, \texttt{PluginContext::load\_analyzer} performs dynamic library loading.
+It explicitly checks the library for the modern \texttt{cl\_get\_native\_api} symbol.
+If the symbol exists and versions match, the library is wrapped in the \texttt{NativeAnalyzerBridge}.
+If the modern API is missing, the infrastructure falls back to the historical C ABI through the legacy \texttt{cl\_get\_analyzer\_api} entry point.
+The resulting listener is then wrapped in a \texttt{LegacyPredatorBridge}.
+Missing symbols or version mismatches are reported as errors via the plugin diagnostic channel and prevent the analyzer from loading.
+
+Modern native analyzers are provided with an \texttt{AnalysisContext} declared in the public analyzer headers.
+Its implementation is located in \texttt{src/exporters/AnalysisContext.cpp}.
+This context provides three specific services: the diagnostic reporter, the \texttt{AnalysisManager}, and unified export helpers exposed through \texttt{exportDot}, \texttt{exportPP}, and \texttt{exportJson}.
+Because the \texttt{AnalysisManager} uses lazy evaluation, multiple analyzers that run sequentially can request and share expensive derived data, such as the Call Graph, from a single cached instance.
+
+Conversely, backward compatibility is handled by \texttt{PredatorAdapter.cpp}.
+This adapter systematically walks the modern Code Model and reconstructs the legacy \texttt{cl\_type} and \texttt{cl\_var} structures.
+The emission sequence was carefully implemented to match historical expectations: all types and variables are pre-registered before any function bodies are streamed.
+This exact ordering ensures the legacy Predator verification kernel functions entirely unmodified.
+
+\section{Serialization and Offline Whole-Program Workflow}\label{sec:serialization}
+
+The second major execution path is the offline workflow, which completely decouples the analysis from the live compiler process.
+Serialization is implemented via the \texttt{JSONExporter} and \texttt{JSONImporter} classes.
+Because the model relies solely on strongly typed IDs rather than memory addresses, the serialization process maps internal IDs to JSON values almost directly, avoiding complex graph-pointer reconstruction.
+
+Whole-program analysis requires merging multiple translation units into a single model.
+This is executed by \texttt{ModelMerger.cpp}.
+To prevent ID collisions, for example, \texttt{FunctionId(0)} existing in two separate files, the merger generates explicit remapping tables.
+As a new file is appended to the consolidated Code Model, the merger systematically rewrites every cross-reference through these tables, seamlessly preserving the integrity of the graph topology across file boundaries.
+
+These capabilities are exposed to the user via two standalone executables.
+The \texttt{cl\_merge} tool accepts multiple \texttt{.json} files, leverages the \texttt{ModelMerger}, and outputs a unified program model.
+The \texttt{cl\_analyze} tool acts as the offline analysis driver.
+It can either load a native analyzer library or invoke the built-in offline exporters for DOT and pretty-printed output.
+Instead of using the \texttt{GCCDiagnosticReporter}, it instantiates an equivalent \texttt{StderrDiagnosticReporter}.
+When the analyzer path is selected, it loads the target analyzer and feeds it the deserialized JSON model.
+Consequently, the analyzer backend requires no modifications to operate offline; the semantic contract remains identical whether the model originated from GCC memory or a JSON text file.
+
+\section{Testing, Tooling, and Practical Workflow}\label{sec:testing}
+
+To ensure the architecture serves as a robust research prototype, extensive automated testing and tooling were implemented.
+This section describes the implemented testing infrastructure and practical usage flow, while the quantitative evaluation itself is deferred to the following testing chapter.
+When the \texttt{WITH\_PREDATOR} CMake option is enabled, the build system compiles the patched Predator components and exposes their regression suite through CTest.
+
+To verify correctness across the different architectural boundaries, CTest is configured with four separate regression suites:
+\begin{enumerate}
+  \item \textbf{GCC-Adapter Tests}: 46 tests validating that the GIMPLE translation produces the correct JSON output against historical fixtures.
+  \item \textbf{Code Model Integration Tests}: 38 tests focusing specifically on types, initializers, control flow edges, and edge cases.
+  \item \textbf{Offline Pipeline Tests}: 3 end-to-end tests covering the offline analysis path through the \texttt{cl\_analyze} tool.
+  \item \textbf{Predator Regression Suite}: 1,192 tests executed against the patched Predator kernel to validate backward compatibility on the preserved listener interface.
+\end{enumerate}
+
+To demonstrate how the system is used in practice, two reference native analyzers were implemented: \texttt{callgraph\_dot} and \texttt{recursion\_check}.
+The \texttt{callgraph\_dot} analyzer requests the shared \texttt{CallGraph} annotation and emits its nodes and edges as a Graphviz DOT file.
+The \texttt{recursion\_check} analyzer requests the same annotation, iterates over its strongly connected components, and reports direct and mutual recursion both to diagnostics and to a text report.
+A developer can run \texttt{make callgraph FILE=example.c} to generate a \texttt{callgraph.dot} visualization of the program's interprocedural structure.
+Following that, \texttt{make recursion FILE=example.c} checks the same program for direct and mutual recursion, and writes \texttt{recursion\_report.txt} by default.
+In both cases, the output path can be redirected via the forwarded-analyzer argument string exposed by the top-level Makefile.
+Together, these analyzers show that both simple visual tools and more analysis-oriented native analyzers can be written over the new architecture with minimal boilerplate.
+
+At this stage, the implementation already delivers three concrete execution paths: the live GCC plugin path, the Predator compatibility path, and the offline JSON-based path.
+The subsequent testing chapter quantitatively evaluates these execution paths, whereas the present chapter remains focused on their construction.
+
+\section{Current Limitations and Extension Points}\label{sec:implementation-limitations}
+
+While the architecture is stable, several limitations and extension points remain.
+The \texttt{AnalysisContext} and \texttt{AnalysisManager} are explicitly designed as extension points for future annotation services.
+However, the offline \texttt{cl\_analyze} workflow currently only supports native analyzers or built-in exporters.
+Executing legacy analyzers like Predator offline is not supported because they depend heavily on the \texttt{PredatorAdapter} reconstructing the legacy data stream, a process currently tied directly to the live GCC execution path.
+
+These limitations do not diminish the prototype's practical value; rather, they delineate the next logical steps in its development.
+These include expanding the set of shared annotations, implementing concrete behavior for currently reserved plugin arguments, and extending the offline path where feasible without compromising the existing analyzer boundary.
+
+\section{Implementation Size}\label{sec:implementation-size}
+
+To quantify the scale of the implementation and distinguish original thesis work from legacy code, the authored C and C++ implementation files comprise approximately 11,309 lines of code (LOC)~\footnote{Measured in April 2026}.
+The repository includes an additional 2,061 lines of automated test code, bringing the total authored contribution to 13,370 lines.
+
+\begin{table}[H]
+  \begin{tabular}{ll}
+    Subsystem                                                & LOC    \\
+    Core model (\texttt{src/core/})                          & 2,082  \\
+    GCC integration (\texttt{src/adapters/gcc/})             & 2,759  \\
+    Predator compatibility (\texttt{src/adapters/predator/}) & 1,239  \\
+    Annotation services (\texttt{src/annotation\_services/}) & 599    \\
+    Exporters and offline frontend (\texttt{src/exporters/}) & 3,825  \\
+    Command-line tools (\texttt{src/tools/})                 & 368    \\
+    Native analyzers (\texttt{analyzers/})                   & 279    \\
+    Public headers (\texttt{include/})                       & 158    \\
+    Total implementation code                                & 11,309
+  \end{tabular}
+  \caption{Lines of code (LOC) for each major subsystem of the implementation.}\label{tab:loc}
+\end{table}
+
+In contrast, the imported Predator submodule comprises approximately 673,000 lines of legacy C and C++ code, with Code Listener itself totaling about 25,000 lines, including headers, support files, and tests.
+This legacy code is treated solely as an external dependency and evaluation baseline, and is excluded from the thesis implementation metrics.
+As illustrated in Table~\ref{tab:loc} on page~\pageref{tab:loc}, the code-size distribution reflects the architectural priorities of the project, with the largest components allocated to the Exporter pipelines, the GCC translation adapter, and the Core representation.
 
 \end{document}
