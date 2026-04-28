@@ -186,8 +186,12 @@ To quantify the scale of the implementation and distinguish original thesis work
 The repository includes an additional 2,061 lines of automated test code, bringing the total authored contribution to 13,370 lines.
 
 \begin{table}[H]
-  \begin{tabular}{ll}
+  \centering
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{@{}lr@{}}
+    \toprule
     Subsystem                                                & LOC    \\
+    \midrule
     Core model (\texttt{src/core/})                          & 2,082  \\
     GCC integration (\texttt{src/adapters/gcc/})             & 2,759  \\
     Predator compatibility (\texttt{src/adapters/predator/}) & 1,239  \\
@@ -196,7 +200,9 @@ The repository includes an additional 2,061 lines of automated test code, bringi
     Command-line tools (\texttt{src/tools/})                 & 368    \\
     Native analyzers (\texttt{analyzers/})                   & 279    \\
     Public headers (\texttt{include/})                       & 158    \\
-    Total implementation code                                & 11,309
+    \midrule
+    Total implementation code                                & 11,309 \\
+    \bottomrule
   \end{tabular}
   \caption{Lines of code (LOC) for each major subsystem of the implementation.}\label{tab:loc}
 \end{table}
