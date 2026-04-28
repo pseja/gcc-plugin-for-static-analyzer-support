@@ -1,9 +1,18 @@
+% !TeX root = xpsejal00-gcc-plugin.tex
 \documentclass[xpsejal00-gcc-plugin.tex]{subfiles}
 \begin{document}
 
-\chapter{Conclusion}
-\label{chap:conclusion}
+\chapter{Conclusion}\label{chap:conclusion}
 
-% TODO: conclusion chapter
+This thesis set out to research the original Code Listener infrastructure and to develop a modern replacement, aiming to preserve its static-analysis value while addressing key architectural limitations.
+To achieve these goals, a new GCC plugin and toolchain were designed around a compiler-independent \texttt{CodeModel}, lazy annotation services, and unified interfaces for export and analysis.
+The resulting prototype enables live analysis inside GCC, offline JSON-based processing through \texttt{cl\_merge} and \texttt{cl\_analyze}, and ongoing integration with the existing Predator toolchain.
+Evaluation showed strong continuity: all native regression suites and the Predator compatibility path passed 1,192 \texttt{new-plugin} regression tests during clean rebuilds using GCC 12, 13, and 14.
+Collectively, these results demonstrate that modernization not only replicates the functionality of the original integration point but also provides a more maintainable and extensible foundation for future analyzers and workflows, thereby guiding subsequent development directions.
+
+Building on these results, the most natural continuation of this work is to expand the framework along the trajectory in which it was originally designed, ensuring cohesive growth.
+Short-term improvements include introducing the planned \texttt{ModelBuilder} abstraction to cleanly separate the incremental GCC extraction logic from the \texttt{CodeModel}'s internal storage layout, as well as implementing additional annotation services for analyses currently available only in legacy form, such as loop-closing edges, points-to information, and variable liveness.
+In the longer term, the architecture could be broadened with another compiler frontend, most notably, an LLVM/Clang adapter, and the offline workflow could be extended to support legacy analyzers without requiring a live GCC execution.
+Collectively, these directions preserve the main contribution of this thesis: providing a practical compatibility bridge for existing tools and a cleaner platform for future research and engineering.
 
 \end{document}
