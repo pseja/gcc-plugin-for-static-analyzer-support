@@ -162,20 +162,26 @@
   specialist.title.a={},    %titul za jménem (nepovinné) / title after the name (optional)
   % Klíčová slova / keywords
   keywords.cs={
-    infrastruktura Code Listener, GCC, LLVM, plugin, refaktorování, statická analýza, C, C++
+    Code Listener, GCC plugin, statická analýza, CodeModel, serializace JSON, Predator, zpětná kompatibilita
   }, % klíčová slova v českém či slovenském jazyce / keywords in czech or slovak language
   keywords.en={
-    Code Listener infrastructure, GCC, LLVM, plugin, refactoring, static analysis, C, C++
+    Code Listener, GCC plugin, static analysis, CodeModel, JSON serialization, Predator, backward compatibility
   }, % klíčová slova v anglickém jazyce / keywords in english
   %keywords.en={Here, individual keywords separated by commas will be written in English.},
   % Abstrakt / Abstract
-  % TODO: write proper abstract
   abstract.cs={
-    Tato bakalářská práce se zabývá analýzou infrastruktury Code Listener, která poskytuje základ pro tvorbu statických analyzátorů zdrojového kódu, a její následnou refaktorizací do nového pluginu.
+    Tato bakalářská práce se zabývá modernizací infrastruktury Code Listener, která slouží jako mezivrstva mezi překladači a statickými analyzátory programů v jazyce C a C++.
+    Nejprve analyzuje původní architekturu a identifikuje její hlavní omezení, zejména povinné transformace a propletení výsledků analýz s vnitřní reprezentací programu.
+    Na základě této analýzy navrhuje a implementuje nový plugin pro GCC postavený na překladači nezávislém modelu programu CodeModel, líně vyhodnocovaných anotačních službách, jednotném rozhraní pro analyzátory a podpoře exportu do JSON pro offline zpracování.
+    Řešení zachovává zpětnou kompatibilitu s nástrojem Predator prostřednictvím adaptéru, který rekonstruuje původní proud zpětných volání z nového CodeModelu.
+    Správnost a praktická použitelnost návrhu byly ověřeny nativními regresními testy a 1192 testy kompatibility Predatoru při sestaveních s GCC 12, 13 a 14.
   }, % abstrakt v českém či slovenském jazyce / abstract in czech or slovak language
-  % TODO: write proper abstract
   abstract.en={
-    This bachelor's thesis deals with the analysis of the Code Listener infrastructure, which serves as the foundation for creating static analyzers, and its subsequent refactoring into a new plugin.
+    This bachelor's thesis modernizes the Code Listener infrastructure, which serves as an integration layer between compilers and static analyzers for C and C++ programs.
+    It first analyzes the original architecture and identifies its main limitations, namely mandatory transformations and the pollution of analysis results with the internal program representation.
+    Based on this analysis, the thesis designs and implements a new GCC plugin built around a compiler-independent CodeModel, lazily evaluated annotation services, a unified analyzer interface, and JSON export for offline processing.
+    The solution preserves backward compatibility with Predator through an adapter that reconstructs the original callback stream from the new CodeModel.
+    Correctness and practical viability were validated by native regression suites and by 1,192 Predator compatibility tests executed after rebuilds with GCC 12, 13, and 14.
   }, % abstrakt v anglickém jazyce / abstract in english
   %abstract.en={An abstract of the work in English will be written in this paragraph.},
   % Prohlášení (u anglicky psané práce anglicky, u slovensky psané práce slovensky; u projektové praxe lze zakomentovat). Pokud použijete nástroje umělé inteligence, uveďte je podobně jako v příkladu. / Declaration (for thesis in english should be in english; for project practice can be commented out). If you use any AI tools, acknowledge them like in the provided example.
@@ -184,11 +190,11 @@
 % Uvedl jsem všechny literární prameny, publikace a další zdroje, ze kterých jsem čerpal. 
 % Pro jazykovou revizi technické zprávy jsem použil(a) nástroj ChatGPT. 
 % Při tvorbě odevzdaného programového kódu jsem využíval nástroj Github Copilot. [konkretizujte a upravte podle skutečnosti].},
-  declaration={I hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of Dr. Ing. Petr Peringer.
+  declaration={I hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of Dr.\ Ing. Petr Peringer.
   % The supplementary information was provided by Mr. Y
   I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis.
-  I have used Grammarly to correct spelling and other language mistakes. 
-  % I used GitHub Copilot when working on the software. [specify and ammend based on reality].
+  I have used Grammarly to improve the linguistic quality and spelling of this thesis.
+  I utilized GitHub Copilot when working on the software. Specifically during the software development phase, where this tool was used exclusively for reviewing, consulting, and verifying my original interface designs and implementation choices, rather than for the automated code generation.
   },
   % Poděkování (nepovinné, nejlépe v jazyce práce; nechcete-li, zakomentujte pro skrytí nadpisu. / Acknowledgement (optional, ideally in the language of the thesis; comment out to hide it including a heading.) 
 %   acknowledgment={V této sekci je možno uvést poděkování vedoucímu práce a těm, kteří poskytli odbornou pomoc
