@@ -20,6 +20,7 @@
 @inproceedings{PredatorSuite2016,
   author    = {Petr {Peringer} and Veronika {Šoková} and Marek {Trtík} and Tomáš {Vojnar} and Lukáš {Holík} and Michal {Kotoun}},
   title     = {Predator Shape Analysis Tool Suite},
+  editor    = {Roderick Bloem and Eli Arbel},
   booktitle = {Proceedings of HVC 2016},
   year      = {2016},
   series    = {Lecture Notes in Computer Science},
@@ -32,18 +33,67 @@
   url       = {http://link.springer.com/chapter/10.1007/978-3-319-49052-6_13}
 }
 
-@misc{PredatorWebsite,
+@webpage{PredatorWebsite,
   author       = {{VeriFIT Research Group}},
   title        = {Predator},
-  howpublished = {\url{https://www.fit.vut.cz/research/group/verifit/public/tools/predator/}},
-  note         = {[Cit. 2026-04-23]}
+  howpublished = {online},
+  publisher    = {},
+  year         = {2026},
+  url          = {https://www.fit.vut.cz/research/group/verifit/public/tools/predator/},
+  cited        = {2026-04-27}
 }
 
-@misc{ForesterWebsite,
+@webpage{ForesterWebsite,
   author       = {{VeriFIT Research Group}},
   title        = {Forester},
-  howpublished = {\url{https://www.fit.vut.cz/research/group/verifit/public/tools/forester/}},
-  note         = {[Cit. 2026-04-23]}
+  howpublished = {online},
+  publisher    = {},
+  year         = {2019},
+  url          = {https://www.fit.vut.cz/research/group/verifit/public/tools/forester/},
+  cited        = {2026-04-27}
+}
+
+@webpage{RefactoringGuruLargeClass,
+  author       = {Alexander Shvets},
+  title        = {Large Class: {C}ode {S}mell},
+  howpublished = {online},
+  publisher    = {},
+  year         = {2026},
+  url          = {https://refactoring.guru/smells/large-class},
+  cited        = {2026-04-27}
+}
+
+% (2025). C++ Standards Support in GCC - GNU Project. GNU Project. https://gcc.gnu.org/projects/cxx-status.html
+@webpage{gccCxxStatus,
+  author       = {{GNU Project}},
+  title        = {C++ Standards Support in GCC},
+  howpublished = {online},
+  publisher    = {},
+  year         = {2025},
+  url          = {https://gcc.gnu.org/projects/cxx-status.html},
+  cited        = {2026-04-27}
+}
+
+% (2025). Header only - JSON for Modern C++. nlohmann/json. https://json.nlohmann.me/integration/index.html
+@webpage{nlohmannJson,
+  author       = {Niels Lohmann},
+  title        = {JSON for Modern C++: Header Only},
+  howpublished = {online},
+  publisher    = {},
+  year         = {2025},
+  url          = {https://json.nlohmann.me/integration/index.html},
+  cited        = {2026-04-27}
+}
+
+% BoostedCpp>, T. (2026). Inside Boost.Container: comparing different deque implementations. BoostedCpp. https://boostedcpp.net/2026/03/30/deque/
+@webpage{boostedCppDeque,
+  author       = {{BoostedCpp}},
+  title        = {Inside Boost.Container: Comparing Different Deque Implementations},
+  howpublished = {online},
+  publisher    = {},
+  year         = {2026},
+  url          = {https://boostedcpp.net/2026/03/30/deque/},
+  cited        = {2026-04-27}
 }
 
 % PredatorHP revamped (SV-COMP 2020 competition contribution)
@@ -59,6 +109,19 @@
   publisher = {Springer},
   year      = {2020},
   doi       = {10.1007/978-3-030-45237-7_31}
+}
+
+@book{CleanArchitecture,
+  address    = {Boston Columbus Indianapolis New York San Francisco Amsterdam Cape Town Dubai London Madrid Milan Munich Paris Montreal Toronto Delhi Mexico City São Paulo Sydney Hong Kong Seoul Singapore Taipei Tokyo},
+  series     = {Robert C. Martin series},
+  title      = {Clean Architecture: a craftsman's guide to software structure and design},
+  edition    = {1},
+  isbn       = {9780134494166},
+  publisher  = {Prentice Hall},
+  author     = {Martin, Robert C. and Grenning, James and Brown, Simon and Henney, Kevlin},
+  year       = {2018},
+  collection = {Robert C. Martin series},
+  language   = {eng}
 }
 
 % LLVM/Clang adapter for Code Listener
@@ -113,11 +176,15 @@
 }
 
 % GCC Internals
+% https://gcc.gnu.org/onlinedocs/gcc-12.5.0/gccint.pdf
 @webpage{GCCInternals,
-  key          = {GCCInt},
-  title        = {{GCC} Internals},
+  author       = {{GNU Project}},
+  title        = {GNU Compiler Collection Internals},
   howpublished = {online},
-  url          = {https://gcc.gnu.org/onlinedocs/gccint/},
+  publisher    = {Free Software Foundation},
+  year         = {2024},
+  note         = {Version 12.5.0},
+  url          = {https://gcc.gnu.org/onlinedocs/gcc-12.5.0/gccint.pdf},
   cited        = {2026-04-04}
 }
 
@@ -132,29 +199,68 @@
 
 % Frama-C: A software analysis perspective
 @article{FramaC2015,
-  author  = {Kirchner, Florent and Kosmatov, Nikolai and Prevosto, Virgile and Signoles, Julien and Yakobowski, Boris},
-  journal = {Formal Aspects of Computing},
-  number  = {3},
-  title   = {Frama-C: A software analysis perspective},
-  volume  = {27},
-  year    = {2015},
-  pages   = {573--609},
-  month   = {May},
-  issn    = {1433-299X},
-  doi     = {10.1007/s00165-014-0326-7},
-  url     = {https://doi.org/10.1007/s00165-014-0326-7}
+  author    = {Kirchner, Florent and Kosmatov, Nikolai and Prevosto, Virgile and Signoles, Julien and Yakobowski, Boris},
+  journal   = {Formal Aspects of Computing},
+  number    = {3},
+  title     = {Frama-C: A software analysis perspective},
+  volume    = {27},
+  year      = {2015},
+  pages     = {573--609},
+  month     = {May},
+  issn      = {1433-299X},
+  doi       = {10.1007/s00165-014-0326-7},
+  url       = {https://doi.org/10.1007/s00165-014-0326-7},
+  publisher = {Springer}
 }
 
 @inproceedings{LLVMCompilationFramework,
-  author    = {Lattner, C. and Adve, V.},
-  booktitle = {International Symposium on Code Generation and Optimization, 2004. CGO 2004.},
-  title     = {LLVM: a compilation framework for lifelong program analysis \& transformation},
-  year      = {2004},
-  volume    = {},
-  number    = {},
-  pages     = {75-86},
-  doi       = {10.1109/CGO.2004.1281665}
+  address      = {San Jose, CA, USA},
+  title        = {LLVM: A compilation framework for lifelong program analysis \& transformation},
+  isbn         = {9780769521022},
+  url          = {http://ieeexplore.ieee.org/document/1281665/},
+  doi          = {10.1109/CGO.2004.1281665},
+  booktitle    = {International Symposium on Code Generation and Optimization, 2004. CGO 2004.},
+  organization = {IEEE Computer Society},
+  publisher    = {IEEE},
+  author       = {Lattner, C. and Adve, V.},
+  year         = {2004},
+  pages        = {75--86}
 }
+
+% https://www.bodden.de/pubs/lblh11soot.pdf
+@inproceedings{SootFramework2011,
+  language     = {en},
+  month        = {October},
+  booktitle    = {Cetus Users and Compiler Infastructure Workshop (CETUS 2011)},
+  organization = {Cetus Users and Compiler Infrastructure Workshop},
+  author       = {Patrick Lam and Eric Bodden and Ondrej Lhotak and Laurie Hendren},
+  year         = {2011},
+  title        = {The Soot framework for Java program analysis: a retrospective},
+  url          = {http://tubiblio.ulb.tu-darmstadt.de/59322/}
+}
+
+
+% Design Patterns: GoF book
+@book{GoF,
+  author    = {Erich Gamma and Richard Helm and Ralph Johnson and John Vlissides},
+  title     = {Design Patterns: Elements of Reusable Object-Oriented Software},
+  edition   = {1},
+  publisher = {Addison-Wesley},
+  year      = {1994},
+  isbn      = {978-0-201-63361-0}
+}
+
+@article{Tarjan1972,
+  title     = {Depth-first search and linear graph algorithms},
+  author    = {Tarjan, Robert},
+  journal   = {SIAM journal on computing},
+  volume    = {1},
+  number    = {2},
+  pages     = {146--160},
+  year      = {1972},
+  publisher = {SIAM}
+}
+
 
 % Sparse semantic checker
 @webpage{Sparse,

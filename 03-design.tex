@@ -355,7 +355,7 @@ To demonstrate this modern capability, the infrastructure includes a reference \
 The most critical constraint of the modernization effort was ensuring that the VeriFIT group's primary tool, the Predator shape analyzer, continued to function without requiring any modifications to its own source code.
 Predator expects its input in the form of the legacy \texttt{cl\_code\_listener} C API, which is a stream of sequential function-pointer callbacks such as \texttt{fnc\_open}, \texttt{insn}, or \texttt{fnc\_close}.
 
-To bridge this fundamental architectural gap, the infrastructure implements the classic Adapter design pattern~\cite{DesignPatterns}.
+To bridge this fundamental architectural gap, the infrastructure implements the classic Adapter design pattern~\cite{GoF}.
 The \texttt{LegacyPredatorBridge} instantiates a \texttt{PredatorAdapter}, which systematically traverses the new, object-oriented \texttt{CodeModel} and translates its entities back into the legacy stream of C callbacks.
 
 \begin{figure}[H]
@@ -363,7 +363,7 @@ The \texttt{LegacyPredatorBridge} instantiates a \texttt{PredatorAdapter}, which
   \includegraphics[width=0.7\textwidth]{obrazky-figures/predatoradapter-flow-diagram.pdf}
   \caption{
     Data flow diagram of the Predator Compatibility Layer.
-    The \texttt{PredatorAdapter} structurally adapts the modern \texttt{CodeModel} to fulfill the legacy \texttt{cl\_code\_listener} callback interface expected by Predator, seamlessly preserving backward compatibility~\cite{DesignPatterns}.
+    The \texttt{PredatorAdapter} structurally adapts the modern \texttt{CodeModel} to fulfill the legacy \texttt{cl\_code\_listener} callback interface expected by Predator, seamlessly preserving backward compatibility.
   }\label{fig:predator-adapter-flow}
 \end{figure}
 
