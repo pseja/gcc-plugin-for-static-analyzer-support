@@ -4,11 +4,11 @@
 
 \chapter{Conclusion}\label{chap:conclusion}
 
-This thesis set out to research the original Code Listener infrastructure and to develop a modern replacement, aiming to preserve its static-analysis value while addressing key architectural limitations.
-To achieve these goals, a new GCC plugin and toolchain were designed around a compiler-independent \texttt{CodeModel}, lazy annotation services, and unified interfaces for export and analysis.
-The resulting prototype enables live analysis inside GCC, offline JSON-based processing through \texttt{cl\_merge} and \texttt{cl\_analyze}, and ongoing integration with the existing Predator toolchain.
-Evaluation showed strong continuity: all native regression suites and the Predator compatibility path passed 1,192 \texttt{new-plugin} regression tests during clean rebuilds using GCC 12, 13, and 14.
-Collectively, these results demonstrate that modernization not only replicates the functionality of the original integration point but also provides a more maintainable and extensible foundation for future analyzers and workflows, thereby guiding subsequent development directions.
+This thesis analyzed the original Code Listener infrastructure and developed a modern replacement that preserves its static-analysis role while addressing accumulated architectural constraints.
+To achieve these goals, a new GCC plugin and supporting toolchain were designed around a compiler-independent \texttt{CodeModel}, lazy annotation services, and unified interfaces for export and analysis.
+The resulting prototype enables live analysis inside GCC, offline JSON-based processing through \texttt{cl\_merge} and \texttt{cl\_analyze}, and backward-compatible integration with the existing Predator toolchain.
+Evaluation showed strong continuity: the native regression suites passed successfully, and the Predator compatibility path passed all 1,192 registered \texttt{new-plugin} regression tests during clean rebuilds using GCC 12, GCC 13, and GCC 14.
+Collectively, these results show that the modernization preserves the historical analyzer boundary while also providing a more maintainable and extensible foundation for future analyzers and workflows.
 
 Building on these results, the most natural continuation of this work is to expand the framework along the trajectory in which it was originally designed, ensuring cohesive growth.
 Short-term improvements include introducing the planned \texttt{ModelBuilder} abstraction to cleanly separate the incremental GCC extraction logic from the \texttt{CodeModel}'s internal storage layout, as well as implementing additional annotation services for analyses currently available only in legacy form, such as loop-closing edges, points-to information, and variable liveness.

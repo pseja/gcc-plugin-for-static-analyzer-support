@@ -42,7 +42,7 @@ The architecture of the original Code Listener is highly modular, effectively ac
   \includegraphics[width=0.85\textwidth]{obrazky-figures/codelistener-old.pdf}
   \caption{
     Block diagram of the legacy Code Listener infrastructure.
-    The system is divided into interconnected modules, beginning with the code parser interface, which extracts intermediate representations from compilers such as GCC or Sparse. % TODO: reproduced from~\cite{CodeListener2012}.
+    The system is divided into interconnected modules, beginning with the code parser interface, which extracts intermediate representations from compilers such as GCC or Sparse.
     This data flows through optional filters, such as \texttt{switch to if} transformations, and listeners like the CFG plotters before being aggregated into a persistent object model within the code storage component.
     Finally, static analyzers such as Predator and Forester can query this code storage to perform formal verification, routing any discovered defects back through the code parser interface and the code parser's error stream to maintain consistent compiler-like error reporting~\cite{CodeListener2012}.
   }\label{fig:old-architecture}

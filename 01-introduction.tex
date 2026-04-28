@@ -4,9 +4,9 @@
 
 \chapter{Introduction}\label{chap:introduction}
 
-This bachelor's thesis focuses on the design and implementation of a modernized reimplementation of the Code Listener infrastructure, a C++ library that serves as a vital bridge between compilers and static analysis tools, particularly the Predator shape analysis tool suite.
-The original Code Listener architecture, while successful in enabling static analysis of C programs that manipulate heap memory, exhibits several design limitations that have accumulated over time.
-This thesis aims to address these constraints by replacing the callback-driven pipeline with a persistent Code Model, demoting analyses from hard-wired pre-analysis steps to optional, on-demand annotation services, and introducing a structured query interface and uniform support for exporting results in common formats.
+This bachelor's thesis analyzes the original Code Listener infrastructure and develops a modernized replacement for it.
+Code Listener serves as a bridge between industrial compilers and static analysis tools, most notably the Predator shape analysis suite.
+The thesis addresses the main architectural constraints of the legacy design by replacing the callback-driven pipeline with a persistent Code Model, moving hard-wired pre-analyses behind optional on-demand annotation services, and introducing a structured query interface together with uniform export support, while preserving compatibility with the existing Predator workflow.
 
 \section{Motivation}\label{sec:motivation}
 
@@ -70,7 +70,7 @@ Chapter~\ref{chap:design} outlines the architectural modernization, detailing th
 % Chapter~\ref{chap:implementation} documents the development environment, portability considerations, and the resulting code metrics.
 Chapter~\ref{chap:implementation} documents the implementation process, including development environment setup, portability considerations, and code metrics regarding the refactored infrastructure.
 % Chapter~\ref{chap:testing} evaluates the implementation through integration tests and a regression run against Predator's test suite.
-Chapter~\ref{chap:testing} presents the methodology and results of regression testing, demonstrating the correctness and performance of the new implementation against the existing test suite. % TODO: along with integration tests that validate the new architecture's features.
+Chapter~\ref{chap:testing} presents the testing methodology and results, covering both the native validation suites and the backward-compatibility regression tests, and concludes with a qualitative discussion of the architectural performance trade-offs of the new implementation.
 % Chapter~\ref{chap:conclusion} summarizes the results and outlines directions for future work.
 Finally, Chapter~\ref{chap:conclusion} summarizes the contributions of this work and outlines potential avenues for future research and development.
 
