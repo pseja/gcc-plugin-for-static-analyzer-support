@@ -136,6 +136,7 @@ To construct these blocks, the Code Listener API restricts its intermediate inst
     The graph models the execution structure using basic blocks as vertices and control flow transitions as directed edges.
     Each basic block contains a strictly sequential list of non-terminal instructions, such as function calls (\texttt{CALL}) or binary operations (\texttt{BINOP}).
     To determine the subsequent flow of execution, every block concludes with exactly one terminal instruction, such as an unconditional jump (\texttt{JMP}), conditional jump (\texttt{COND}), or return (\texttt{RET})~\cite{CodeListener2012}.
+    Reproduced from~\cite{CodeListener2012}.
   }\label{fig:cfg}
 \end{figure}
 

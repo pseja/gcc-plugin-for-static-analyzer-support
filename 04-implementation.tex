@@ -134,7 +134,7 @@ Because the model relies solely on strongly typed IDs rather than memory address
 
 Whole-program analysis requires merging multiple translation units into a single model.
 This is executed by \texttt{ModelMerger.cpp}.
-To prevent ID collisions, for example, \texttt{FunctionId(0)} existing in two separate files, the merger generates explicit remapping tables.
+To prevent ID collisions, for example a function with ID of 0 existing in two separate files, the merger generates explicit remapping tables.
 As a new file is appended to the consolidated Code Model, the merger systematically rewrites every cross-reference through these tables, seamlessly preserving the integrity of the graph topology across file boundaries.
 
 These capabilities are exposed to the user via two standalone executables.

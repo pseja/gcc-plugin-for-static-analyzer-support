@@ -10,7 +10,7 @@ Building upon the limitations identified in the previous chapter, the new design
 To effectively resolve the constraints of the legacy implementation, the modernized architecture was designed with five primary goals:
 \begin{enumerate}
   \item \textbf{Clean Intermediate Representation (IR):} The core Code Model must remain a pure representation of the parsed program, strictly decoupling the IR from any embedded analysis results to eliminate the \uv{Large Class} anti-pattern~\cite{RefactoringGuruLargeClass}.
-  \item \textbf{On-Demand Annotation Services:} The mandatory, eagerly evaluated pre-analyses must be replaced by a lazy evaluation system where auxiliary data is computed and cached only when explicitly requested by an analyzer.
+  \item \textbf{On-Demand Annotation Services:} The mandatory, eagerly evaluated \\pre-analyses must be replaced by a lazy evaluation system where auxiliary data is computed and cached only when explicitly requested by an analyzer.
   \item \textbf{Unified Exporter Pipeline:} The infrastructure must provide a uniform mechanism to export the internal representation into various diagnostic and persistent formats (such as JSON, DOT, and pretty-printed text) from a single source of truth.
   \item \textbf{Compiler and Analyzer Independence:} Strict boundary interfaces, later introduced as \texttt{IFrontend} and \texttt{IAnalyzer}, must be introduced to fully decouple the core infrastructure from both the underlying compiler and the target analysis tools.
   \item \textbf{Backward Compatibility:} Existing analyzers, specifically the Predator tool suite, must be able to operate seamlessly on the new infrastructure without requiring any modifications to their own source code.
@@ -67,7 +67,7 @@ Once this translation is complete, the Code Model contains no compiler-specific 
 This strict boundary ensures that no GCC-specific headers or data structures leak into the rest of the system.
 
 Furthermore, even diagnostic reporting is abstracted.
-A dedicated \texttt{GCCDiagnosticReporter} class wraps GCC's native error-reporting functions.
+A dedicated \\\texttt{GCCDiagnosticReporter} class wraps GCC's native error-reporting functions.
 This ensures that any defects found by downstream analyzers are emitted with the correct file, line, and column information in the standard compiler error format, without the analyzers themselves needing to know they are running inside GCC.\@
 
 \subsection*{Modernized Plugin Arguments}\label{sub:plugin-arguments}
@@ -200,7 +200,7 @@ This CRTP base automatically injects two critical components into every service:
 \begin{enumerate}
   \item A strictly enforced signature for the \texttt{build(model)} static factory method.
   \item A static \texttt{AnalysisKey} member.
-    The memory address of this static member (\texttt{\&Derived::Key}) serves as the unique identifier for the type-erased cache.
+    The memory address of this static member \\(\texttt{\&Derived::Key}) serves as the unique identifier for the type-erased cache.
     This elegant, low-overhead pattern guarantees globally unique keys per annotation type and heavily mirrors the \texttt{AnalysisInfoMixin} design found in modern LLVM~\footnote{\url{https://llvm.org/doxygen/structllvm_1_1AnalysisInfoMixin.html\#details}}.\@
 \end{enumerate}
 
@@ -242,7 +242,7 @@ This class orchestrates the export process by combining three classical design p
   \item \textbf{Visitor Pattern:} The \texttt{Exporter} inherits from a \texttt{CodeModelVisitor} interface, allowing it to systematically traverse the hierarchical structure of the \texttt{CodeModel}, those being the functions, blocks, instructions, and operands, without modifying the entity classes themselves.
   \item \textbf{Template Method Pattern:} The base class defines the overarching traversal algorithm, providing virtual hooks that the concrete subclasses override to emit format-specific output.
   \item \textbf{Strategy Pattern:} The active exporter is selected dynamically at runtime via the \texttt{AnalysisContext}.
-    The export methods, specifically either \texttt{exportDot()}, \texttt{exportJson()}, or \texttt{exportPP()}, allow the infrastructure to swap export strategies seamlessly.
+    The export methods, specifically either \texttt{exportDot()}, \\\texttt{exportJson()}, or \texttt{exportPP()}, allow the infrastructure to swap export strategies seamlessly.
 \end{itemize}
 
 Furthermore, while the main analysis pipeline shares a single \texttt{AnalysisManager} instance, each concrete \texttt{Exporter} is instantiated with its own independent \texttt{AnalysisManager}.
@@ -329,7 +329,7 @@ The \texttt{IAnalyzer} interface dictates a single, simple contract:
 virtual void analyze(const CodeModel&, AnalysisContext&) = 0;
 \end{lstlisting}
 
-The framework provides two built-in implementations of this interface that bridge the gap between the internal Code Model and the external analysis tools: the \texttt{NativeAnalyzerBridge} for modern plugins, and the \texttt{LegacyPredatorBridge} for backward compatibility.
+The framework provides two built-in implementations of this interface that bridge the gap between the internal Code Model and the external analysis tools: the \\\texttt{NativeAnalyzerBridge} for modern plugins, and the \texttt{LegacyPredatorBridge} for backward compatibility.
 
 \begin{figure}[H]
   \centering
@@ -370,7 +370,7 @@ The \texttt{LegacyPredatorBridge} instantiates a \texttt{PredatorAdapter}, which
 \subsection*{Capability Asymmetry and the Illusion of Pre-Analyses}\label{sub:capability-asymmetry}
 
 An important architectural asymmetry exists between the two bridges.
-While the \texttt{NativeAnalyzerBridge} exposes the full \texttt{AnalysisContext} to modern tools, the \texttt{LegacyPredatorBridge::analyze()} method explicitly discards the context.
+\\While the \texttt{NativeAnalyzerBridge} exposes the full \texttt{AnalysisContext} to modern tools, \\the \texttt{LegacyPredatorBridge::analyze()} method explicitly discards the context.
 Because Predator predates the \texttt{AnalysisManager}, it cannot dynamically request framework annotations.
 
 Instead, the \texttt{PredatorAdapter} relies solely on the \texttt{CallGraph} annotation service to determine the topological ordering of root functions (functions with no callers), ensuring they are emitted to Predator in the correct sequence.
