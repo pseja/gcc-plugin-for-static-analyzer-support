@@ -1,9 +1,98 @@
+% !TeX root = xpsejal00-gcc-plugin.tex
 \documentclass[xpsejal00-gcc-plugin.tex]{subfiles}
 \begin{document}
 
-\chapter{Testing and Evaluation}
-\label{chap:testing}
+\chapter{Testing and Evaluation}\label{chap:testing}
 
-% TODO: testing and evaluation chapter
+This chapter evaluates the modernized Code Listener infrastructure.
+The primary objective is to demonstrate that the new architecture meets its design requirements: accurate extraction of program semantics, support for offline serialization, and preservation of backward compatibility at the historical Predator listener boundary.
+
+The evaluation is divided into three parts.
+First, the native test suites verify the structural correctness of the new \texttt{CodeModel} and the serialization pipeline.
+Second, a large-scale regression analysis is performed using the legacy Predator tool to prove backward compatibility.
+Finally, the performance characteristics of the new architecture are critically analyzed, highlighting the trade-offs between structural overhead and algorithmic efficiency.
+
+\section{Testing Methodology and Environment}\label{sec:testing-methodology}
+
+The testing methodology was designed to isolate the architecture's distinct boundaries.
+Because the infrastructure acts as a mediator between the compiler and the analyzers, defects could theoretically originate in the GCC extraction phase, the internal modeling phase, or the final analyzer handoff.
+
+To systematically verify each phase, the project utilizes the CTest framework to orchestrate four distinct regression suites.
+Testing was conducted on Linux, specifically Ubuntu 22.04 LTS and Arch Linux.
+Within the checked-in CMake configuration, the plugin build is parameterized by the \texttt{TARGET\_GCC} variable, which defaults to \texttt{gcc-12}.
+To verify portability across supported compiler releases, the project was rebuilt from a clean state, and the full \texttt{make test} pipeline was rerun separately with GCC 12, GCC 13, and GCC 14.
+The testing pipeline is fully automated via the \texttt{make test} build target, with dedicated entry points for the \texttt{cl-adapter}, \texttt{codemodel}, \texttt{cl\_analyze}, and Predator compatibility suites.
+
+\section{Verification of the Modernized Infrastructure}\label{sec:verification}
+
+Before testing the infrastructure against complex third-party tools, the core components of the new architecture were verified in isolation.
+This ensures that the foundational C++23 implementations, specifically the entity pools, the \texttt{std::variant} hierarchies, and the JSON round-trip, function correctly.
+
+This verification is covered by three dedicated test suites:
+
+\begin{enumerate}
+  \item \textbf{GCC-Adapter Tests (46 tests):} These tests compile historical C programs through the new live GCC plugin.
+    The generated JSON output is compared against expected fixtures using shell checks built around \texttt{jq}~\footnote{\url{https://github.com/jqlang/jq}}.
+    This suite proves that the Compiler Abstraction Layer correctly intercepts GCC's GIMPLE passes, recovers source locations, and accurately identifies types and control flow edges.
+  \item \textbf{Code Model Integration Tests (38 tests):} These tests compile dedicated C inputs through the live plugin and inspect the resulting JSON model through suite-specific assertion scripts.
+    They verify the representation of primitive and aggregate types, function calls, control flow constructs, initializers, and other edge cases that stress the internal Code Model layout.
+  \item \textbf{Offline Pipeline Tests (3 tests):} These end-to-end tests exercise the standalone \texttt{cl\_analyze} tool.
+    Each test first exports a Code Model to JSON through the live plugin, then invokes \texttt{cl\_analyze} with a native analyzer and checks the produced output file.
+    These tests exercise the \texttt{JSONFrontend} to \texttt{NativeAnalyzerBridge} path using the reference \texttt{callgraph\_dot} and \texttt{recursion\_check} analyzers.
+\end{enumerate}
+
+All tests across these three suites pass successfully, confirming that the new compiler-independent core is structurally sound.
+
+\section{Backward Compatibility: Predator Regression Analysis}\label{sec:predator-regression}
+
+The most rigorous constraint placed on the modernization effort was ensuring that the VeriFIT group's primary analysis tool, the Predator shape analyzer, continued to function without modifications to its source code.
+The compatibility patch integrates the Predator GCC regression corpus directly into CTest.
+In its default fast configuration, this registers 1,192 \texttt{new-plugin} tests, corresponding to the GCC regression inputs executed in four modes: the default error-label mode, \texttt{track\_uninit}, OOM simulation, and \texttt{exit\_leaks}.
+These tests cover pointer arithmetic, dynamically linked structures, sorting routines, and memory-management diagnostics~\cite{PredatorSuite2016}.
+
+To evaluate backward compatibility, the patched Predator kernel is compiled against the new infrastructure and invoked through the \texttt{LegacyPredatorBridge} and \texttt{PredatorAdapter}.
+The harness compares the filtered diagnostic output of the new plugin path against the same expected \texttt{.err} files used by Predator's GCC-based regression workflow.
+Across the clean rebuilds performed for GCC 12, GCC 13, and GCC 14, all 1,192 registered \texttt{new-plugin} tests passed successfully.
+
+During development, compatibility debugging was driven repeatedly against this regression harness, with a quick verification subset covering tests 1 through 20 used to track the adapter fixes summarized in the implementation chapter.
+
+The significance of this regression setup lies in its validation criterion.
+The new object-oriented Code Model is considered compatible only if the reconstructed callback stream reproduces the legacy diagnostic behavior expected by Predator's regression files.
+This makes the Predator suite the most demanding external check of variable scopes, control-flow reconstruction, and low-level memory-operation fidelity in the current thesis implementation.
+
+\section{Performance Considerations and Architectural Trade-offs}\label{sec:performance}
+
+When evaluating the performance of the modernized infrastructure, it is crucial to recognize that the modernization does not merely optimize a single fixed execution path.
+Instead, it introduces two distinct modes of operation: a native path that analyzes the \texttt{CodeModel} directly, and a compatibility path that reconstructs the historical \texttt{cl\_code\_listener} callback stream for Predator.
+As a result, any direct wall-clock comparison with the legacy framework would combine several different costs, specifically the extraction of GIMPLE, construction of the persistent model, optional annotation requests, adapter replay for legacy tools, and the analyzer's own internal algorithms.
+In particular, the end-to-end timing of Predator would largely reflect the behavior of its verification kernel, not just the overhead introduced by the new infrastructure.
+
+For this reason, no dedicated benchmarking harness or memory-profiling campaign was implemented as part of this thesis.
+A trustworthy quantitative study would require a separate experimental methodology with fixed workloads, repeated runs, isolated measurement of the live and offline paths, and a strict separation between framework cost and analyzer-internal cost.
+Reporting a small set of uncontrolled timing numbers would therefore be less informative than explicitly limiting the claims to what can be justified directly from the implemented architecture and the executed regression campaign.
+
+\subsection*{Structural Overhead (The Double-Translation Cost)}\label{sec:structural-overhead}
+
+For legacy tools like Predator, the modernized infrastructure introduces a deliberate structural overhead.
+In the legacy architecture, the GCC plugin translated GIMPLE directly into the \texttt{cl\_code\_listener} callback stream in a single pass.
+In the new architecture, however, the execution flow performs the work twice: the \texttt{GCCAdapter} first translates GIMPLE into the persistent \texttt{CodeModel}, allocating entities and resolving IDs, and then the \texttt{PredatorAdapter} traverses the entire \texttt{CodeModel} to reconstruct and emit the legacy callbacks.
+Consequently, the baseline structural processing time for legacy tools is inherently higher in the new system.
+This overhead is specific to the compatibility path and should not be generalized to native analyzers that consume the \texttt{CodeModel} directly.
+
+\subsection*{Algorithmic Efficiency (The Elimination of Eager Pre-Analyses)}\label{sec:algorithmic-efficiency}
+
+However, this structural overhead is heavily offset by the elimination of the legacy system's eager pre-analyses.
+The legacy \texttt{ClEasy} pipeline forced the mandatory computation of a points-to graph, loop-closing edges, and variable liveness sets for every analyzed function before the analyzer was even invoked.
+Because the new infrastructure replaces this eager pipeline with the lazy-evaluating \texttt{AnalysisManager}, these expensive algorithms are completely bypassed unless explicitly requested.
+This design changes where work is paid for: the framework performs more structural translation along the compatibility path, while auxiliary analyses are moved behind an explicit demand-driven boundary.
+For a fair quantitative comparison, this shift would need to be measured separately from the analyzer's cost, because the two architectures no longer spend time in the same execution phases.
+
+\subsection*{Conclusion on Performance}\label{sec:performance-conclusion}
+
+Ultimately, the modernized infrastructure introduces a clear trade-off.
+The legacy compatibility path pays for an additional reconstruction step, while the native path operates directly on the \texttt{CodeModel} and requests derived analyses only when needed.
+The strongest conclusion supported by this thesis is therefore not a numeric speedup claim, but a clearer placement of computational cost.
+The framework now makes the compatibility overhead explicit, removes mandatory framework-side pre-processing from the native path, and preserves correct behavior across the executed regression suites and the tested GCC versions.
+Quantifying whether this also yields a standalone timing or memory advantage remains future work for a dedicated benchmark campaign.
 
 \end{document}
