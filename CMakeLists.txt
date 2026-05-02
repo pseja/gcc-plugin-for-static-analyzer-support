@@ -35,14 +35,43 @@ message(STATUS "GCC Plugin Directory: ${GCC_PLUGIN_DIR}")
 
 set(GCC_PLUGIN_INCLUDE_DIR "${GCC_PLUGIN_DIR}/include")
 
+function(collect_subdirectories out_var base_dir)
+  set(dirs "${base_dir}")
+  file(
+    GLOB_RECURSE children
+    LIST_DIRECTORIES true
+    CONFIGURE_DEPENDS "${base_dir}/*")
+  foreach(child IN LISTS children)
+    if(IS_DIRECTORY "${child}")
+      list(APPEND dirs "${child}")
+    endif()
+  endforeach()
+  list(REMOVE_DUPLICATES dirs)
+  set(${out_var}
+      "${dirs}"
+      PARENT_SCOPE)
+endfunction()
+
+collect_subdirectories(CL_SRC_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src")
+list(APPEND CL_SRC_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
 # shared library for pure library with no dependencies on GCC internals
-file(GLOB_RECURSE CORE_SOURCES src/core/*.cpp src/exporters/*.cpp
-     src/annotation_services/*.cpp)
+file(
+  GLOB_RECURSE
+  CORE_SOURCES
+  CONFIGURE_DEPENDS
+  src/model/*.cpp
+  src/analysis/*.cpp
+  src/exporters/*.cpp
+  src/runtime/*.cpp
+  src/frontends/json/*.cpp
+  src/bridges/native/*.cpp)
+
+list(FILTER CORE_SOURCES EXCLUDE REGEX ".*/GCCDiagnosticReporter\\.cpp$")
 
 add_library(cl_core SHARED ${CORE_SOURCES})
 
-target_include_directories(cl_core PUBLIC src/core src/exporters
-                                          src/annotation_services include)
+target_include_directories(cl_core PUBLIC ${CL_SRC_INCLUDE_DIRS})
 
 target_link_libraries(cl_core PUBLIC nlohmann_json::nlohmann_json)
 
@@ -61,13 +90,15 @@ target_compile_options(
 set_target_properties(cl_core PROPERTIES CXX_STANDARD 23)
 
 # shared library for the plugin itself, which depends on GCC internals
-file(GLOB_RECURSE GCC_SOURCES src/adapters/gcc/*.cpp src/adapters/*.cpp)
+file(GLOB_RECURSE GCC_SOURCES CONFIGURE_DEPENDS src/frontends/gcc/*.cpp
+     src/bridges/predator/*.cpp)
+
+list(APPEND GCC_SOURCES src/runtime/GCCDiagnosticReporter.cpp)
 
 add_library(cl_gcc SHARED ${GCC_SOURCES})
 
-target_include_directories(
-  cl_gcc PRIVATE ${GCC_PLUGIN_INCLUDE_DIR} src/adapters/gcc
-                 src/adapters/predator include)
+target_include_directories(cl_gcc PRIVATE ${GCC_PLUGIN_INCLUDE_DIR}
+                                          ${CL_SRC_INCLUDE_DIRS})
 
 target_link_libraries(cl_gcc PRIVATE cl_core dl)
 
@@ -91,8 +122,7 @@ set_target_properties(cl_gcc PROPERTIES CXX_STANDARD 23)
 # -fplugin-arg-libcl_gcc-args=<output_file>
 function(add_cl_analyzer target source)
   add_library(${target} SHARED ${source})
-  target_include_directories(${target} PRIVATE include src/core src/exporters
-                                               src/annotation_services)
+  target_include_directories(${target} PRIVATE ${CL_SRC_INCLUDE_DIRS})
   target_link_libraries(${target} PRIVATE cl_core)
   target_compile_options(
     ${target}
@@ -114,8 +144,7 @@ add_cl_analyzer(cl_recursion_check
 # standalone tools (cl_merge, cl_analyze)
 function(add_cl_tool target)
   add_executable(${target} src/tools/${target}/main.cpp)
-  target_include_directories(${target} PRIVATE include src/core src/exporters
-                                               src/annotation_services)
+  target_include_directories(${target} PRIVATE ${CL_SRC_INCLUDE_DIRS})
   target_link_libraries(${target} PRIVATE cl_core ${CMAKE_DL_LIBS})
   target_compile_options(${target} PRIVATE -Wall -Wextra -Werror -fno-rtti)
   set_target_properties(${target} PROPERTIES CXX_STANDARD 23)
