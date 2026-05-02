@@ -5,7 +5,7 @@
  * @date 2026-04-16
  *
  * Usage:
- *   cl_merge <input1.json> [input2.json ...] -o <output.json>
+ *   cl_merge &lt;input1.json&gt; [input2.json ...] -o &lt;output.json&gt;
  *
  * @copyright Copyright (c) 2026 Lukáš Pšeja
  *

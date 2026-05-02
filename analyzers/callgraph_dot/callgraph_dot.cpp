@@ -1,5 +1,7 @@
 /**
- * Callgraph DOT demo analyzer.
+ * @file callgraph_dot.cpp
+ * @author Lukáš Pšeja <xpsejal00@vutbr.cz>
+ * @brief Callgraph DOT demo analyzer.
  *
  * Implements the native CodeListener analyzer API (cl_native_analyzer_api.h).
  * When loaded via -fplugin-arg-libcl_gcc-load-analyzer=libcl_callgraph_dot.so
@@ -12,9 +14,25 @@
  *       -fplugin-arg-libcl_gcc-load-analyzer=libcl_callgraph_dot.so \
  *       -fplugin-arg-libcl_gcc-args=callgraph.dot \
  *       -o /dev/null -S foo.c
- *
  * or:
  *   make callgraph FILE=foo.c [ARGS="callgraph.dot"]
+ *
+ * @date 2026-05-02
+ *
+ * @copyright Copyright (c) 2026 Lukáš Pšeja
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <fstream>

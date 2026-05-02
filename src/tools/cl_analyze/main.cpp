@@ -4,7 +4,7 @@
  * @brief Run a native CodeListener analyzer on a multi TU JSON CodeModel.
  *
  * Usage:
- *   cl_analyze <model.json> --analyzer=<path/to/libanalyzer.so> [--args=<string>]
+ *   cl_analyze &lt;model.json&gt; --analyzer=&lt;path/to/libanalyzer.so&gt; [--args=&lt;string&gt;]
  *
  * Example (generate a whole-program call graph):
  *   cl_merge a.json b.json c.json -o merged.json

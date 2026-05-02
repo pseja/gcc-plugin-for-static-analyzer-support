@@ -7,7 +7,7 @@
  *   cl_analyze model.json --analyzer=libcl_recursion_check.so [--args=report.txt]
  *
  * or:
- *   make recursion FILE=<src> [ARGS=<output.txt>]
+ *   make recursion FILE=&lt;src&gt; [ARGS=&lt;output.txt&gt;]
  *
  * @date 2026-04-18
  *
