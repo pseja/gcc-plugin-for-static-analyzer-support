@@ -1,5 +1,6 @@
 #include <string_view> // std::string_view
 #include <charconv>    // std::from_chars
+#include <sstream>     // std::ostringstream
 
 #include <gcc-plugin.h> // plugin_name_args
 
@@ -7,6 +8,23 @@
 
 namespace CodeListener::CompilerAbstractionLayer
 {
+
+namespace
+{
+
+constexpr std::string_view plugin_version = "0.1";
+
+std::string pluginBaseName(const PluginArgs &args)
+{
+    return args.base_name.empty() ? "libcl_gcc" : args.base_name;
+}
+
+std::string pluginPath(const PluginArgs &args)
+{
+    return args.full_name.empty() ? pluginBaseName(args) : args.full_name;
+}
+
+} // namespace
 
 PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticReporter &reporter)
     : base_name(plugin_info->base_name ? plugin_info->base_name : ""),
@@ -134,6 +152,38 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticRepo
             valid = false;
         }
     }
+}
+
+std::string PluginArgs::versionText() const
+{
+    return pluginBaseName(*this) + " " + std::string(plugin_version);
+}
+
+std::string PluginArgs::helpText() const
+{
+    const std::string name = pluginBaseName(*this);
+    std::ostringstream out;
+
+    out << versionText() << "\n\n";
+    out << "Usage: gcc -fplugin=" << pluginPath(*this) << " [OPTIONS] ...\n\n";
+    out << "Implemented options:\n";
+    out << "    -fplugin-arg-" << name << "-help\n";
+    out << "    -fplugin-arg-" << name << "-version\n";
+    out << "    -fplugin-arg-" << name << "-load-analyzer=PATH      - load a native or legacy analyzer library\n";
+    out << "    -fplugin-arg-" << name << "-args=ANALYZER_ARGS        - forward arguments to the loaded analyzer\n";
+    out << "    -fplugin-arg-" << name << "-dry-run                 - skip analyzer loading and execution\n";
+    out << "    -fplugin-arg-" << name << "-dump-pp[=OUTPUT_FILE]   - export the pretty-printed CodeModel\n";
+    out << "    -fplugin-arg-" << name << "-gen-json[=OUTPUT_FILE]  - export the CodeModel as JSON\n";
+    out << "    -fplugin-arg-" << name << "-gen-dot[=OUTPUT_FILE]   - export the CodeModel as DOT\n";
+    out << "    -fplugin-arg-" << name << "-gen-dot-verbosity=LEVEL   - set DOT verbosity to CLEAN, COMPACT, or FULL\n";
+    out << "    -fplugin-arg-" << name << "-pid-file=FILE           - write the plugin process PID to FILE\n";
+    out << "    -fplugin-arg-" << name << "-verbose[=LEVEL]         - turn on informational or debug diagnostics\n\n";
+    out << "Compatibility flags recognized but not yet implemented:\n";
+    out << "    -fplugin-arg-" << name << "-dump-types\n";
+    out << "    -fplugin-arg-" << name << "-preserve-ec\n";
+    out << "    -fplugin-arg-" << name << "-type-dot=FILE\n";
+
+    return out.str();
 }
 
 void PluginArgs::print(Core::DiagnosticReporter &reporter) const

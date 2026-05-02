@@ -37,6 +37,8 @@ struct PluginArgs
 
     explicit PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticReporter &reporter);
 
+    [[nodiscard]] std::string versionText() const;
+    [[nodiscard]] std::string helpText() const;
     void print(Core::DiagnosticReporter &reporter) const;
 };
 

@@ -27,7 +27,7 @@ class PluginContext
 
     static PluginContext &getInstance();
 
-    void initialize(const plugin_name_args *plugin_info, const plugin_gcc_version *version);
+    bool initialize(const plugin_name_args *plugin_info, const plugin_gcc_version *version);
 
     const PluginArgs *getArgs() const;
     Core::DiagnosticReporter &getDiagnosticReporter();

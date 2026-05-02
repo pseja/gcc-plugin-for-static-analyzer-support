@@ -1,4 +1,7 @@
+#include <fstream>
+
 #include <dlfcn.h>
+#include <unistd.h>
 
 #include <cl_analyzer_api.h>
 #include <cl_native_analyzer_api.h>
@@ -19,6 +22,30 @@
 
 namespace CodeListener::CompilerAbstractionLayer
 {
+
+namespace
+{
+
+bool writePidFile(const std::string &pid_file, Core::DiagnosticReporter &reporter)
+{
+    std::ofstream stream(pid_file);
+    if (!stream.is_open())
+    {
+        reporter.report(Core::DiagnosticLevel::Error, "Failed to open PID file '" + pid_file + "' for writing");
+        return false;
+    }
+
+    stream << getpid() << '\n';
+    if (!stream)
+    {
+        reporter.report(Core::DiagnosticLevel::Error, "Failed to write PID file '" + pid_file + "'");
+        return false;
+    }
+
+    return true;
+}
+
+} // namespace
 
 // TODO: plugin arguments?
 struct plugin_info PluginContext::plugin_info = {
@@ -41,9 +68,27 @@ PluginContext &PluginContext::getInstance()
     return instance;
 }
 
-void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin_gcc_version *version)
+bool PluginContext::initialize(const plugin_name_args *plugin_info, const plugin_gcc_version *version)
 {
     args = std::make_unique<PluginArgs>(plugin_info, reporter);
+    if (!args->valid)
+    {
+        return false;
+    }
+    if (args->verbose >= 2)
+    {
+        reporter.setVerbosityLevel(Core::DiagnosticLevel::Debug);
+    }
+    else if (args->verbose >= 1)
+    {
+        reporter.setVerbosityLevel(Core::DiagnosticLevel::Info);
+    }
+
+    if (args->pid_file.has_value() && !writePidFile(args->pid_file.value(), reporter))
+    {
+        return false;
+    }
+
     adapter = std::make_unique<GCCAdapter>(model, reporter);
 
     init_print(version);
@@ -73,23 +118,20 @@ void PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     register_callback(plugin_info->base_name, PLUGIN_FINISH, on_plugin_finish, this);
 
     // load external analyzer (e.g. libsl_analyzer.so) if requested
-    if (args->load_analyzer.has_value())
+    if (args->use_analyzer && args->load_analyzer.has_value())
     {
         const std::string &an_args = args->analyzer_args.has_value() ? args->analyzer_args.value() : "";
         load_analyzer(args->load_analyzer.value(), an_args, plugin_info->full_name ? plugin_info->full_name : "");
     }
-
-    // apply verbosity setting to reporter
-    if (args->verbose >= 2)
+    else if (!args->use_analyzer && args->load_analyzer.has_value())
     {
-        reporter.setVerbosityLevel(Core::DiagnosticLevel::Debug);
-    }
-    else if (args->verbose >= 1)
-    {
-        reporter.setVerbosityLevel(Core::DiagnosticLevel::Info);
+        reporter.report(Core::DiagnosticLevel::Info,
+                        "Dry-run requested; skipping analyzer load from '" + args->load_analyzer.value() + "'");
     }
 
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin initialized");
+
+    return true;
 }
 
 const PluginArgs *PluginContext::getArgs() const
@@ -213,10 +255,11 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     (void)gcc_data;
     (void)user_data;
 
-    Core::DiagnosticReporter &reporter = PluginContext::getInstance().getDiagnosticReporter();
+    PluginContext &plugin_context = PluginContext::getInstance();
+    Core::DiagnosticReporter &reporter = plugin_context.getDiagnosticReporter();
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin starting to export");
 
-    const PluginArgs *args = PluginContext::getInstance().getArgs();
+    const PluginArgs *args = plugin_context.getArgs();
     if (!args)
     {
         reporter.report(Core::DiagnosticLevel::Error,
@@ -224,7 +267,7 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
         return;
     }
 
-    const Core::CodeModel &model = PluginContext::getInstance().getCodeModel();
+    const Core::CodeModel &model = plugin_context.getCodeModel();
 
     // JSON export
     if (args->gen_json_file.has_value())
@@ -251,11 +294,18 @@ void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
     }
 
     // feed the model to every loaded analyzer via GCCFrontend
-    GCCFrontend frontend(model);
-    AnalysisContext ctx(reporter, PluginContext::getInstance().shared_analysis_manager);
-    if (!frontend.run(PluginContext::getInstance().analyzers, ctx))
+    if (args->use_analyzer && !plugin_context.analyzers.empty())
     {
-        reporter.report(Core::DiagnosticLevel::Error, "One or more analyzers reported errors");
+        GCCFrontend frontend(model);
+        AnalysisContext ctx(reporter, plugin_context.shared_analysis_manager);
+        if (!frontend.run(plugin_context.analyzers, ctx))
+        {
+            reporter.report(Core::DiagnosticLevel::Error, "One or more analyzers reported errors");
+        }
+    }
+    else if (!args->use_analyzer)
+    {
+        reporter.report(Core::DiagnosticLevel::Info, "Dry-run requested; skipping analyzer execution");
     }
 
     reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished");

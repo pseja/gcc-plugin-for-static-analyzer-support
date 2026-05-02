@@ -1,9 +1,12 @@
+#include <cstdlib>
 #include <iostream> // std::cerr
 
 #include <gcc-plugin.h>     // plugin_init, plugin_is_GPL_compatible
 #include <plugin-version.h> // gcc_version
 
+#include "PluginArgs.hpp"
 #include "PluginContext.hpp"
+#include "StderrDiagnosticReporter.hpp"
 #include "register_plugin.hpp"
 
 // required by GCC to indicate that the plugin is GPL-compatible
@@ -40,6 +43,24 @@ int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
 {
     // CodeListener::CompilerAbstractionLayer::print_info(plugin_info, version);
 
+    CodeListener::Core::StderrDiagnosticReporter early_reporter;
+    CodeListener::CompilerAbstractionLayer::PluginArgs early_args(plugin_info, early_reporter);
+    if (!early_args.valid)
+    {
+        return 1;
+    }
+
+    if (early_args.version)
+    {
+        std::cout << early_args.versionText() << "\n";
+        return 0;
+    }
+    if (early_args.help)
+    {
+        std::cout << early_args.helpText() << "\n";
+        return 0;
+    }
+
     // FIXME: old cl had less strict version check for predator
     if (!plugin_default_version_check(version, &gcc_version))
     {
@@ -51,7 +72,10 @@ int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
 
     CodeListener::CompilerAbstractionLayer::PluginContext &context =
         CodeListener::CompilerAbstractionLayer::PluginContext::getInstance();
-    context.initialize(plugin_info, version);
+    if (!context.initialize(plugin_info, version))
+    {
+        return 1;
+    }
 
     return 0;
 }
