@@ -25,19 +25,19 @@
 %\documentclass[english,zadani,print]{fitthesis} % for the black and white print - links are black
 %\documentclass[zadani,cprint]{fitthesis} % pro barevný tisk - odkazy jsou černé, znak VUT barevný
 %\documentclass[english,zadani,cprint]{fitthesis} % for the print - links are black, logo is color
-% * Je-li práce psaná v anglickém jazyce, je zapotřebí u třídy použít 
+% * Je-li práce psaná v anglickém jazyce, je zapotřebí u třídy použít
 %   parametr english následovně:
-%   If thesis is written in English, it is necessary to use 
+%   If thesis is written in English, it is necessary to use
 %   parameter english as follows:
 %      \documentclass[english]{fitthesis}
-% * Je-li práce psaná ve slovenském jazyce, je zapotřebí u třídy použít 
+% * Je-li práce psaná ve slovenském jazyce, je zapotřebí u třídy použít
 %   parametr slovak následovně:
-%   If the work is written in the Slovak language, it is necessary 
+%   If the work is written in the Slovak language, it is necessary
 %   to use parameter slovak as follows:
 %      \documentclass[slovak]{fitthesis}
-% * Je-li práce psaná v anglickém jazyce se slovenským abstraktem apod., 
+% * Je-li práce psaná v anglickém jazyce se slovenským abstraktem apod.,
 %   je zapotřebí u třídy použít parametry english a enslovak následovně:
-%   If the work is written in English with the Slovak abstract, etc., 
+%   If the work is written in English with the Slovak abstract, etc.,
 %   it is necessary to use parameters english and enslovak as follows:
 %      \documentclass[english,enslovak]{fitthesis}
 
@@ -48,14 +48,14 @@
 \usepackage{listings}
 
 \lstset{
-    language=C++,
-    basicstyle=\ttfamily\small,
-    keywordstyle=\color{blue}\bfseries,
-    stringstyle=\color{red},
-    commentstyle=\color{green!50!black},
-    morekeywords={vector, unique_ptr, IAnalyzer, AnalysisContext, CodeModel},
-    breaklines=true,
-    % frame=tb % Adds a line at the top and bottom
+  language=C++,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  stringstyle=\color{red},
+  commentstyle=\color{green!50!black},
+  morekeywords={vector, unique_ptr, IAnalyzer, AnalysisContext, CodeModel},
+  breaklines=true,
+  % frame=tb % Adds a line at the top and bottom
 }
 
 \usepackage{booktabs}
@@ -64,7 +64,7 @@
 % The Glossaries package can be used for the list of abbreviations - it is necessary to uncomment also below. When compiling from the console also in the Makefile (full version for Perl or lite)
 %\usepackage{glossaries}
 %\usepackage{glossary-superragged}
-%\makeglossaries 
+%\makeglossaries
 
 % Nastavení cesty k obrázkům
 % Setting of a path to the pictures
@@ -92,42 +92,41 @@
 % problém je, že balíček hyperref musí být uveden jako poslední, takže nemůže
 % být v šabloně
 % "hyperref" package create clickable links in pdf if you are using pdflatex.
-% Problem is that this package have to be introduced as the last one so it 
+% Problem is that this package have to be introduced as the last one so it
 % can not be placed in the template file.
 \ifWis
 \ifx\pdfoutput\undefined % nejedeme pod pdflatexem / we are not using pdflatex
 \else
-  \usepackage{color}
-  \usepackage[unicode,colorlinks,hyperindex,plainpages=false,pdftex]{hyperref}
-  \definecolor{hrcolor-ref}{RGB}{223,52,30}
-  \definecolor{hrcolor-cite}{HTML}{2F8F00}
-  \definecolor{hrcolor-urls}{HTML}{092EAB}
-  \hypersetup{
-	linkcolor=hrcolor-ref,
-	citecolor=hrcolor-cite,
-	filecolor=magenta,
-	urlcolor=hrcolor-urls
-  }
-  \def\pdfBorderAttrs{/Border [0 0 0] }  % bez okrajů kolem odkazů / without margins around links
-  \pdfcompresslevel=9
+\usepackage{color}
+\usepackage[unicode,colorlinks,hyperindex,plainpages=false,pdftex]{hyperref}
+\definecolor{hrcolor-ref}{RGB}{223,52,30}
+\definecolor{hrcolor-cite}{HTML}{2F8F00}
+\definecolor{hrcolor-urls}{HTML}{092EAB}
+\hypersetup{
+  linkcolor=hrcolor-ref,
+  citecolor=hrcolor-cite,
+  filecolor=magenta,
+  urlcolor=hrcolor-urls
+}
+\def\pdfBorderAttrs{/Border [0 0 0] }  % bez okrajů kolem odkazů / without margins around links
+\pdfcompresslevel=9
 \fi
 \else % pro tisk budou odkazy, na které se dá klikat, černé / for the print clickable links will be black
 \ifx\pdfoutput\undefined % nejedeme pod pdflatexem / we are not using pdflatex
 \else
-  \usepackage{color}
-  \usepackage[unicode,colorlinks,hyperindex,plainpages=false,pdftex,urlcolor=black,linkcolor=black,citecolor=black]{hyperref}
-  \definecolor{links}{rgb}{0,0,0}
-  \definecolor{anchors}{rgb}{0,0,0}
-  \def\AnchorColor{anchors}
-  \def\LinkColor{links}
-  \def\pdfBorderAttrs{/Border [0 0 0] } % bez okrajů kolem odkazů / without margins around links
-  \pdfcompresslevel=9
+\usepackage{color}
+\usepackage[unicode,colorlinks,hyperindex,plainpages=false,pdftex,urlcolor=black,linkcolor=black,citecolor=black]{hyperref}
+\definecolor{links}{rgb}{0,0,0}
+\definecolor{anchors}{rgb}{0,0,0}
+\def\AnchorColor{anchors}
+\def\LinkColor{links}
+\def\pdfBorderAttrs{/Border [0 0 0] } % bez okrajů kolem odkazů / without margins around links
+\pdfcompresslevel=9
 \fi
 \fi
 % Řešení problému, kdy klikací odkazy na obrázky vedou za obrázek
 % This solves the problems with links which leads after the picture
 \usepackage[all]{hypcap}
-
 
 % Informace o práci/projektu / Information about the thesis
 %---------------------------------------------------------------------------
@@ -144,19 +143,19 @@
   %dectitle.length={14.5cm}, % nastavení délky bloku s titulkem nad prohlášením pro úpravu zalomení řádku (lze definovat zde nebo níže) / setting the length of a block with a thesis title above declaration for adjusting a line break (can be defined here or below)
   %Autor / Author
   author.name={Lukáš},   % jméno autora / author name
-  author.surname={Pšeja},   % příjmení autora / author surname 
+  author.surname={Pšeja},   % příjmení autora / author surname
   %author.title.p={Bc.}, % titul před jménem (nepovinné) / title before the name (optional)
   %author.title.a={Ph.D.}, % titul za jménem (nepovinné) / title after the name (optional)
   %Ustav / Department
   department={UITS}, % doplňte příslušnou zkratku dle ústavu na zadání: UPSY/UIFS/UITS/UPGM / fill in appropriate abbreviation of the department according to assignment: UPSY/UIFS/UITS/UPGM
   % Školitel / supervisor
-  supervisor.name={Petr},   % jméno školitele / supervisor name 
+  supervisor.name={Petr},   % jméno školitele / supervisor name
   supervisor.surname={Peringer},   % příjmení školitele / supervisor surname
   supervisor.title.p={Dr.\ Ing.},   %titul před jménem (nepovinné) / title before the name (optional)
   supervisor.title.a={},    %titul za jménem (nepovinné) / title after the name (optional)
   % Školitel specialista / Supervisor specialist
-  % Vyplňuje se pouze u pojednání disertační práce nebo u disertační práce, pokud existuje školitel specialista. Pokud nemáte školitele specialistu, jméno a příjmení ponechte prázdné. / Is used only with PhD. thesis or proposal. if you have the specialist. If you do not have a specialist, leave name and surname blank.  
-  specialist.name={},   % jméno školitele specialisty / supervisor specialist name 
+  % Vyplňuje se pouze u pojednání disertační práce nebo u disertační práce, pokud existuje školitel specialista. Pokud nemáte školitele specialistu, jméno a příjmení ponechte prázdné. / Is used only with PhD. thesis or proposal. if you have the specialist. If you do not have a specialist, leave name and surname blank.
+  specialist.name={},   % jméno školitele specialisty / supervisor specialist name
   specialist.surname={},   % příjmení školitele specialisty / supervisor specialist surname
   specialist.title.p={},   %titul před jménem (nepovinné) / title before the name (optional)
   specialist.title.a={},    %titul za jménem (nepovinné) / title after the name (optional)
@@ -185,20 +184,20 @@
   }, % abstrakt v anglickém jazyce / abstract in english
   %abstract.en={An abstract of the work in English will be written in this paragraph.},
   % Prohlášení (u anglicky psané práce anglicky, u slovensky psané práce slovensky; u projektové praxe lze zakomentovat). Pokud použijete nástroje umělé inteligence, uveďte je podobně jako v příkladu. / Declaration (for thesis in english should be in english; for project practice can be commented out). If you use any AI tools, acknowledge them like in the provided example.
-%   declaration={Prohlašuji, že jsem tuto bakalářskou práci vypracoval samostatně pod vedením pana X...
-% Další informace mi poskytli...
-% Uvedl jsem všechny literární prameny, publikace a další zdroje, ze kterých jsem čerpal. 
-% Pro jazykovou revizi technické zprávy jsem použil(a) nástroj ChatGPT. 
-% Při tvorbě odevzdaného programového kódu jsem využíval nástroj Github Copilot. [konkretizujte a upravte podle skutečnosti].},
+  %   declaration={Prohlašuji, že jsem tuto bakalářskou práci vypracoval samostatně pod vedením pana X...
+  % Další informace mi poskytli...
+  % Uvedl jsem všechny literární prameny, publikace a další zdroje, ze kterých jsem čerpal.
+  % Pro jazykovou revizi technické zprávy jsem použil(a) nástroj ChatGPT.
+  % Při tvorbě odevzdaného programového kódu jsem využíval nástroj Github Copilot. [konkretizujte a upravte podle skutečnosti].},
   declaration={I hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of Dr.\ Ing. Petr Peringer.
-  % The supplementary information was provided by Mr. Y
-  I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis.
-  I have used Grammarly to improve the linguistic quality and spelling of this thesis.
-  I utilized GitHub Copilot when working on the software. Specifically during the software development phase, where this tool was used exclusively for reviewing, consulting, and verifying my original interface designs and implementation choices, rather than for the automated code generation.
+    % The supplementary information was provided by Mr. Y
+    I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis.
+    I have used Grammarly to improve the linguistic quality and spelling of this thesis.
+    I utilized GitHub Copilot when working on the software, specifically during the software development phase, where this tool was used exclusively for reviewing, consulting, and verifying my original interface designs and implementation choices, rather than for the automated code generation.
   },
-  % Poděkování (nepovinné, nejlépe v jazyce práce; nechcete-li, zakomentujte pro skrytí nadpisu. / Acknowledgement (optional, ideally in the language of the thesis; comment out to hide it including a heading.) 
-%   acknowledgment={V této sekci je možno uvést poděkování vedoucímu práce a těm, kteří poskytli odbornou pomoc
-% (externí zadavatel, konzultant apod.).},
+  % Poděkování (nepovinné, nejlépe v jazyce práce; nechcete-li, zakomentujte pro skrytí nadpisu. / Acknowledgement (optional, ideally in the language of the thesis; comment out to hide it including a heading.)
+  %   acknowledgment={V této sekci je možno uvést poděkování vedoucímu práce a těm, kteří poskytli odbornou pomoc
+  % (externí zadavatel, konzultant apod.).},
   % TODO: write proper acknowledgement
   % acknowledgment={
   %   Here it is possible to express thanks to the supervisor and to the people which provided professional help (external submitter, consultant, etc.).
@@ -214,7 +213,57 @@
 }
 
 % Rozšířený abstrakt (cca 3 normostrany) - lze definovat zde nebo výše / Extended abstract (approximately 3 standard pages) - can be defined here or above
-%\extendedabstract{Do tohoto odstavce bude zapsán výtah (abstrakt) práce v českém (slovenském) jazyce.}
+\extendedabstract{Infrastruktura Code Listener historicky sloužila jako mezivrstva mezi překladačem a statickými analyzátory programů v~jazycích C a C++.
+  Jejím úkolem bylo převzít vnitřní reprezentaci programu z~překladače, převést ji do jednotného tvaru a předat ji analyzátorům, především analyzátoru Predator.
+  Přestože tento přístup umožnil praktické nasazení několika analýz, původní implementace postupně nashromáždila zásadní architektonická omezení.
+  Specificky vnitřní reprezentace programu byla přímo znečištěna výsledky pomocných analýz a zpracování bylo svázáno s~povinným řetězcem transformací.
+  To vedlo ke komplikované údržbě a obtížnému rozšiřování.
+  Cílem této bakalářské práce bylo proto původní Code Listener analyzovat, navrhnout a implementovat modernizovanou infrastrukturu, která zachová zpětnou kompatibilitu s~analyzátorem Predator, ale současně vytvoří čistší základ pro další vývoj a výzkum.\par
+
+  První část práce se soustředí na rozbor původního řešení a podobných projektů.
+  Ukazuje, že historická architektura byla založena na přímém převodu GIMPLE reprezentace do proudu zpětných volání, která analyzátory spotřebovávaly v~přesně daném pořadí.
+  Tento model sice vyhovoval tehdejším nástrojům, ale za cenu velmi těsného svázání s~konkrétním zpracovatelským řetězcem.
+  Do jedné sady struktur se ukládaly jak základní informace o~programu, tak výsledky pomocných analýz, například graf volání nebo analýza živých proměnných.
+  Každý analyzátor tak implicitně platil cenu za výpočty, které často vůbec nepotřeboval.
+  Práce proto formuluje několik návrhových cílů: oddělit čistou vnitřní reprezentaci programu od odvozených dat, nahradit povinné předanalýzy líně vyhodnocovanými anotačními službami, zavést jednotné rozhraní pro překladače i analyzátory a současně zachovat kompatibilitu s~nástrojem Predator, který představuje nejdůležitější praktický referenční bod celého projektu.\par
+
+  Na základě těchto požadavků byl navržen nový systém postavený kolem překladačově nezávislého modelu programu \texttt{CodeModel}.
+  Ten představuje centrální a čistou reprezentaci přeloženého programu, v~níž jsou typy, proměnné, funkce, bloky a instrukce uloženy ve stabilních poolových kontejnerech a navzájem propojeny pomocí silně typovaných identifikátorů namísto syrových ukazatelů.
+  Konkrétní druhy typů a instrukcí jsou modelovány pomocí \texttt{std::variant}, což umožňuje popsat uzavřenou množinu konstrukcí jazyka C bez hluboké dědičné hierarchie a bez úniku závislostí na GCC do zbytku systému.
+  Nad tímto jádrem byla navržena vrstva anotačních služeb, v~níž \texttt{AnalysisManager} vypočítává a kešuje odvozená data až ve chvíli, kdy si je analyzátor nebo exportér vyžádá.
+  V~implementované podobě tato vrstva zahrnuje například graf volání a transformaci \uv{switch-to-if}, ale architektura je otevřena i pro další analýzy.\par
+
+  Další důležitou část návrhu tvoří jasné rozhraní mezi frontendy, exportéry a analyzátory.
+  Práce zavádí strategii \texttt{IFrontend}, která odděluje zdroj programového modelu od jeho dalšího zpracování.
+  Díky tomu mohou analyzátory pracovat jak v~živém režimu uvnitř GCC, tak v~offline režimu nad dříve serializovaným modelem.
+  Exportní vrstva sjednocuje generování textových i persistentních výstupů a využívá jednotný průchod modelem přes návštěvníka \texttt{CodeModelVisitor}.
+  Praktickým důsledkem je, že z~téhož modelu lze konzistentně generovat JSON reprezentaci, grafové výstupy v~DOT formátu nebo čitelný textový výpis programu.
+  Tato část návrhu zajišťuje, že modernizovaná infrastruktura není pouze náhradou historického pluginu, ale samostatnou platformou, nad níž lze vytvářet nové nástroje, analyzátory i vývojové workflow.\par
+
+  Implementační část práce převádí navrženou architekturu do funkčního prototypu v~jazyce C++23.
+  Výsledkem je nový plugin pro GCC, který se registruje do životního cyklu překladače, sleduje zpracovávané překladové jednotky a pomocí modulu \texttt{GCCAdapter} převádí GCC stromy a GIMPLE instrukce do \texttt{CodeModelu}.
+  Adaptér přitom řeší praktické problémy reálného překladačového prostředí: kešuje již vytvořené typy a proměnné, normalizuje zdrojové lokace, přiřazuje syntetická jména anonymním agregátům a zajišťuje, že výsledný model neobsahuje žádné ukazatele do paměti GCC, takže může bezpečně přežít samotný překladačový proces.
+  Pro práci mimo živý běh pluginu byly implementovány nástroje \texttt{cl\_merge} a \texttt{cl\_analyze}, které umožňují serializovat více překladových jednotek do JSON, sloučit je do jednoho celoprogramového modelu a následně nad nimi spouštět analyzátory nebo vestavěné exportéry.
+  Tím práce rozšiřuje původní převážně pluginově orientovaný scénář o~explicitní offline workflow založené na serializaci do JSON, slučování modelů z~více překladových jednotek a následné analýze mimo běh GCC.\par
+
+  Klíčovým požadavkem celé práce bylo také zachování praktické použitelnosti existujících nástrojů.
+  Z~tohoto důvodu byla významná část implementace věnována kompatibilní vrstvě pro Predator.
+  Modul \texttt{PredatorAdapter} systematicky prochází nový \texttt{CodeModel} a rekonstruuje z~něj historický proud struktur a zpětných volání, který Predator očekává.
+  Nad ním je vystavěn most \texttt{LegacyPredatorBridge}, jenž umožňuje dynamicky načíst analyzátory implementované proti starému C rozhraní, zatímco nové nativní analyzátory mohou používat moderní C++ ABI a služby \texttt{AnalysisContext}.
+  To je důkaz, že modernizace není pouze \uv{přepis} staré architektury.
+
+  Správnost a praktická použitelnost řešení byly ověřeny víceúrovňovým testováním.
+  Pro novou infrastrukturu byly připraveny tři nativní regresní sady: 46 testů GCC adaptéru, které ověřují správnost generovaného JSON modelu vůči historickým fixture, 38 integračních testů \texttt{CodeModelu}, zaměřených na typy, inicializátory, řízení toku a další hraniční případy, a 3 end-to-end testy offline cesty přes \texttt{cl\_analyze}.
+  Nejnáročnějším ověřením je však regresní sada Predatoru.
+  Tato sada byla integrována do CTestu a registruje 1~192 \texttt{new-plugin} testů, které jsou přímými porty původních \texttt{predator} testů, ale místo spuštění nad původním pluginem se spouští nad tím novým.
+  Tyto testy byly spuštěny po čistých sestaveních s~GCC~12, GCC~13 a GCC~14 a ve všech případech úspěšně prošly.
+  Výsledky tak ukazují, že modernizace zachovala chování na historickém rozhraní, které je pro původní ekosystém klíčové.\par
+
+  Hlavní přínos práce spočívá ve vytvoření modernizované infrastruktury, která odděluje čistou reprezentaci programu od odvozených analýz, zavádí poptávkově řízené zpracování pomocných dat, podporuje offline serializaci a přitom zachovává plnou prakticky ověřenou kompatibilitu s~nástrojem Predator.
+  Pro čtenáře a pro další výzkum to znamená, že historicky cenné analyzátory již nemusí být svázány s~neudržitelnou interní architekturou a současně vzniká podstatně vhodnější základ pro další rozšiřování.
+  Na novou platformu lze navazovat dalšími anotačními službami, specializovanými analyzátory i novými frontendy, například pro LLVM/Clang.
+  Práce tak představuje důležitý krok k~tomu, aby se statická analýza v~ekosystému C a C++ mohla dále rozvíjet bez omezení původní architektury, a zároveň zachovala kontinuitu s~existujícími nástroji a analyzátory.
+}
 % Začít rozšířený abstrakt na liché stránce? / Should extended abstract start on the odd page?
 %\extabstractodd{true}
 
@@ -243,135 +292,134 @@
 % \raggedbottom
 
 \begin{document}
-  % Vysazeni titulnich stran / Typesetting of the title pages
-  % ----------------------------------------------
-  \maketitle
-  % Obsah
-  % ----------------------------------------------
-  \setlength{\parskip}{0pt}
+% Vysazeni titulnich stran / Typesetting of the title pages
+% ----------------------------------------------
+\maketitle
+% Obsah
+% ----------------------------------------------
+\setlength{\parskip}{0pt}
 
-  {\hypersetup{hidelinks}\tableofcontents}
-  
-  % Seznam obrazku a tabulek (pokud prace obsahuje velke mnozstvi obrazku, tak se to hodi)
-  % List of figures and list of tables (if the thesis contains a lot of pictures, it is good)
-  \ifczech
-    \renewcommand\listfigurename{Seznam obrázků}
-  \fi
-  \ifslovak
-    \renewcommand\listfigurename{Zoznam obrázkov}
-  \fi
-  {\hypersetup{hidelinks}\listoffigures}
-  
-  \ifczech
-    \renewcommand\listtablename{Seznam tabulek}
-  \fi
-  \ifslovak
-    \renewcommand\listtablename{Zoznam tabuliek}
-  \fi
-  % {\hypersetup{hidelinks}\listoftables}
+{\hypersetup{hidelinks}\tableofcontents}
 
-  % Seznam zkratek / List of abbreviations
-  %\ifczech
-  %  \renewcommand*\glossaryname{Seznam zkratek}%
-  %  \renewcommand*\entryname{Zkratka}
-  %  \renewcommand*\descriptionname{Význam}
-  %\fi
-  %\ifslovak
-  %  \renewcommand*\glossaryname{Zoznam skratiek}%
-  %  \renewcommand*\entryname{Skratka}
-  %  \renewcommand*\descriptionname{Význam}
-  %\fi
-  %\ifenglish
-  %  \renewcommand*\glossaryname{List of abbreviations}%
-  %  \renewcommand*\entryname{Abbreviation}
-  %  \renewcommand*\descriptionname{Meaning}
-  %\fi
-  % Definice zkratek - z textu se odkazují např. \Gls{TF–IDF}
-  % Definition of abbreviations - referred from the text e.g. \Gls{TF–IDF}
-  %\newglossaryentry{TF–IDF}
-  %{
-  %  name={TF–IDF},
-  %  description={Term Frequency-Inverse Document Frequency}
-  %}
-  % 
-  %\setglossarystyle{superragged}
-  %\printglossaries
-
-
-  \ifODSAZ
-    \setlength{\parskip}{0.5\bigskipamount}
-  \else
-    \setlength{\parskip}{0pt}
-  \fi
-
-  % vynechani stranky v oboustrannem rezimu
-  % Skip the page in the two-sided mode
-  \iftwoside
-    \cleardoublepage
-  \fi
-
-  % Text prace / Thesis text
-  % ----------------------------------------------
-  \ifenglish
-    \subfile{01-introduction}
-    \subfile{02-state-of-the-art}
-    \subfile{03-design}
-    \subfile{04-implementation}
-    \subfile{05-testing}
-    \subfile{06-conclusion}
-  \else
-    \input{xpsejal00-gcc-plugin-01-kapitoly-chapters}
-  \fi
-  
-  % Kompilace po částech (viz výše, nutno odkomentovat a zakomentovat input výše)
-  % Compilation piecewise (see above, it is necessary to uncomment it and comment out input above)
-  %\subfile{chapters/projekt-01-uvod-introduction}
-  % ...
-  %\subfile{chapters/projekt-05-zaver-conclusion}
-
-  % Pouzita literatura / Bibliography
-  % ----------------------------------------------
-\ifslovak
-  \makeatletter
-  \def\@openbib@code{\addcontentsline{toc}{chapter}{Literatúra}}
-  \makeatother
-  \bibliographystyle{bib-styles/Pysny/skplain}
-\else
-  \ifczech
-    \makeatletter
-    \def\@openbib@code{\addcontentsline{toc}{chapter}{Literatura}}
-    \makeatother
-    \bibliographystyle{bib-styles/Pysny/czplain}
-  \else 
-    \makeatletter
-    \def\@openbib@code{\addcontentsline{toc}{chapter}{Bibliography}}
-    \makeatother
-    \bibliographystyle{bib-styles/Pysny/enplain}
-  %  \bibliographystyle{alpha}
-  \fi
-\fi
-  \begin{flushleft}
-  \bibliography{xpsejal00-gcc-plugin-20-literatura-bibliography}
-  \end{flushleft}
-
-  % vynechani stranky v oboustrannem rezimu
-  % Skip the page in the two-sided mode
-  \iftwoside
-    \cleardoublepage
-  \fi
-
-  % Prilohy / Appendices
-  % ---------------------------------------------
-  \appendix
+% Seznam obrazku a tabulek (pokud prace obsahuje velke mnozstvi obrazku, tak se to hodi)
+% List of figures and list of tables (if the thesis contains a lot of pictures, it is good)
 \ifczech
-  \renewcommand{\appendixpagename}{Přílohy}
-  \renewcommand{\appendixtocname}{Přílohy}
-  \renewcommand{\appendixname}{Příloha}
+\renewcommand\listfigurename{Seznam obrázků}
 \fi
 \ifslovak
-  \renewcommand{\appendixpagename}{Prílohy}
-  \renewcommand{\appendixtocname}{Prílohy}
-  \renewcommand{\appendixname}{Príloha}
+\renewcommand\listfigurename{Zoznam obrázkov}
+\fi
+{\hypersetup{hidelinks}\listoffigures}
+
+\ifczech
+\renewcommand\listtablename{Seznam tabulek}
+\fi
+\ifslovak
+\renewcommand\listtablename{Zoznam tabuliek}
+\fi
+% {\hypersetup{hidelinks}\listoftables}
+
+% Seznam zkratek / List of abbreviations
+%\ifczech
+%  \renewcommand*\glossaryname{Seznam zkratek}%
+%  \renewcommand*\entryname{Zkratka}
+%  \renewcommand*\descriptionname{Význam}
+%\fi
+%\ifslovak
+%  \renewcommand*\glossaryname{Zoznam skratiek}%
+%  \renewcommand*\entryname{Skratka}
+%  \renewcommand*\descriptionname{Význam}
+%\fi
+%\ifenglish
+%  \renewcommand*\glossaryname{List of abbreviations}%
+%  \renewcommand*\entryname{Abbreviation}
+%  \renewcommand*\descriptionname{Meaning}
+%\fi
+% Definice zkratek - z textu se odkazují např. \Gls{TF–IDF}
+% Definition of abbreviations - referred from the text e.g. \Gls{TF–IDF}
+%\newglossaryentry{TF–IDF}
+%{
+%  name={TF–IDF},
+%  description={Term Frequency-Inverse Document Frequency}
+%}
+%
+%\setglossarystyle{superragged}
+%\printglossaries
+
+\ifODSAZ
+\setlength{\parskip}{0.5\bigskipamount}
+\else
+\setlength{\parskip}{0pt}
+\fi
+
+% vynechani stranky v oboustrannem rezimu
+% Skip the page in the two-sided mode
+\iftwoside
+\cleardoublepage
+\fi
+
+% Text prace / Thesis text
+% ----------------------------------------------
+\ifenglish
+\subfile{01-introduction}
+\subfile{02-state-of-the-art}
+\subfile{03-design}
+\subfile{04-implementation}
+\subfile{05-testing}
+\subfile{06-conclusion}
+\else
+\input{xpsejal00-gcc-plugin-01-kapitoly-chapters}
+\fi
+
+% Kompilace po částech (viz výše, nutno odkomentovat a zakomentovat input výše)
+% Compilation piecewise (see above, it is necessary to uncomment it and comment out input above)
+%\subfile{chapters/projekt-01-uvod-introduction}
+% ...
+%\subfile{chapters/projekt-05-zaver-conclusion}
+
+% Pouzita literatura / Bibliography
+% ----------------------------------------------
+\ifslovak
+\makeatletter
+\def\@openbib@code{\addcontentsline{toc}{chapter}{Literatúra}}
+\makeatother
+\bibliographystyle{bib-styles/Pysny/skplain}
+\else
+\ifczech
+\makeatletter
+\def\@openbib@code{\addcontentsline{toc}{chapter}{Literatura}}
+\makeatother
+\bibliographystyle{bib-styles/Pysny/czplain}
+\else
+\makeatletter
+\def\@openbib@code{\addcontentsline{toc}{chapter}{Bibliography}}
+\makeatother
+\bibliographystyle{bib-styles/Pysny/enplain}
+%  \bibliographystyle{alpha}
+\fi
+\fi
+\begin{flushleft}
+  \bibliography{xpsejal00-gcc-plugin-20-literatura-bibliography}
+\end{flushleft}
+
+% vynechani stranky v oboustrannem rezimu
+% Skip the page in the two-sided mode
+\iftwoside
+\cleardoublepage
+\fi
+
+% Prilohy / Appendices
+% ---------------------------------------------
+\appendix
+\ifczech
+\renewcommand{\appendixpagename}{Přílohy}
+\renewcommand{\appendixtocname}{Přílohy}
+\renewcommand{\appendixname}{Příloha}
+\fi
+\ifslovak
+\renewcommand{\appendixpagename}{Prílohy}
+\renewcommand{\appendixtocname}{Prílohy}
+\renewcommand{\appendixname}{Príloha}
 \fi
 %  \appendixpage
 
@@ -380,44 +428,44 @@
 %\iftwoside
 %  \cleardoublepage
 %\fi
-  
+
 \ifslovak
 %  \section*{Zoznam príloh}
 %  \addcontentsline{toc}{section}{Zoznam príloh}
 \else
-  \ifczech
+\ifczech
 %    \section*{Seznam příloh}
 %    \addcontentsline{toc}{section}{Seznam příloh}
-  \else
+\else
 %    \section*{List of Appendices}
 %    \addcontentsline{toc}{section}{List of Appendices}
-  \fi
 \fi
-  \startcontents[chapters]
-  \setlength{\parskip}{0pt} 
-  % seznam příloh / list of appendices
-  % \printcontents[chapters]{l}{0}{\setcounter{tocdepth}{2}}
-  
-  \ifODSAZ
-    \setlength{\parskip}{0.5\bigskipamount}
-  \else
-    \setlength{\parskip}{0pt}
-  \fi
-  
-  % vynechani stranky v oboustrannem rezimu
-  \iftwoside
-    \cleardoublepage
-  \fi
-  
-  % Přílohy / Appendices
-  \ifenglish
-    \input{xpsejal00-gcc-plugin-30-prilohy-appendices-en}
-  \else
-    \input{xpsejal00-gcc-plugin-30-prilohy-appendices}
-  \fi
-  
-  % Kompilace po částech (viz výše, nutno odkomentovat)
-  % Compilation piecewise (see above, it is necessary to uncomment it)
-  %\subfile{xpsejal00-gcc-plugin-30-prilohy-appendices}
-  
+\fi
+\startcontents[chapters]
+\setlength{\parskip}{0pt}
+% seznam příloh / list of appendices
+% \printcontents[chapters]{l}{0}{\setcounter{tocdepth}{2}}
+
+\ifODSAZ
+\setlength{\parskip}{0.5\bigskipamount}
+\else
+\setlength{\parskip}{0pt}
+\fi
+
+% vynechani stranky v oboustrannem rezimu
+\iftwoside
+\cleardoublepage
+\fi
+
+% Přílohy / Appendices
+\ifenglish
+\input{xpsejal00-gcc-plugin-30-prilohy-appendices-en}
+\else
+\input{xpsejal00-gcc-plugin-30-prilohy-appendices}
+\fi
+
+% Kompilace po částech (viz výše, nutno odkomentovat)
+% Compilation piecewise (see above, it is necessary to uncomment it)
+%\subfile{xpsejal00-gcc-plugin-30-prilohy-appendices}
+
 \end{document}
