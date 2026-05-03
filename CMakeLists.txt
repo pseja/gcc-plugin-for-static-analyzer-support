@@ -35,6 +35,11 @@ message(STATUS "GCC Plugin Directory: ${GCC_PLUGIN_DIR}")
 
 set(GCC_PLUGIN_INCLUDE_DIR "${GCC_PLUGIN_DIR}/include")
 
+file(
+  GENERATE
+  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/make-config.mk"
+  CONTENT "TARGET_GCC := ${TARGET_GCC}\nCC := ${TARGET_GCC}\n")
+
 function(collect_subdirectories out_var base_dir)
   set(dirs "${base_dir}")
   file(
@@ -213,6 +218,24 @@ if(WITH_PREDATOR)
     STATUS
       "Run predator tests: ctest --test-dir ${PREDATOR_BUILD} -R \"^new-plugin-\""
   )
+endif()
+
+# Doxygen documentation target (HTML + LaTeX/PDF)
+find_package(Doxygen OPTIONAL_COMPONENTS dot)
+if(DOXYGEN_FOUND)
+  set(DOXYFILE "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile")
+  add_custom_target(
+    docs
+    COMMAND ${DOXYGEN_EXECUTABLE} "${DOXYFILE}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Generating API documentation with Doxygen"
+    VERBATIM)
+  message(
+    STATUS
+      "Doxygen found - run 'cmake --build build --target docs' to generate docs"
+  )
+else()
+  message(STATUS "Doxygen not found - 'docs' target unavailable")
 endif()
 
 # CodeModel integration tests

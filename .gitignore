@@ -57,3 +57,6 @@ build/
 
 # gcc dump directory
 dump/
+
+# Doxygen generated documentation
+docs/doxygen/

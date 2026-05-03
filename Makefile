@@ -1,6 +1,10 @@
-CC := gcc-12
 BUILD := build
+MAKE_CONFIG := $(BUILD)/make-config.mk
+TARGET_GCC ?= gcc-12
+CC ?= $(TARGET_GCC)
 JOBS := $(shell nproc)
+
+-include $(MAKE_CONFIG)
 
 PLUGIN := $(BUILD)/libcl_gcc.so
 CALLGRAPH := $(BUILD)/libcl_callgraph_dot.so
@@ -25,8 +29,8 @@ VERBOSITY ?= CLEAN
 
 # MAKEFLAGS += --no-builtin-rules
 .PHONY: all build configure callgraph json recursion predator \
-        json-multi merge dot-multi \
-        test-predator test-cl-adapter test-codemodel test-cl-analyze test clean help FORCE
+	json-multi merge dot-multi \
+	test-predator test-cl-adapter test-codemodel test-cl-analyze test clean clean-docs help doxygen
 
 # silently check that FILE was provided before an analyzer target runs
 define require_file
@@ -57,11 +61,11 @@ all: build
 
 ## run CMake configuration (no build)
 configure:
-	cmake -S . -B $(BUILD) -DTARGET_GCC=$(CC)
+	cmake -S . -B $(BUILD) -DTARGET_GCC=$(TARGET_GCC)
 
 ## configure (if needed) and compile everything
 build:
-	cmake -S . -B $(BUILD) -DTARGET_GCC=$(CC)
+	cmake -S . -B $(BUILD) -DTARGET_GCC=$(TARGET_GCC)
 	cmake --build $(BUILD) -j$(JOBS)
 
 ## callgraph FILE=<src> [ARGS=<output.dot>]
@@ -157,7 +161,7 @@ test: test-cl-adapter test-predator test-codemodel test-cl-analyze
 # cleanup
 
 ## remove the build directory
-clean: clean-predator
+clean: clean-predator clean-docs
 	rm -rf $(BUILD)
 
 ## reset the Predator submodule to a clean state
@@ -166,12 +170,21 @@ clean-predator:
 	git -C $(PREDATOR_SRC) clean -fdx
 	git submodule update --init --recursive $(PREDATOR_SRC)
 
+## remove generated Doxygen output
+clean-docs:
+	rm -rf docs/doxygen
+
+# generate API documentation with Doxygen
+doxygen:
+	cmake --build $(BUILD) --target docs
+
 # help message
 help:
 	@echo " Build:"
 	@echo "     make build          - configure (if needed) and compile everything"
 	@echo "     make configure      - run CMake configuration (no build)"
 	@echo "     make clean          - remove the build directory"
+	@echo "     make clean-docs     - remove generated Doxygen output from docs/doxygen"
 	@echo "     make clean-predator - reset the Predator submodule to a clean state"
 	@echo ""
 	@echo " Analyzers (single translation unit):"
@@ -191,3 +204,5 @@ help:
 	@echo "     make test-codemodel  - run all CodeModel tests"
 	@echo "     make test-cl-analyze - run cl_analyze pipeline tests"
 	@echo "     make test            - run all of the above"
+	@echo ""
+	@echo "     make doxygen         - generate API documentation with Doxygen"
