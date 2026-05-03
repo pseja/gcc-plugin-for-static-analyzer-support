@@ -23,6 +23,13 @@ Within the checked-in CMake configuration, the plugin build is parameterized by 
 To verify portability across supported compiler releases, the project was rebuilt from a clean state, and the full \texttt{make test} pipeline was rerun separately with GCC 12, GCC 13, and GCC 14.
 The testing pipeline is fully automated via the \texttt{make test} build target, with dedicated entry points for the \texttt{cl-adapter}, \texttt{codemodel}, \texttt{cl\_analyze}, and Predator compatibility suites.
 
+The two primary evaluation environments were intentionally different in character.
+The Ubuntu 22.04 setup ran under WSL 2 on a desktop-class machine with an Intel Core i5--8400 CPU (6 cores at 2.8~GHz), an NVIDIA GeForce GTX~1070~Ti GPU, and 16~GB of RAM.\@
+The Arch Linux setup ran on a laptop with an Intel Core i5--1135G7 CPU (4 cores at 2.40~GHz), integrated Intel Iris Xe Graphics, and 24~GB of RAM.\@
+These systems were not used as a controlled benchmark platform, but they provide useful operational context for the executed regression campaign.
+On the Ubuntu/WSL 2 machine, a clean \texttt{make} rebuild took approximately 1~minute and 48~seconds, while the full \texttt{make test} pipeline completed in about 18~seconds.
+On the Arch Linux laptop, the same commands took approximately 39~seconds and 11~seconds, respectively.
+
 \section{Verification of the Modernized Infrastructure}\label{sec:verification}
 
 Before testing the infrastructure against complex third-party tools, the core components of the new architecture were verified in isolation.
@@ -32,7 +39,7 @@ This verification is covered by three dedicated test suites:
 
 \begin{enumerate}
   \item \textbf{GCC-Adapter Tests (46 tests):} These tests compile historical C programs through the new live GCC plugin.
-    The generated JSON output is compared against expected fixtures using shell checks built around \texttt{jq}~\footnote{\url{https://github.com/jqlang/jq}}.
+    The generated JSON output is compared against expected fixtures using shell checks built around \texttt{jq}\footnote{\url{https://github.com/jqlang/jq}}.
     This suite proves that the Compiler Abstraction Layer correctly intercepts GCC's GIMPLE passes, recovers source locations, and accurately identifies types and control flow edges.
   \item \textbf{Code Model Integration Tests (38 tests):} These tests compile dedicated C inputs through the live plugin and inspect the resulting JSON model through suite-specific assertion scripts.
     They verify the representation of primitive and aggregate types, function calls, control flow constructs, initializers, and other edge cases that stress the internal Code Model layout.
@@ -60,7 +67,7 @@ The significance of this regression setup lies in its validation criterion.
 The new object-oriented Code Model is considered compatible only if the reconstructed callback stream reproduces the legacy diagnostic behavior expected by Predator's regression files.
 This makes the Predator suite the most demanding external check of variable scopes, control-flow reconstruction, and low-level memory-operation fidelity in the current thesis implementation.
 
-\section{Performance Considerations and Architectural Trade-offs}\label{sec:performance}
+\section{Performance and Architectural Trade-offs}\label{sec:performance}
 
 When evaluating the performance of the modernized infrastructure, it is crucial to recognize that the modernization does not merely optimize a single fixed execution path.
 Instead, it introduces two distinct modes of operation: a native path that analyzes the \texttt{CodeModel} directly, and a compatibility path that reconstructs the historical \texttt{cl\_code\_listener} callback stream for Predator.
@@ -68,8 +75,9 @@ As a result, any direct wall-clock comparison with the legacy framework would co
 In particular, the end-to-end timing of Predator would largely reflect the behavior of its verification kernel, not just the overhead introduced by the new infrastructure.
 
 For this reason, no dedicated benchmarking harness or memory-profiling campaign was implemented as part of this thesis.
+The only timing figures reported here are the practical wall-clock observations for a clean \texttt{make} rebuild and the aggregate \texttt{make test} run on the two development machines described above.
 A trustworthy quantitative study would require a separate experimental methodology with fixed workloads, repeated runs, isolated measurement of the live and offline paths, and a strict separation between framework cost and analyzer-internal cost.
-Reporting a small set of uncontrolled timing numbers would therefore be less informative than explicitly limiting the claims to what can be justified directly from the implemented architecture and the executed regression campaign.
+Consequently, the reported timings should be read as reproducibility-oriented context for the development and regression workflow, rather than as a formal performance benchmark.
 
 \subsection*{Structural Overhead (The Double-Translation Cost)}\label{sec:structural-overhead}
 
