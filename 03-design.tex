@@ -201,7 +201,7 @@ This CRTP base automatically injects two critical components into every service:
   \item A strictly enforced signature for the \texttt{build(model)} static factory method.
   \item A static \texttt{AnalysisKey} member.
     The memory address of this static member \\(\texttt{\&Derived::Key}) serves as the unique identifier for the type-erased cache.
-    This elegant, low-overhead pattern guarantees globally unique keys per annotation type and heavily mirrors the \texttt{AnalysisInfoMixin} design found in modern LLVM~\footnote{\url{https://llvm.org/doxygen/structllvm_1_1AnalysisInfoMixin.html\#details}}.\@
+    This elegant, low-overhead pattern guarantees globally unique keys per annotation type and heavily mirrors the \texttt{AnalysisInfoMixin} design found in modern LLVM\footnote{\url{https://llvm.org/doxygen/structllvm_1_1AnalysisInfoMixin.html\#details}}.\@
 \end{enumerate}
 
 \begin{figure}[H]
@@ -299,7 +299,7 @@ The infrastructure implements two exporters primarily designed for human inspect
 A major limitation of the legacy architecture was its strict confinement to the live compiler memory space.
 To enable offline processing and cross-translation-unit (whole-program) analysis, the new infrastructure introduces the \texttt{JSONExporter} and \texttt{JSONImporter}.
 
-Utilizing the \texttt{nlohmann/json} library~\footnote{\url{https://github.com/nlohmann/json}}, the \texttt{JSONExporter} serializes the entire CodeModel, including all entity pools and ID-based cross-references, into a persistent JSON file.
+Utilizing the \texttt{nlohmann/json} library\footnote{\url{https://github.com/nlohmann/json}}, the \texttt{JSONExporter} serializes the entire CodeModel, including all entity pools and ID-based cross-references, into a persistent JSON file.
 The \texttt{JSONImporter} performs the inverse operation, safely deserializing the JSON file back into a fully functional \texttt{CodeModel} in memory.
 
 Because the C and C++ compilation models operate on independent translation units (source files), full verification often requires analyzing the entire program at once.
