@@ -52,7 +52,7 @@ Crucially, this is the only component in the entire architecture that interacts 
 
 The infrastructure integrates with GCC via its standard plugin API.\@
 The lifecycle begins at \texttt{plugin\_init()}, which is called when the plugin is dynamically loaded by GCC and where compiler version checks are performed.
-A custom GIMPLE pass is then registered to execute immediately after the compiler's native \texttt{cfg} (Control Flow Graph) pass.
+A~custom GIMPLE pass is then registered to execute immediately after the compiler's native \texttt{cfg} (Control Flow Graph) pass.
 This is the same insertion point used by the legacy Code Listener.
 
 However, the execution flow diverges significantly from the legacy architecture.
@@ -67,7 +67,7 @@ Once this translation is complete, the Code Model contains no compiler-specific 
 This strict boundary ensures that no GCC-specific headers or data structures leak into the rest of the system.
 
 Furthermore, even diagnostic reporting is abstracted.
-A dedicated \\\texttt{GCCDiagnosticReporter} class wraps GCC's native error-reporting functions.
+A~dedicated \\\texttt{GCCDiagnosticReporter} class wraps GCC's native error-reporting functions.
 This ensures that any defects found by downstream analyzers are emitted with the correct file, line, and column information in the standard compiler error format, without the analyzers themselves needing to know they are running inside GCC.\@
 
 \subsection*{Modernized Plugin Arguments}\label{sub:plugin-arguments}
@@ -109,7 +109,7 @@ Because both frontends implement the same contract, the live compiler plugin and
 At the heart of the modernized infrastructure is the \texttt{CodeModel}.
 Once the Compiler Abstraction Layer intercepts and translates the compiler's intermediate representation, the \texttt{CodeModel} serves as the central, immutable, and parser-independent representation of the program.
 
-\subsection*{Resolving IR Pollution and the Large Class Anti-Pattern}\label{sub:resolve-ir-pollution}
+\subsection*{Resolving Intermediate Representation Pollution}\label{sub:resolve-ir-pollution}
 
 The most critical architectural shift in the \texttt{CodeModel} is its strict adherence to the Single Responsibility Principle.
 As identified in the legacy architecture Section~\ref{sec:cl-architecture} on page~\pageref{sec:cl-architecture}, the original data structures, namely the \texttt{Fnc}, \texttt{Insn}, and \texttt{Storage}, suffered from severe Intermediate Representation (IR) pollution, acting as \uv{Large Class}~\cite{RefactoringGuruLargeClass} that directly embedded the results of mandatory pre-analyses such as points-to and call graphs, and also variable liveness sets.
@@ -198,8 +198,8 @@ Every annotation service must inherit from a templated base class, \texttt{Annot
 This CRTP base automatically injects two critical components into every service:
 
 \begin{enumerate}
-  \item A strictly enforced signature for the \texttt{build(model)} static factory method.
-  \item A static \texttt{AnalysisKey} member.
+  \item A~strictly enforced signature for the \texttt{build(model)} static factory method.
+  \item A~static \texttt{AnalysisKey} member.
     The memory address of this static member \\(\texttt{\&Derived::Key}) serves as the unique identifier for the type-erased cache.
     This elegant, low-overhead pattern guarantees globally unique keys per annotation type and heavily mirrors the \texttt{AnalysisInfoMixin} design found in modern LLVM\footnote{\url{https://llvm.org/doxygen/structllvm_1_1AnalysisInfoMixin.html\#details}}.\@
 \end{enumerate}
@@ -296,7 +296,7 @@ The infrastructure implements two exporters primarily designed for human inspect
 
 \subsection*{Persistent Storage and the JSON Round-Trip}\label{sub:json-round-trip}
 
-A major limitation of the legacy architecture was its strict confinement to the live compiler memory space.
+A~major limitation of the legacy architecture was its strict confinement to the live compiler memory space.
 To enable offline processing and cross-translation-unit (whole-program) analysis, the new infrastructure introduces the \texttt{JSONExporter} and \texttt{JSONImporter}.
 
 Utilizing the \texttt{nlohmann/json} library\footnote{\url{https://github.com/nlohmann/json}}, the \texttt{JSONExporter} serializes the entire CodeModel, including all entity pools and ID-based cross-references, into a persistent JSON file.
@@ -311,8 +311,8 @@ It accepts an arbitrary number of deserialized \texttt{CodeModel} objects and sa
 By leveraging the JSON round-trip and the \texttt{IFrontend} Strategy pattern, the infrastructure provides two standalone, offline command-line tools:
 
 \begin{enumerate}
-  \item \textbf{cl\_merge:} A utility that parses multiple \texttt{.json} files exported during a build process, invokes the \texttt{ModelMerger}, and outputs a single, consolidated JSON representation of the entire software project.
-  \item \textbf{cl\_analyze:} A standalone analysis driver.
+  \item \textbf{cl\_merge:} A~utility that parses multiple \texttt{.json} files exported during a build process, invokes the \texttt{ModelMerger}, and outputs a single, consolidated JSON representation of the entire software project.
+  \item \textbf{cl\_analyze:} A~standalone analysis driver.
     Instead of running as a live GCC plugin, it utilizes the \texttt{JSONFrontend} to load a pre-merged \texttt{CodeModel} from disk.
     It then invokes the registered analysis backend identically to the \texttt{GCCFrontend}.
     From the perspective of the static analyzers, there is absolutely no difference between running live inside GCC or running offline via \texttt{cl\_analyze}.

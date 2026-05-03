@@ -98,7 +98,7 @@ Finally, the back end uses RTL (Register Transfer Language) to perform architect
 When intercepting the compilation pipeline, the Code Listener adapter parses the GIMPLE representation~\cite{CodeListener2012}.
 GIMPLE is a tree-based representation derived from GENERIC, specifically designed to facilitate target- and language-independent optimizations~\cite{GCCInternals}.
 
-A defining characteristic of GIMPLE is its highly restrictive grammar.
+A~defining characteristic of GIMPLE is its highly restrictive grammar.
 Expressions are broken down into a three-address representation consisting of tuples containing no more than three operands, with the exception of function calls~\cite{GCCInternals}.
 To accommodate the breakdown of complex expressions, the compiler introduces artificial temporary variables to hold intermediate values~\cite{GCCInternals}.
 Furthermore, expressions with side effects are strictly limited to the right-hand side of assignments~\cite{GCCInternals}.
@@ -115,8 +115,8 @@ The Code Listener adapter systematically translates these GIMPLE trees into its 
 To decouple static analysis tools from the GCC compiler, the Code Listener adapter systematically translates GIMPLE into its own simplified format, the Code Listener Intermediate Representation (CL IR).
 In this representation, the execution structure of each parsed function is modeled using a Control Flow Graph (CFG)~\cite{CodeListener2012}.
 
-A Control Flow Graph is a directed mathematical graph where the vertices represent basic blocks, and the edges represent the possible transfers of control flow during program execution~\cite{CodeListener2012}.
-A basic block is defined as a straight-line sequence of code with exactly one entry point and one exit point.
+A~Control Flow Graph is a directed mathematical graph where the vertices represent basic blocks, and the edges represent the possible transfers of control flow during program execution~\cite{CodeListener2012}.
+A~basic block is defined as a straight-line sequence of code with exactly one entry point and one exit point.
 Once execution enters a basic block, all instructions within it are executed sequentially, without branching or halting, until the end of the block is reached.
 
 To construct these blocks, the Code Listener API restricts its intermediate instruction set to two distinct groups:
@@ -198,7 +198,7 @@ Because these analysis results have no external storage mechanism, they must be 
 
 \subsection*{One-Way Handoff}\label{sub:handoff}
 
-Which brings us to the final architectural limitation: the legacy pipeline culminates in a strict, one-way handoff.
+The final architectural limitation is the strict, one-way handoff at the culmination of the legacy pipeline.
 The analyzer is provided with a read-only reference to the fully populated code model.
 Once execution enters the analyzer, it has no structured query interface to communicate results back to the framework, nor can it dynamically request auxiliary services.
 For example, if an analyzer discovers a suspicious function during execution and wishes to generate a visual DOT dump of its control flow graph, it cannot do so because diagnostic outputs must be strictly pre-configured via compiler flags at invocation time.

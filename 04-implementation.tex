@@ -37,7 +37,7 @@ Additionally, the standard \texttt{patch} utility is required during the build c
 
 \section{Build System}\label{sec:build-system}
 
-A two-layered build system is employed in the implementation.
+A~two-layered build system is employed in the implementation.
 CMake manages the complex target graph, dependencies, and test registrations, while a top-level Makefile offers concise commands for standard development workflows, including \texttt{make build}, \texttt{make test}, \texttt{make json}, \texttt{make callgraph}, and others.
 To avoid compiler-version drift between these two layers, the CMake configuration also generates a small make fragment consumed by the Makefile, keeping its \texttt{CC} variable synchronized with the selected \texttt{TARGET\_GCC}.
 
@@ -108,7 +108,7 @@ These messages are emitted only when the verbosity level is explicitly raised to
 
 The internal Code Model is driven by centralized entity pools.
 In the implementation, these pools for types, variables, functions, blocks, and instructions are instantiated as \texttt{std::deque} containers.
-A \texttt{std::deque} allocates memory in fixed chunks, meaning that as the GCC adapter incrementally populates the model and holds temporary references, the memory addresses of previously inserted entities remain perfectly stable~\cite{boostedCppDeque}.
+A~\texttt{std::deque} allocates memory in fixed chunks, meaning that as the GCC adapter incrementally populates the model and holds temporary references, the memory addresses of previously inserted entities remain perfectly stable~\cite{boostedCppDeque}.
 This avoids the pointer-invalidation issues common to \texttt{std::vector} reallocations, which were encountered in early prototypes.
 
 Because deep inheritance trees were avoided, instruction and type payloads are implemented using C++23 \texttt{std::variant}.
@@ -190,7 +190,7 @@ Beyond the regression suites, the repository also includes tooling intended to d
 To demonstrate how the system is used in practice, two reference native analyzers were implemented: \texttt{callgraph\_dot} and \texttt{recursion\_check}.
 The \texttt{callgraph\_dot} analyzer requests the shared \texttt{CallGraph} annotation and emits its nodes and edges as a Graphviz DOT file.
 The \texttt{recursion\_check} analyzer requests the same annotation, iterates over its strongly connected components, and reports direct and mutual recursion both to diagnostics and to a text report.
-A developer can run \texttt{make callgraph FILE=example.c} to generate a \texttt{callgraph.dot} visualization of the program's interprocedural structure.
+A~developer can run \texttt{make callgraph FILE=example.c} to generate a \texttt{callgraph.dot} visualization of the program's interprocedural structure.
 Following that, \texttt{make recursion FILE=example.c} checks the same program for direct and mutual recursion, and writes \texttt{recursion\_report.txt} by default.
 In both cases, the output path can be redirected via the forwarded-analyzer argument string exposed by the top-level Makefile.
 Together, these analyzers show that both simple visual tools and more analysis-oriented native analyzers can be written over the new architecture with minimal boilerplate.
