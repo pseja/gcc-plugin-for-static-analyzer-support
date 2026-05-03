@@ -13,7 +13,7 @@ Section~\ref{sec:build-system} on page~\pageref{sec:build-system} explains the b
 Section~\ref{sec:gcc-plugin-pipeline} on page~\pageref{sec:gcc-plugin-pipeline} then follows the live GCC plugin path, Section~\ref{sec:core-representation} on page~\pageref{sec:core-representation} presents the compiler-independent representation, and Section~\ref{sec:analyzer-interfaces} on page~\pageref{sec:analyzer-interfaces} explains how analyzers attach to it.
 Section~\ref{sec:exporter-infrastructure} on page~\pageref{sec:exporter-infrastructure} covers the common exporter layer, and Section~\ref{sec:serialization} on page~\pageref{sec:serialization} describes the offline whole-program workflow built on top of it.
 The chapter concludes with the testing infrastructure in Section~\ref{sec:testing} on page~\pageref{sec:testing}, tooling and practical usage in Section~\ref{sec:tooling-workflow} on page~\pageref{sec:tooling-workflow}, current extension points and limitations in Section~\ref{sec:implementation-limitations} on page~\pageref{sec:implementation-limitations}, and the size of the authored implementation in Section~\ref{sec:implementation-size} on page~\pageref{sec:implementation-size}.
-In accordance with software engineering best practices, exhaustive source code listings are omitted from the main text and are instead provided in the GitHub repository~\footnote{\url{https://github.com/pseja/gcc-plugin-for-static-analyzer-support}}.
+In accordance with software engineering best practices, exhaustive source code listings are omitted from the main text and are instead provided in the GitHub repository\footnote{\url{https://github.com/pseja/gcc-plugin-for-static-analyzer-support}}.
 
 \section{Development Environment and Platform Constraints}\label{sec:dev-env}
 
@@ -210,8 +210,8 @@ These include expanding the set of shared annotations, implementing concrete beh
 
 \section{Implementation Size}\label{sec:implementation-size}
 
-To quantify the scale of the implementation and distinguish original thesis work from legacy code, the authored C and C++ implementation files outside the imported Predator subtree comprise approximately 11,354 lines of code (LOC)~\footnote{Measured in May 2026}.
-The repository includes an additional 2,061 lines of automated test code, bringing the total authored contribution to 13,415 lines.
+To quantify the scale of the implementation and distinguish original thesis work from legacy code, the authored C and C++ implementation files outside the imported Predator subtree comprise 14,960 lines of code (LOC)\footnote{Measured in May 2026}.
+The repository includes an additional 2,061 lines of automated test code, bringing the total authored contribution to 17,021 lines.
 
 \begin{table}[H]
   \centering
@@ -220,24 +220,24 @@ The repository includes an additional 2,061 lines of automated test code, bringi
     \toprule
     Subsystem                                    & LOC    \\
     \midrule
-    Code model (\texttt{src/model/})             & 1,753  \\
-    Annotation services (\texttt{src/analysis/}) & 599    \\
-    Exporters (\texttt{src/exporters/})          & 3,737  \\
-    Runtime services (\texttt{src/runtime/})     & 369    \\
-    GCC frontend (\texttt{src/frontends/gcc/})   & 2,700  \\
-    JSON frontend (\texttt{src/frontends/json/}) & 59     \\
-    Analyzer bridges (\texttt{src/bridges/})     & 1,332  \\
+    Code model (\texttt{src/model/})             & 3,521  \\
+    Annotation services (\texttt{src/analysis/}) & 898    \\
+    Exporters (\texttt{src/exporters/})          & 4,217  \\
+    Runtime services (\texttt{src/runtime/})     & 606    \\
+    GCC frontend (\texttt{src/frontends/gcc/})   & 3,142  \\
+    JSON frontend (\texttt{src/frontends/json/}) & 109    \\
+    Analyzer bridges (\texttt{src/bridges/})     & 1,526  \\
     Command-line tools (\texttt{src/tools/})     & 368    \\
-    Example analyzers (\texttt{analyzers/})      & 279    \\
-    Public headers (\texttt{include/})           & 158    \\
+    Example analyzers (\texttt{analyzers/})      & 316    \\
+    Public headers (\texttt{include/})           & 257    \\
     \midrule
-    Total implementation code                    & 11,354 \\
+    Total implementation code                    & 14,960 \\
     \bottomrule
   \end{tabular}
   \caption{Lines of code (LOC) for each major subsystem of the implementation.}\label{tab:loc}
 \end{table}
 
-In contrast, the imported Predator submodule comprises approximately 673,000 lines of legacy C and C++ code, with Code Listener itself totaling about 25,000 lines, including headers, support files, and tests.
+In contrast, the imported Predator submodule comprises approximately 658,000 lines of legacy C and C++ code, while the bundled legacy Code Listener subtree within that submodule accounts for about 17,600 lines, including its local tests.
 This legacy code is treated solely as an external dependency and evaluation baseline, and is excluded from the thesis implementation metrics.
 As illustrated in Table~\ref{tab:loc} on page~\pageref{tab:loc}, the code-size distribution reflects the architectural priorities of the project, with the largest components allocated to the Exporter pipelines, the GCC frontend, and the Code Model.
 
