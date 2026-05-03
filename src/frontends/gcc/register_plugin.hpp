@@ -27,6 +27,12 @@
 namespace CodeListener::CompilerAbstractionLayer
 {
 
+/**
+ * Print plugin and compiler version information in the same format as the legacy plugin.
+ *
+ * @param plugin_info GCC plugin metadata supplied to `plugin_init`.
+ * @param version GCC version structure describing the host compiler.
+ */
 void print_info(struct plugin_name_args *plugin_info, struct plugin_gcc_version *version);
 
 } // namespace CodeListener::CompilerAbstractionLayer

@@ -29,13 +29,22 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one conditional branch instruction. */
 struct CondInstruction
 {
+    /** Left-hand operand of the branch condition. */
     Operand lhs;
+
+    /** Right-hand operand of the branch condition. */
     Operand rhs;
+
+    /** Comparison opcode deciding which successor is taken. */
     OpCode opcode;
 
+    /** Successor block reached when the condition evaluates to true. */
     BlockId true_target;
+
+    /** Successor block reached when the condition evaluates to false. */
     BlockId false_target;
 };
 

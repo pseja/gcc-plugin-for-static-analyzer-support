@@ -29,8 +29,10 @@
 namespace CodeListener::Core
 {
 
+/** Payload describing one union type. */
 struct UnionType
 {
+    /** Field variables declared by the union. */
     std::vector<VariableId> fields;
 };
 

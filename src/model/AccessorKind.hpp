@@ -27,16 +27,24 @@
 namespace CodeListener::Core
 {
 
+/** Enumerates the accessor steps used to reach nested subobjects of an operand. */
 enum class AccessorKind
 {
-    DEREF,      // *ptr
-    ARRAY,      // ptr[index] or arr[index]
-    FIELD,      // obj.field or ptr->field
-    ADDRESS_OF, // &expr
-    OFFSET,     // (char*)ptr + offset (pointer arithmetic)
-    BIT_SLICE,  // expr[start:end] (bit field extraction)
+    DEREF,      /**< Pointer dereference, for example `*ptr`. */
+    ARRAY,      /**< Array or pointer indexing, for example `arr[index]`. */
+    FIELD,      /**< Field selection, for example `obj.field` or `ptr->field`. */
+    ADDRESS_OF, /**< Address-of, for example `&expr`. */
+    OFFSET,     /**< Pointer arithmetic offset, for example `(char*)ptr + offset`. */
+    BIT_SLICE,  /**< Bit slice extraction, for example `expr[start:end]`. */
 };
 
+/**
+ * Convert an accessor kind to its stable textual name.
+ *
+ * @param accessor_kind Accessor kind to stringify.
+ *
+ * @return Short symbolic name used in debugging and serialization.
+ */
 constexpr std::string_view toString(AccessorKind accessor_kind) noexcept
 {
     switch (accessor_kind)

@@ -32,21 +32,38 @@ namespace CodeListener::Exporters
 {
 
 /**
- * Serializes a CodeModel to the project's JSON interchange format.
+ * Serializes a CodeModel to the JSON format.
  */
 class JSONExporter : public Exporter
 {
   public:
+    /**
+     * Constructs an exporter that writes to an already opened stream.
+     *
+     * @param os Output stream receiving the serialized JSON document.
+     */
     explicit JSONExporter(std::ostream &os);
+
+    /**
+     * Constructs an exporter that writes to a file.
+     *
+     * @param filepath Output file path opened by the exporter.
+     */
     explicit JSONExporter(const std::string &filepath);
 
   protected:
-    // JSON is a batch format: onEndModel assembles and dumps the whole document.
-    // Fine-grained hooks (onVisitType etc.) are not needed here.
+    /**
+     * Flush the complete JSON document once the visitor finished traversing the model.
+     *
+     * @param model Fully traversed model ready for serialization.
+     */
     void onEndModel(const Core::CodeModel &model) override;
 
   private:
+    /** Owned file stream used when the exporter was constructed from a path. */
     std::ofstream file_os;
+
+    /** Effective output stream used by the exporter regardless of construction mode. */
     std::ostream &os;
 };
 

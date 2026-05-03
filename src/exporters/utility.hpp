@@ -25,12 +25,14 @@
 namespace CodeListener::Exporters
 {
 
+/** Helper visitor combinator used with `std::visit`. */
 template <class... Ts>
 struct overloaded : Ts...
 {
     using Ts::operator()...;
 };
-// explicit deduction guide (not strictly needed in C++20/23, but good practice)
+
+/** Explicit deduction guide for `overloaded`. */
 template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 

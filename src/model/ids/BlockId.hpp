@@ -27,10 +27,12 @@
 namespace CodeListener::Core
 {
 
+/** Tag type distinguishing basic-block identifiers from other id domains. */
 struct BlockTag
 {
 };
 
+/** Strongly typed identifier referencing one stored basic block. */
 using BlockId = Id<BlockTag>;
 
 } // namespace CodeListener::Core

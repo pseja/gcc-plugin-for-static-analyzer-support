@@ -29,8 +29,10 @@
 namespace CodeListener::Core
 {
 
+/** Payload describing one structure type. */
 struct StructType
 {
+    /** Field variables declared by the structure in layout order. */
     std::vector<VariableId> fields;
 };
 

@@ -28,10 +28,15 @@
 namespace CodeListener::AnnotationServices
 {
 
-// CRTP base class for annotations
+/**
+ * CRTP base class used by concrete annotations to expose a unique cache key.
+ *
+ * @tparam Derived Concrete annotation type.
+ */
 template <typename Derived>
 struct AnnotationBase : public Annotation
 {
+    /** Unique key instance used to identify the derived annotation type in the cache. */
     static AnalysisKey Key;
 };
 

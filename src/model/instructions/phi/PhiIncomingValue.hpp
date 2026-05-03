@@ -28,9 +28,13 @@
 namespace CodeListener::Core
 {
 
+/** One predecessor contribution attached to an SSA phi instruction. */
 struct PhiIncomingValue
 {
+    /** Predecessor block from which the value flows. */
     BlockId block_id;
+
+    /** Operand contributed by the predecessor block. */
     Operand value;
 };
 

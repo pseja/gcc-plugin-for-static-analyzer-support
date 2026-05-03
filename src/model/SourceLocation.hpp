@@ -23,26 +23,62 @@
 #pragma once
 
 #include <string>
-#include <string_view>
 #include <sstream>
 
 namespace CodeListener::Core
 {
 
+/** Captures a best-effort source position for a model entity or diagnostic. */
 struct SourceLocation
 {
+    /** Source file path or placeholder when the file is unknown. */
     std::string file{"<unknown>"};
+
+    /** Function name associated with the location when known. */
     std::string function{"<unknown>"};
+
+    /** One-based source line number, or `0` when unavailable. */
     int line{0};
+
+    /** One-based source column number, or `0` when unavailable. */
     int column{0};
+
+    /** Optional backend-specific handle pointing to the native source location object. */
     void *native_handle{nullptr};
 
+    /** Constructs an unknown source location placeholder. */
     SourceLocation() = default;
+
+    /**
+     * Constructs a location with explicit file, function, and coordinates.
+     *
+     * @param file Source file path.
+     * @param func Function name associated with the location.
+     * @param line One-based line number.
+     * @param column One-based column number.
+     * @param native_handle Optional backend-specific location handle.
+     */
     SourceLocation(std::string file, std::string func, int line, int column, void *native_handle = nullptr);
+
+    /**
+     * Constructs a location without explicit function information.
+     *
+     * @param file Source file path.
+     * @param line One-based line number.
+     * @param column One-based column number.
+     * @param native_handle Optional backend-specific location handle.
+     */
     SourceLocation(std::string file, int line, int column, void *native_handle = nullptr);
 };
 
-inline std::string_view toString(const SourceLocation &loc)
+/**
+ * Format a source location as `file:function:line:column`.
+ *
+ * @param loc Location to render.
+ *
+ * @return Owning string containing the formatted representation.
+ */
+inline std::string toString(const SourceLocation &loc)
 {
     std::ostringstream oss;
     oss << loc.file << ':' << loc.function << ':' << loc.line << ':' << loc.column;

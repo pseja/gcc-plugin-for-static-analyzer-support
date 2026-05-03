@@ -31,15 +31,19 @@
 namespace CodeListener::AnnotationServices
 {
 
-// function in the call graph
+/** Represents one function node inside the derived call graph. */
 struct CallGraphNode
 {
+    /** Identifier of the represented function. */
     Core::FunctionId function_id;
 
+    /** Outgoing calls performed by this function. */
     std::vector<CallGraphEdge> outgoing_calls;
+
+    /** Incoming calls targeting this function. */
     std::vector<CallGraphEdge> incoming_calls;
 
-    // instructions where the address of this function was taken
+    /** Instructions where the address of this function was taken. */
     std::vector<Core::InstructionId> address_taken_at;
 };
 

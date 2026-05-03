@@ -27,59 +27,48 @@
 namespace CodeListener::Core
 {
 
+/** Enumerates operation codes used by expression-like instructions. */
 enum class OpCode
 {
-    // not applicable (calls, returns)
-    NONE,
-
-    // unary
-    NEGATE,  // -x
-    BIT_NOT, // ~x
-    LOG_NOT, // !x
-    ABS,     // abs(x)
-
-    // binary
-    ADD, // x + y
-    SUB, // x - y
-    MUL, // x * y
-    DIV, // x / y
-    MOD, // x % y
-
-    // bitwise
-    BIT_AND, // x & y
-    BIT_OR,  // x | y
-    BIT_XOR, // x ^ y
-    SHL,     // x << y
-    SHR,     // x >> y
-
-    // logical
-    LOG_AND, // x && y
-    LOG_OR,  // x || y
-
-    // comparisons
-    EQUAL,         // x == y
-    NOT_EQUAL,     // x != y
-    GREATER_THAN,  // x > y
-    LESS_THAN,     // x < y
-    GREATER_EQUAL, // x >= y
-    LESS_EQUAL,    // x <= y
-
-    // memory
-    POINTER_ADD, // ptr + offset
-    POINTER_SUB, // ptr - ptr (diff)
-
-    // numeric
-    MIN, // MIN(x, y)
-    MAX, // MAX(x, y)
-
-    // bitwise rotation
-    ROTATE_LEFT,  // ROL(x, y)
-    ROTATE_RIGHT, // ROR(x, y)
-
-    // type conversion
-    CAST, // (cast)x
+    NONE,          /**< Not applicable - for operations such as calls or returns. */
+    NEGATE,        /**< Unary negation: `-x`. */
+    BIT_NOT,       /**< Bitwise negation: `~x`. */
+    LOG_NOT,       /**< Logical negation: `!x`. */
+    ABS,           /**< Absolute value: `abs(x)`. */
+    ADD,           /**< Addition: `x + y`. */
+    SUB,           /**< Subtraction: `x - y`. */
+    MUL,           /**< Multiplication: `x * y`. */
+    DIV,           /**< Division: `x / y`. */
+    MOD,           /**< Modulo: `x % y`. */
+    BIT_AND,       /**< Bitwise AND: `x & y`. */
+    BIT_OR,        /**< Bitwise OR: `x | y`. */
+    BIT_XOR,       /**< Bitwise XOR: `x ^ y`. */
+    SHL,           /**< Left shift: `x << y`. */
+    SHR,           /**< Right shift: `x >> y`. */
+    LOG_AND,       /**< Logical AND: `x && y`. */
+    LOG_OR,        /**< Logical OR: `x || y`. */
+    EQUAL,         /**< Equality comparison: `x == y`. */
+    NOT_EQUAL,     /**< Inequality comparison: `x != y`. */
+    GREATER_THAN,  /**< Greater-than comparison: `x > y`. */
+    LESS_THAN,     /**< Less-than comparison: `x < y`. */
+    GREATER_EQUAL, /**< Greater-or-equal comparison: `x >= y`. */
+    LESS_EQUAL,    /**< Less-or-equal comparison: `x <= y`. */
+    POINTER_ADD,   /**< Pointer addition: `ptr + offset`. */
+    POINTER_SUB,   /**< Pointer subtraction or pointer difference: `ptr - offset`. */
+    MIN,           /**< Minimum selection: `MIN(x, y)`. */
+    MAX,           /**< Maximum selection: `MAX(x, y)`. */
+    ROTATE_LEFT,   /**< Bitwise rotate left: `ROL(x, y)`. */
+    ROTATE_RIGHT,  /**< Bitwise rotate right: `ROR(x, y)`. */
+    CAST,          /**< Type conversion: `(cast)x`. */
 };
 
+/**
+ * Convert an opcode to its stable textual name.
+ *
+ * @param op Opcode to stringify.
+ *
+ * @return Short symbolic name used in debugging and serialization.
+ */
 constexpr std::string_view toString(OpCode op) noexcept
 {
     switch (op)

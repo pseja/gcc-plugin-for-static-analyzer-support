@@ -25,8 +25,10 @@
 namespace CodeListener::AnnotationServices
 {
 
+/** Polymorphic base class for annotations cached by the analysis manager. */
 struct Annotation
 {
+    /** Virtual destructor for safe cleanup through base pointers. */
     virtual ~Annotation() = default;
 };
 

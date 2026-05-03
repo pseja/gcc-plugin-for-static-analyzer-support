@@ -20,7 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <cstdlib>
 #include <iostream> // std::cerr
 
 #include <gcc-plugin.h>     // plugin_init, plugin_is_GPL_compatible

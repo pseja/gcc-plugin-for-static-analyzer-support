@@ -31,19 +31,25 @@
 namespace CodeListener::Core
 {
 
+/** Represents one instruction stored in the CodeModel. */
 struct Instruction
 {
+    /** Stable identifier of the instruction. */
     InstructionId id;
+
+    /** Identifier of the block that owns the instruction. */
     BlockId parent_block_id;
 
-    // FIXME: not needed anymore thanks to the InstructionData variant, but keeping it for easier querying and debugging
-    // for now
+    /** Cached coarse-grained instruction kind used for quick checks and debugging. */
     InstructionKind kind;
+
+    /** Detailed payload describing the concrete instruction. */
     InstructionData data;
 
+    /** Best-effort source location associated with the instruction. */
     SourceLocation source_location;
 
-    // ends a basic block (e.g. GOTO, RET, SWITCH, COND)
+    /** Whether the instruction terminates its containing basic block. */
     bool is_terminator{false};
 };
 

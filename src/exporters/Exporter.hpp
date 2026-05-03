@@ -42,11 +42,18 @@ namespace CodeListener::Exporters
 class Exporter : public Core::CodeModelVisitor
 {
   public:
+    /** Virtual destructor for polymorphic exporter use. */
     virtual ~Exporter() = default;
 
+    /**
+     * Traverse and serialize the supplied model.
+     *
+     * @param model Model to export.
+     */
     void exportModel(const Core::CodeModel &model);
 
   protected:
+    /** Lazy annotation cache available to all concrete exporters during traversal. */
     AnnotationServices::AnalysisManager analysis_manager;
 };
 

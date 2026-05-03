@@ -45,6 +45,7 @@ namespace CodeListener::Core
 class IFrontend
 {
   public:
+    /** Virtual destructor for polymorphic frontend ownership. */
     virtual ~IFrontend() = default;
 
     /**

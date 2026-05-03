@@ -25,6 +25,7 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing an unsupported or unresolved type. */
 struct UnknownType
 {
 };

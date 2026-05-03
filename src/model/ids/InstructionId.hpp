@@ -27,10 +27,12 @@
 namespace CodeListener::Core
 {
 
+/** Tag type distinguishing instruction identifiers from other id domains. */
 struct InstructionTag
 {
 };
 
+/** Strongly typed identifier referencing one stored instruction. */
 using InstructionId = Id<InstructionTag>;
 
 } // namespace CodeListener::Core

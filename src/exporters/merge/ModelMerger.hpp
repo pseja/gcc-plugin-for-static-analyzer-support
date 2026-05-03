@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <vector>
 
 #include "CodeModel.hpp"
@@ -36,6 +35,13 @@ namespace CodeListener::Exporters
 class ModelMerger
 {
   public:
+    /**
+     * Merge multiple translation-unit models into one combined model.
+     *
+     * @param models Models to merge. Ownership is transferred into the merger.
+     *
+     * @return Whole-program model containing the merged entities.
+     */
     static Core::CodeModel merge(std::vector<Core::CodeModel> models);
 };
 

@@ -27,10 +27,12 @@
 namespace CodeListener::Core
 {
 
+/** Tag type distinguishing variable identifiers from other id domains. */
 struct VariableTag
 {
 };
 
+/** Strongly typed identifier referencing one stored variable. */
 using VariableId = Id<VariableTag>;
 
 } // namespace CodeListener::Core

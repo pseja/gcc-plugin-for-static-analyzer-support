@@ -33,13 +33,22 @@
 namespace CodeListener::Exporters
 {
 
-// maps per-TU IDs to the corresponding merged-model IDs
+/** Maps per-translation-unit identifiers to their corresponding identifiers in the merged model. */
 struct IdMaps
 {
+    /** Mapping from source type ids to merged-model type ids. */
     std::unordered_map<Core::TypeId, Core::TypeId> type_map;
+
+    /** Mapping from source variable ids to merged-model variable ids. */
     std::unordered_map<Core::VariableId, Core::VariableId> var_map;
+
+    /** Mapping from source function ids to merged-model function ids. */
     std::unordered_map<Core::FunctionId, Core::FunctionId> func_map;
+
+    /** Mapping from source block ids to merged-model block ids. */
     std::unordered_map<Core::BlockId, Core::BlockId> block_map;
+
+    /** Mapping from source instruction ids to merged-model instruction ids. */
     std::unordered_map<Core::InstructionId, Core::InstructionId> instr_map;
 };
 

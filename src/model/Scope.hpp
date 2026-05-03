@@ -27,13 +27,21 @@
 namespace CodeListener::Core
 {
 
+/** Describes the scope in which a variable or operand is valid. */
 enum class Scope
 {
-    GLOBAL,
-    STATIC,
-    FUNCTION,
+    GLOBAL,   /**< Global scope visible across the whole program. */
+    STATIC,   /**< Translation-unit-local static scope. */
+    FUNCTION, /**< Scope local to the current function body. */
 };
 
+/**
+ * Convert a scope value to its stable textual name.
+ *
+ * @param scope Scope value to stringify.
+ *
+ * @return Short symbolic name used in diagnostics and exports.
+ */
 constexpr std::string_view toString(Scope scope) noexcept
 {
     switch (scope)

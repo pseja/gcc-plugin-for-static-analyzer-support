@@ -37,12 +37,22 @@ namespace CodeListener::CompilerAbstractionLayer
 class NativeAnalyzerBridge : public Core::IAnalyzer
 {
   public:
+    /**
+     * Constructs a bridge over one native analyzer API table.
+     *
+     * @param api Native analyzer ABI exported by the loaded shared library.
+     * @param args Opaque argument string forwarded to the analyzer.
+     */
     explicit NativeAnalyzerBridge(const cl_native_analyzer_api_t *api, std::string args = {});
 
+    /** @copydoc Core::IAnalyzer::analyze */
     bool analyze(const Core::CodeModel &model, AnalysisContext &ctx) override;
 
   private:
+    /** Borrowed native analyzer API table returned by the loaded shared library. */
     const cl_native_analyzer_api_t *api;
+
+    /** Opaque argument string forwarded to the analyzer on each run. */
     std::string args;
 };
 

@@ -27,22 +27,30 @@
 namespace CodeListener::Core
 {
 
+/** Enumerates the coarse type categories represented in the CodeModel. */
 enum class TypeKind
 {
-    ENUM,
-    BOOL,
-    INTEGER,
-    REAL,
-    POINTER,
-    ARRAY,
-    STRUCT,
-    UNION,
-    VOID,
-    FUNCTION,
-    COMPLEX,
-    UNKNOWN,
+    ENUM,     /**< Enumeration type. */
+    BOOL,     /**< Boolean type. */
+    INTEGER,  /**< Integer type. */
+    REAL,     /**< Floating-point type. */
+    POINTER,  /**< Pointer type. */
+    ARRAY,    /**< Array type. */
+    STRUCT,   /**< Structure type. */
+    UNION,    /**< Union type. */
+    VOID,     /**< Void type. */
+    FUNCTION, /**< Function signature type. */
+    COMPLEX,  /**< Complex numeric type. */
+    UNKNOWN,  /**< Unsupported or unresolved type. */
 };
 
+/**
+ * Convert a type kind to its stable textual name.
+ *
+ * @param kind Type kind to stringify.
+ *
+ * @return Short symbolic name used in diagnostics and exports.
+ */
 constexpr std::string_view toString(TypeKind kind) noexcept
 {
     switch (kind)

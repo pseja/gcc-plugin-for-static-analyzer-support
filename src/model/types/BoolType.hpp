@@ -25,6 +25,7 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing the built-in boolean type. */
 struct BoolType
 {
 };

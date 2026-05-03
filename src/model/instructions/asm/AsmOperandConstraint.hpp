@@ -29,10 +29,13 @@
 namespace CodeListener::Core
 {
 
+/** Describes one operand and its GCC inline-assembly constraint string. */
 struct AsmOperandConstraint
 {
-    // "=r" (write to any register), "r" (read from any register), "m" (memory operand)
+    /** GCC constraint string, for example `"=r"`, `"r"`, or `"m"`. */
     std::string constraint;
+
+    /** Operand bound to the constraint. */
     Operand operand;
 };
 

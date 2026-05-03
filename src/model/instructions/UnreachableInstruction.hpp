@@ -25,9 +25,9 @@
 namespace CodeListener::Core
 {
 
+/** Marker payload for instructions lowered from unreachable builtins or unreachable control-flow edges. */
 struct UnreachableInstruction
 {
-    // triggered by __builtin_unreachable
 };
 
 } // namespace CodeListener::Core

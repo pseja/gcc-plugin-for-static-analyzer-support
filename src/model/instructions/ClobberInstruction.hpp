@@ -27,8 +27,10 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing a variable-lifetime clobber marker. */
 struct ClobberInstruction
 {
+    /** Variable or storage location whose lifetime ends at this point. */
     Operand clobbered_variable;
 };
 

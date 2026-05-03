@@ -32,17 +32,25 @@
 namespace CodeListener::Core
 {
 
+/** Represents one variable-like entity stored in the CodeModel. */
 struct Variable
 {
+    /** Stable identifier of the variable. */
     VariableId id;
+
+    /** Source or synthetic name of the variable. */
     std::string name{"<anonymous>"};
+
+    /** Identifier of the variable's declared type. */
     TypeId type_id;
 
+    /** Source location where the variable originates. */
     SourceLocation source_location;
 
-    // true for variables created by the compiler for internal purposes
+    /** Whether the variable was synthesized by the compiler rather than written explicitly. */
     bool artificial{false};
 
+    /** Detailed payload describing the concrete variable category. */
     VariableData data;
 };
 

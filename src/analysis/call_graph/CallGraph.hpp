@@ -33,32 +33,49 @@
 namespace CodeListener::AnnotationServices
 {
 
+/** Stores the derived call graph together with summary properties used by analyzers and exporters. */
 struct CallGraph : public AnnotationBase<CallGraph>
 {
+    /** Per-function call graph nodes keyed by function identifier. */
     std::unordered_map<Core::FunctionId, CallGraphNode> nodes;
 
-    // functions with no incoming edges
+    /** Functions with no incoming call edges. */
     std::vector<Core::FunctionId> roots;
-    // functions with no outgoing edges
+
+    /** Functions with no outgoing call edges. */
     std::vector<Core::FunctionId> leaves;
 
-    // topological sort of the graph represented as a vector of Strongly Connected Components (SCCs)
-    // - a standard function is an SCC of size 1
-    // - mutually recursive functions are grouped in the same inner vector
+    /**
+     * Topological order of the graph represented as strongly connected components.
+     *
+     * A non-recursive function forms an SCC of size 1, while mutually recursive functions share one inner vector.
+     */
     std::vector<std::vector<Core::FunctionId>> topological_order;
 
-    // global flags
+    /** Whether the graph contains at least one indirect call edge. */
     bool has_indirect_calls{false};
+
+    /** Whether the graph observed at least one function-pointer callback use. */
     bool has_callbacks{false};
 
+    /**
+     * Build the complete call graph annotation for the supplied model.
+     *
+     * @param model Model whose call relationships should be analyzed.
+     *
+     * @return Fully populated call graph annotation.
+     */
     static CallGraph build(const Core::CodeModel &model);
 
   private:
+    /** Populate the raw node and edge structure of the graph. */
     static void buildGraph(CallGraph &graph, const Core::CodeModel &model);
+
+    /** Compute the sets of roots and leaves after the graph edges were built. */
     static void computeRootsAndLeaves(CallGraph &graph);
-    // computes the topological order of strongly connected components (SCCs) using Tarjan's algorithm
-    static void computeTopologicalOrder(
-        CallGraph &graph); // Kosaraju's algorithm is also an option (TODO: rate these in thesis)
+
+    /** Compute the SCC topological order using Tarjan's algorithm. */
+    static void computeTopologicalOrder(CallGraph &graph);
 };
 
 } // namespace CodeListener::AnnotationServices

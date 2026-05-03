@@ -30,9 +30,13 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one switch terminator instruction. */
 struct SwitchInstruction
 {
+    /** Controlling operand whose value selects a case arm. */
     Operand index;
+
+    /** Case arms and default arm reachable from the switch. */
     std::vector<SwitchCase> cases;
 };
 

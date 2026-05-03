@@ -27,8 +27,10 @@
 namespace CodeListener::Core
 {
 
+/** Payload preserving a textual description of an instruction without a dedicated IR form. */
 struct UnknownInstruction
 {
+    /** Human-readable description of the unmatched source instruction. */
     std::string description;
 };
 

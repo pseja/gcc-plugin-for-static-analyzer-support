@@ -28,9 +28,13 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one SSA phi instruction. */
 struct PhiInstruction
 {
+    /** Destination SSA value defined by the phi node. */
     Operand lhs;
+
+    /** Incoming values paired with their predecessor blocks. */
     std::vector<PhiIncomingValue> incoming_values;
 };
 

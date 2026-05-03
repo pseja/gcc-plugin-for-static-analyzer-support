@@ -30,14 +30,23 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing assignment-like instructions and expression evaluation. */
 struct AssignInstruction
 {
+    /** Destination operand receiving the computed result. */
     Operand lhs;
+
+    /** Operation applied to the right-hand operands. */
     OpCode opcode;
 
+    /** First right-hand operand of the operation. */
     std::optional<Operand> rhs1;
+
+    /** Second right-hand operand of the operation when needed. */
     std::optional<Operand> rhs2;
-    std::optional<Operand> rhs3; // for ternary operators
+
+    /** Third operand used by ternary-style operations. */
+    std::optional<Operand> rhs3;
 };
 
 } // namespace CodeListener::Core

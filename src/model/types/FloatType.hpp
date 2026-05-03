@@ -25,6 +25,7 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one floating-point type. */
 struct FloatType
 {
 };

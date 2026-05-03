@@ -27,10 +27,10 @@
 namespace CodeListener::Core
 {
 
-// C99 _Complex types
+/** Payload describing a C99 `_Complex` type. */
 struct ComplexType
 {
-    // the underlying real/imaginary component type
+    /** Identifier of the underlying real and imaginary component type. */
     TypeId component_type_id;
 };
 

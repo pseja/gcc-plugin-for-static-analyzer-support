@@ -41,6 +41,7 @@
 namespace CodeListener::Core
 {
 
+/** Variant containing the concrete payload stored by one `Instruction` entity. */
 using InstructionData =
     std::variant<std::monostate, AssignInstruction, CallInstruction, GotoInstruction, LabelInstruction, AsmInstruction,
                  ReturnInstruction, CondInstruction, SwitchInstruction, PhiInstruction, ClobberInstruction,

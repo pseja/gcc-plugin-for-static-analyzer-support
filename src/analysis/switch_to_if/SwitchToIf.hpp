@@ -40,38 +40,75 @@ namespace CodeListener::AnnotationServices
 struct SwitchToIf : public AnnotationBase<SwitchToIf>
 {
   private:
-    // One equality-check branch produced when a switch is unfolded into an if-else chain.
+    /** One equality-check branch produced when a switch is unfolded into an if-else chain. */
     struct FlatCheck
     {
-        std::string formatted_case_constant; // e.g. "42", "42U", "(18446744073709551614)"
+        /**
+         * Case constant rendered in the pretty-printer syntax.
+         * e.g. "42", "42U", "(18446744073709551614)"
+         */
+        std::string formatted_case_constant;
+
+        /** Name of the target block reached when the equality check matches. */
         std::string target_block_name;
     };
 
-    // Data for one unfolded SwitchInstruction.
+    /** Cached textual lowering for one unfolded `SwitchInstruction`. */
     struct UnfoldedSwitch
     {
-        std::string synth_comp_temp; // e.g. "%rGsw0"
+        /**
+         * Synthetic temporary storing the compared switch operand.
+         * e.g. "%rGsw0"
+         */
+        std::string synth_comp_temp;
+
+        /** Name of the default target block reached when no case matches. */
         std::string default_target_block_name;
+
+        /** Flat sequence of equality checks emitted before the default jump. */
         std::vector<FlatCheck> checks;
-        int synth_label_base; // first label index: L{base} .. L{base + checks.size() - 1}
+
+        /** First synthetic label index reserved for the unfolded branch chain. */
+        int synth_label_base;
     };
 
-    // Data for one unfolded CondInstruction (only when opcode != NONE).
+    /** Cached textual lowering for one unfolded `CondInstruction`. */
     struct UnfoldedCond
     {
-        std::string synth_comp_temp; // e.g. "%rGcond3"
+        /**
+         * Synthetic temporary storing the normalized comparison result.
+         * e.g. "%rGcond3"
+         */
+        std::string synth_comp_temp;
     };
 
-    // Expands one SwitchInstruction's cases into a flat list of single-value equality checks, and resolves the
-    // default-case block name.
+    /**
+     * Expand one switch instruction into a flat list of equality checks.
+     *
+     * @param sw Source switch instruction.
+     * @param model Model used to resolve target block names and type information.
+     * @param out_default_target Receives the resolved default target block name.
+     *
+     * @return Flattened list of one-value comparisons emitted by the pretty-printer.
+     */
     static std::vector<SwitchToIf::FlatCheck> flattenSwitch(const Core::SwitchInstruction &sw,
                                                             const Core::CodeModel &model,
                                                             std::string &out_default_target);
 
   public:
+    /** Lowered switch metadata keyed by the original switch instruction id. */
     std::unordered_map<Core::InstructionId, UnfoldedSwitch> switches;
+
+    /** Lowered conditional metadata keyed by the original conditional instruction id. */
     std::unordered_map<Core::InstructionId, UnfoldedCond> conds;
 
+    /**
+     * Build switch/conditional lowering metadata for the whole model.
+     *
+     * @param model Model whose control-flow instructions should be analyzed.
+     *
+     * @return Fully populated switch-to-if annotation.
+     */
     static SwitchToIf build(const Core::CodeModel &model);
 };
 

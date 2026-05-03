@@ -27,10 +27,12 @@
 namespace CodeListener::Core
 {
 
+/** Tag type distinguishing function identifiers from other id domains. */
 struct FunctionTag
 {
 };
 
+/** Strongly typed identifier referencing one stored function. */
 using FunctionId = Id<FunctionTag>;
 
 } // namespace CodeListener::Core

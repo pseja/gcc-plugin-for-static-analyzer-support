@@ -52,47 +52,89 @@ namespace CodeListener::CompilerAbstractionLayer
 class GCCAdapter
 {
   public:
+    /**
+     * Constructs an adapter over the model being built and the active diagnostic sink.
+     *
+     * @param model Target model populated by the adapter.
+     * @param reporter Diagnostic sink used for adapter warnings and failures.
+     */
     GCCAdapter(Core::CodeModel &model, Core::DiagnosticReporter &reporter);
 
+    /**
+     * Translate one GCC function body into the CodeModel.
+     *
+     * @param fun GCC function currently processed by the custom pass.
+     */
     void processFunction(function *fun);
 
   private:
+    /** Model receiving translated entities and instructions. */
     Core::CodeModel &model;
+
+    /** Diagnostic sink used while translating GCC IR. */
     Core::DiagnosticReporter &reporter;
 
+    /** Name of the function currently being translated. */
     std::string current_function_name;
 
+    /** Cache mapping GCC variable trees to already created model variables. */
     std::unordered_map<tree, Core::VariableId> variable_cache;
+
+    /** Cache mapping GCC type trees to already created model types. */
     std::unordered_map<tree, Core::TypeId> type_cache;
+
+    /** Cache mapping GCC basic blocks to already created model blocks. */
     std::unordered_map<basic_block, Core::BlockId> block_cache;
 
-    // synthetic type and variable cache for GCC internal functions
+    /** Identifier of the synthesized function type reused for GCC internal helpers. */
     Core::TypeId builtin_fn_type_id;
+
+    /** Cache of synthesized model variables representing GCC internal functions. */
     std::unordered_map<std::string, Core::VariableId> internal_fn_cache;
 
+    /** Map one GCC type tree to a stable model type id, creating it if needed. */
     Core::TypeId getOrCreateType(tree type_tree);
 
+    /** Parse a GCC initializer tree into the model initializer representation. */
     Core::Initializer parseInitializer(tree init_tree);
 
+    /** Map one GCC variable tree to a stable model variable id, creating it if needed. */
     Core::VariableId getOrCreateVariable(tree var_tree);
+
+    /** Parse a GCC operand tree into the model operand representation. */
     Core::Operand parseOperand(tree operand_tree);
 
+    /** Improve a GCC location value using statement-specific fallback logic. */
     location_t enhanceLocationT(location_t location, enum gimple_code gcode, gimple *stmt);
+
+    /** Convert a GCC location value into the model source location form. */
     Core::SourceLocation getSourceLocation(location_t location);
 
+    /** Map one GCC type tree to the coarse `TypeKind` classification. */
     Core::TypeKind mapTypeTreeToTypeKind(tree &type_tree);
 
+    /** Emit parameter variables for the current function. */
     void processFunctionParameters(function *fun, Core::Function *function);
 
+    /** Compute predecessor and successor relations for a translated basic block. */
     void linkPredecessorsAndSuccessors(basic_block bb, Core::Block *block);
 
+    /** Ensure one GCC basic block has a corresponding model block. */
     void registerBasicBlock(basic_block bb);
+
+    /** Register all GCC basic blocks of one function before instruction emission starts. */
     void registerBasicBlocks(function *fun);
 
+    /** Translate one GCC basic block into the model. */
     void processBasicBlock(basic_block bb, Core::FunctionId function_id);
+
+    /** Translate all basic blocks of one function into the model. */
     void processBasicBlocks(function *fun, Core::Function *function);
 
+    /** Translate one GCC statement into a model instruction. */
     void processInstruction(gimple *stmt, Core::Block *block);
+
+    /** Translate all statements of one GCC basic block. */
     void processInstructions(basic_block bb, Core::Block *block);
 };
 

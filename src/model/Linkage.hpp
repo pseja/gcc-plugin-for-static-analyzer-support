@@ -27,13 +27,21 @@
 namespace CodeListener::Core
 {
 
+/** Describes the linkage recorded for a named entity. */
 enum class Linkage
 {
-    NONE,     // no linkage (e.g. local variables)
-    INTERNAL, // visible only within the current translation unit
-    EXTERNAL, // visible across translation units
+    NONE,     /**< No linkage, for example for local variables. */
+    INTERNAL, /**< Visible only within the current translation unit. */
+    EXTERNAL, /**< Visible across translation units. */
 };
 
+/**
+ * Convert a linkage kind to its stable textual name.
+ *
+ * @param linkage Linkage kind to stringify.
+ *
+ * @return Short symbolic name used in diagnostics and exports.
+ */
 constexpr std::string_view toString(Linkage linkage) noexcept
 {
     switch (linkage)

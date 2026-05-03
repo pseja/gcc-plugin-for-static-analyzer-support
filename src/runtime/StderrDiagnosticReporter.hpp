@@ -39,7 +39,10 @@ namespace CodeListener::Core
 class StderrDiagnosticReporter : public DiagnosticReporter
 {
   public:
+    /** @copydoc DiagnosticReporter::report(DiagnosticLevel, const SourceLocation&, const std::string&) */
     void report(DiagnosticLevel level, const SourceLocation &loc, const std::string &message) override;
+
+    /** @copydoc DiagnosticReporter::report(DiagnosticLevel, const std::string&, const std::source_location&) */
     void report(DiagnosticLevel level, const std::string &message,
                 const std::source_location &src = std::source_location::current()) override;
 
@@ -49,8 +52,10 @@ class StderrDiagnosticReporter : public DiagnosticReporter
     bool hadError() const;
 
   private:
+    /** Tracks whether an error-or-worse diagnostic was already emitted. */
     bool had_error{false};
 
+    /** Convert a diagnostic level to a human-readable label. */
     static const char *dlvlToString(DiagnosticLevel level);
 };
 

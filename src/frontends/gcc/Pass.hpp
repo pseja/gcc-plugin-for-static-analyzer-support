@@ -32,17 +32,29 @@ namespace CodeListener::CompilerAbstractionLayer
 {
 
 // TODO: rename to something more specific
+/** GCC pass wrapper that forwards each visited function body to the adapter. */
 class Pass : public gimple_opt_pass
 {
   public:
+    /**
+     * Constructs the custom GCC pass.
+     *
+     * @param ctx GCC pass-manager context.
+     * @param adapter Adapter invoked for each processed function.
+     */
     Pass(gcc::context *ctx, GCCAdapter &adapter);
 
+    /** Execute the pass for one GCC function. */
     unsigned int execute(function *fun) override final;
 
+    /** Clone the pass instance for GCC's internal pass management. */
     opt_pass *clone() override final;
 
   private:
+    /** Adapter translating processed functions into the CodeModel. */
     GCCAdapter &adapter;
+
+    /** Static GCC metadata describing this pass to the pass manager. */
     static const struct pass_data pass_metadata;
 };
 

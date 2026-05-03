@@ -31,12 +31,16 @@
 namespace CodeListener::Core
 {
 
+/** Forward declaration of a nested initializer list. */
 struct InitializerList;
 
+/** Discriminated union covering scalar and aggregate initializers. */
 using Initializer = std::variant<Operand, std::shared_ptr<InitializerList>>;
 
+/** Represents an aggregate initializer containing nested element initializers. */
 struct InitializerList
 {
+    /** Ordered element initializers contained in the aggregate. */
     std::vector<Initializer> elements;
 };
 

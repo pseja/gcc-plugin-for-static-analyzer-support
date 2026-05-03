@@ -29,9 +29,11 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one function return instruction. */
 struct ReturnInstruction
 {
-    std::optional<Operand> return_value; // std::nullopt for void returns
+    /** Returned operand, or `std::nullopt` for `void` returns. */
+    std::optional<Operand> return_value;
 };
 
 } // namespace CodeListener::Core

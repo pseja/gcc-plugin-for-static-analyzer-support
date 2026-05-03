@@ -27,10 +27,12 @@
 namespace CodeListener::Core
 {
 
+/** Tag type distinguishing type identifiers from other id domains. */
 struct TypeTag
 {
 };
 
+/** Strongly typed identifier referencing one stored type. */
 using TypeId = Id<TypeTag>;
 
 } // namespace CodeListener::Core

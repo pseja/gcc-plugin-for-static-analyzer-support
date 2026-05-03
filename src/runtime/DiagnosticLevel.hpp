@@ -25,13 +25,14 @@
 namespace CodeListener::Core
 {
 
+/** Severity level attached to one diagnostic message. */
 enum class DiagnosticLevel
 {
-    Debug,
-    Info,
-    Warning,
-    Error,
-    Fatal
+    Debug,   /**< Verbose debugging information. */
+    Info,    /**< Informational message for normal operation. */
+    Warning, /**< Recoverable issue or suspicious condition. */
+    Error,   /**< Non-fatal error that should be surfaced to the user. */
+    Fatal    /**< Unrecoverable error that aborts the current operation. */
 };
 
 } // namespace CodeListener::Core

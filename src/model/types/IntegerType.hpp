@@ -25,8 +25,10 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one integer type. */
 struct IntegerType
 {
+    /** Whether the integer type uses an unsigned interpretation. */
     bool is_unsigned;
 };
 

@@ -30,10 +30,16 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one function call instruction. */
 struct CallInstruction
 {
-    std::optional<Operand> lhs; // std::nullopt for void functions
+    /** Optional destination for the call result, or `std::nullopt` for `void` calls. */
+    std::optional<Operand> lhs;
+
+    /** Operand denoting the direct or indirect callee. */
     Operand callee;
+
+    /** Call arguments in evaluation order. */
     std::vector<Operand> arguments;
 };
 

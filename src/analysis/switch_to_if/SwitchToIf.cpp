@@ -41,8 +41,6 @@
 namespace CodeListener::AnnotationServices
 {
 
-// Expands one SwitchInstruction's cases into a flat list of single-value equality checks, and resolves the default-case
-// block name.
 std::vector<SwitchToIf::FlatCheck> SwitchToIf::flattenSwitch(const Core::SwitchInstruction &sw,
                                                              const Core::CodeModel &model,
                                                              std::string &out_default_target)

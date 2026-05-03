@@ -32,17 +32,25 @@
 namespace CodeListener::Core
 {
 
+/** Represents one basic block stored in the CodeModel. */
 struct Block
 {
+    /** Stable identifier of the block. */
     BlockId id;
+
+    /** Identifier of the parent function containing the block. */
     FunctionId parent;
+
+    /** Printed block label used by exporters and diagnostics. */
     std::string name;
 
-    // ast children
+    /** Ordered identifiers of instructions contained in the block. */
     std::vector<InstructionId> instruction_ids;
 
-    // cfg edges
+    /** Incoming CFG edges represented by predecessor block identifiers. */
     std::vector<BlockId> predecessors;
+
+    /** Outgoing CFG edges represented by successor block identifiers. */
     std::vector<BlockId> successors;
 };
 

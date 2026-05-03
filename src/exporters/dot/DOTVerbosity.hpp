@@ -25,11 +25,12 @@
 namespace CodeListener::Exporters
 {
 
+/** Controls how much detail the DOT exporter emits for each function graph. */
 enum class DotVerbosity
 {
-    CLEAN,
-    COMPACT,
-    FULL,
+    CLEAN,   /**< Emit only the most important structure and terminators. */
+    COMPACT, /**< Emit compact block contents while hiding empty scaffolding. */
+    FULL,    /**< Emit the full block and instruction detail. */
 };
 
 } // namespace CodeListener::Exporters

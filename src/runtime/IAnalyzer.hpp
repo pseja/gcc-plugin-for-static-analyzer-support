@@ -38,6 +38,7 @@ namespace CodeListener::Core
 class IAnalyzer
 {
   public:
+    /** Virtual destructor for polymorphic analyzer ownership. */
     virtual ~IAnalyzer() = default;
 
     /**

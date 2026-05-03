@@ -30,11 +30,13 @@
 namespace CodeListener::AnnotationServices
 {
 
+/** Represents one call edge in the derived call graph. */
 struct CallGraphEdge
 {
+    /** Identifier of the call instruction that produced this edge. */
     Core::InstructionId call_instruction;
-    // target function ID
-    // - if nullopt, the call is an indirect call (function pointer)
+
+    /** Target function identifier, or `std::nullopt` for indirect calls through function pointers. */
     std::optional<Core::FunctionId> callee;
 };
 

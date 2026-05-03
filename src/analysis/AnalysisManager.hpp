@@ -33,13 +33,21 @@ namespace CodeListener::AnnotationServices
 {
 
 /**
- * Lazily builds and caches derivedDescribes  annotations for a single CodeModel instance.
+ * Lazily builds and caches derived annotations for a single CodeModel instance.
  *
- * Inspired by https://llvm.org/doxygen/classllvm_1_1AnalysisManager.html
+ * Inspired by LLVM's `AnalysisManager` (https://llvm.org/doxygen/classllvm_1_1AnalysisManager.html)
  */
 class AnalysisManager
 {
   public:
+    /**
+     * Retrieve a cached annotation, building it on first use.
+     *
+     * @tparam T Concrete annotation type exposing `static AnalysisKey Key` and `static T build(const CodeModel&)`.
+     * @param model Model used when the annotation needs to be computed.
+     *
+     * @return Cached annotation instance of type `T`.
+     */
     template <typename T>
     const T &getAnnotation(const Core::CodeModel &model)
     {
@@ -55,6 +63,7 @@ class AnalysisManager
     }
 
   private:
+    /** Cache keyed by annotation type identity. */
     std::unordered_map<AnalysisKey *, std::unique_ptr<Annotation>> cache;
 };
 

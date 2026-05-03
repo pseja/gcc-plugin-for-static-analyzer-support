@@ -27,8 +27,10 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one label definition. */
 struct LabelInstruction
 {
+    /** Operand carrying the label symbol or identifier. */
     Operand label;
 };
 

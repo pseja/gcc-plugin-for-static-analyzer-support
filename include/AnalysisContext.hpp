@@ -45,30 +45,51 @@ class CodeModel;
 class AnalysisContext
 {
   public:
+    /** Diagnostic sink used to report findings and internal failures. */
     Core::DiagnosticReporter &reporter;
+
+    /** Shared cache of lazily computed annotations derived from the current model. */
     AnnotationServices::AnalysisManager &analysis_manager;
 
+    /**
+     * Constructs a service bundle over the caller-provided reporter and annotation cache.
+     *
+     * @param reporter Diagnostic sink exposed to analyzers.
+     * @param analysis_manager Shared annotation cache exposed to analyzers.
+     */
     AnalysisContext(Core::DiagnosticReporter &reporter, AnnotationServices::AnalysisManager &analysis_manager)
         : reporter(reporter), analysis_manager(analysis_manager)
     {
     }
 
+    /** Non-copyable because the context stores references to external services. */
     AnalysisContext(const AnalysisContext &) = delete;
+    /** Non-assignable because the context stores references to external services. */
     AnalysisContext &operator=(const AnalysisContext &) = delete;
 
     /**
-     * Export the model as a DOT CFG graph to path.
+     * Exports the model as a DOT CFG graph.
+     *
+     * @param model Model to serialize.
+     * @param path Destination file path.
+     * @param verbosity Requested DOT output verbosity.
      */
     void exportDot(const Core::CodeModel &model, const std::string &path,
                    Exporters::DotVerbosity verbosity = Exporters::DotVerbosity::CLEAN);
 
     /**
-     * Export the model as a pretty-printed 3-address-code listing to path.
+     * Exports the model as a pretty-printed three-address-code listing.
+     *
+     * @param model Model to serialize.
+     * @param path Destination file path.
      */
     void exportPP(const Core::CodeModel &model, const std::string &path);
 
     /**
-     * Serialize the model to the internal JSON format at path.
+     * Serializes the model to the internal JSON format.
+     *
+     * @param model Model to serialize.
+     * @param path Destination file path.
      */
     void exportJson(const Core::CodeModel &model, const std::string &path);
 };

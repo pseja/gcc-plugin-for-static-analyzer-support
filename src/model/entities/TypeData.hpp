@@ -40,6 +40,7 @@
 namespace CodeListener::Core
 {
 
+/** Variant containing the concrete payload stored by one `Type` entity. */
 using TypeData = std::variant<UnknownType, VoidType, EnumType, IntegerType, FloatType, BoolType, PointerType, ArrayType,
                               StructType, UnionType, FunctionType, ComplexType>;
 

@@ -25,9 +25,9 @@
 namespace CodeListener::Core
 {
 
+/** Marker payload for instructions that terminate execution via abort, trap, or equivalent builtins. */
 struct AbortInstruction
 {
-    // triggered by __builtin_abort, __builtin_trap, or __builtin_unreachable (with some compiler flags)
 };
 
 } // namespace CodeListener::Core

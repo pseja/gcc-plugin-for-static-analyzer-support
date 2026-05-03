@@ -29,10 +29,14 @@
 namespace CodeListener::Core
 {
 
+/** Payload describing one array type. */
 struct ArrayType
 {
+    /** Identifier of the element type stored in the array. */
     TypeId element_type_id;
-    std::optional<unsigned long> element_count; // nullopt for VLA or flexible array member
+
+    /** Element count, or `std::nullopt` for VLAs and flexible array members. */
+    std::optional<unsigned long> element_count;
 };
 
 } // namespace CodeListener::Core

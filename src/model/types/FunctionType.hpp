@@ -29,10 +29,16 @@
 namespace CodeListener::Core
 {
 
+/** Payload describing one function signature type. */
 struct FunctionType
 {
+    /** Identifier of the function return type. */
     TypeId return_type_id;
+
+    /** Parameter types in declaration order. */
     std::vector<TypeId> parameter_type_ids;
+
+    /** Whether the function accepts a trailing variable argument list. */
     bool is_variadic{false};
 };
 

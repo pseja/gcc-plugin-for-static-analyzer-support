@@ -29,33 +29,48 @@
 namespace CodeListener::Core
 {
 
+/**
+ * Strongly typed identifier wrapper used for entities stored in indexed pools.
+ *
+ * @tparam T Tag type distinguishing incompatible identifier domains.
+ */
 template <typename T>
 struct Id
 {
+    /** Raw pool index, or `ULONG_MAX` when the identifier is invalid. */
     unsigned long index{ULONG_MAX};
 
+    /** @return Whether the identifier refers to a valid pool entry. */
     bool isValid() const
     {
         return index != ULONG_MAX;
     }
 
+    /** @return Sentinel invalid identifier for this tag type. */
     static Id invalid()
     {
         return {ULONG_MAX};
     }
 
+    /** Compare two identifiers of the same domain for equality. */
     bool operator==(const Id &other) const
     {
         return index == other.index;
     }
+
+    /** Compare two identifiers of the same domain for inequality. */
     bool operator!=(const Id &other) const
     {
         return index != other.index;
     }
+
+    /** Implicit conversion to the raw index value. */
     operator std::size_t() const
     {
         return index;
     }
+
+    /** Stream the identifier as its index or as `<invalid>` for sentinel values. */
     friend std::ostream &operator<<(std::ostream &os, const Id<T> &id)
     {
         if (!id.isValid())
@@ -71,9 +86,11 @@ struct Id
 namespace std
 {
 
+/** Hash specialization enabling strongly typed ids in unordered containers. */
 template <typename T>
 struct hash<CodeListener::Core::Id<T>>
 {
+    /** Compute the hash from the wrapped raw index. */
     std::size_t operator()(const CodeListener::Core::Id<T> &id) const
     {
         return std::hash<unsigned long>{}(id.index);

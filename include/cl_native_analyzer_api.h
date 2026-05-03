@@ -32,6 +32,12 @@
 
 #define CL_NATIVE_API_VERSION 2
 
+#if defined(_WIN32) || defined(__CYGWIN__)
+#define CL_ANALYZER_EXPORT __declspec(dllexport)
+#else
+#define CL_ANALYZER_EXPORT __attribute__((__visibility__("default")))
+#endif
+
 /**
  * Describes the entry points that a native analyzer shared library must export.
  */
@@ -49,7 +55,7 @@ struct cl_native_analyzer_api_t
      *
      * @param model The fully populated CodeModel for the translation unit.
      * @param ctx   Services available to the analyzer.
-    * @param args  Value of -fplugin-arg-&lt;plugin&gt;-args=VALUE. May be NULL.
+     * @param args  Value of -fplugin-arg-&lt;plugin&gt;-args=VALUE. May be NULL.
      *
      * @return true if analysis succeeded; false if at least one error was found.
      *         A false return causes the calling tool to exit with a non-zero status.

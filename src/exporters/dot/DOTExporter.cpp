@@ -39,7 +39,7 @@ DOTExporter::DOTExporter(const std::string &filepath, DotVerbosity verbosity)
 {
 }
 
-// Returns true when 'instr' is an explicit CFG terminal (goto / if / ret / switch / abort).
+/** Return whether an instruction is an explicit CFG terminator in CLEAN mode. */
 static bool isCleanTerminal(const Core::Instruction &instr)
 {
     return std::visit(
@@ -50,7 +50,7 @@ static bool isCleanTerminal(const Core::Instruction &instr)
         instr.data);
 }
 
-// Returns true if the block in CLEAN mode needs a "..." body node.
+/** Return whether a block in CLEAN mode needs an explicit "..." body node. */
 static bool cleanHasBody(const Core::CodeModel &model, const Core::Block &block)
 {
     if (block.instruction_ids.empty())

@@ -27,9 +27,13 @@
 namespace CodeListener::Core
 {
 
+/** Payload describing one pointer type. */
 struct PointerType
 {
+    /** Identifier of the pointee type referenced by the pointer. */
     TypeId pointee_type_id;
+
+    /** Whether the pointer carries the C `restrict` qualifier. */
     bool is_restrict;
 };
 

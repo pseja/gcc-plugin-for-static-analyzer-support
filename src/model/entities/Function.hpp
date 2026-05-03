@@ -34,18 +34,28 @@
 namespace CodeListener::Core
 {
 
+/** Represents one function stored in the CodeModel. */
 struct Function
 {
+    /** Stable identifier of the function. */
     FunctionId id;
+
+    /** Function name as reported by the frontend. */
     std::string name;
+
+    /** Identifier of the function return type. */
     TypeId return_type_id;
+
+    /** Source location associated with the function definition or declaration. */
     SourceLocation source_location;
 
+    /** Ordered identifiers of formal parameters. */
     std::vector<VariableId> parameter_ids;
 
+    /** Identifiers of local variables owned by the function body. */
     std::vector<VariableId> local_variable_ids;
 
-    // ast children (blocks)
+    /** Ordered identifiers of blocks that form the function body. */
     std::vector<BlockId> block_ids;
 };
 

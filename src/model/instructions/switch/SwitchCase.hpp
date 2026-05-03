@@ -31,15 +31,19 @@
 namespace CodeListener::Core
 {
 
+/** Describes one case arm or default arm of a switch instruction. */
 struct SwitchCase
 {
-    // if low_value is nullopt, this is the default case
+    /** Lower bound of the case value, or `std::nullopt` for the default case. */
     std::optional<Operand> low_value;
-    // if high_value is present, this is a range case (low ... high)
+
+    /** Upper bound of the case range, present only for GCC range cases `low ... high`. */
     std::optional<Operand> high_value;
 
+    /** Block entered when this case matches. */
     BlockId target_block_id;
 
+    /** Source location of the case label in the original program. */
     SourceLocation source_location;
 };
 

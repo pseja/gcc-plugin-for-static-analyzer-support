@@ -20,7 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <string_view>
@@ -28,35 +27,40 @@
 namespace CodeListener::Core
 {
 
+/** Enumerates instruction categories represented in the CodeModel. */
 enum class InstructionKind
 {
-    // core C statements
-    ASSIGN, // a = b
-    CALL,   // f()
-    RETURN, // return val
-    COND,   // if (cond) ...
-    SWITCH, // switch (val) ...
-    GOTO,   // goto
-    LABEL,  // label:
-    ASM,    // asm(...)
+    ASSIGN, /**< Assignment or expression evaluation, for example `a = b`. */
+    CALL,   /**< Function call. */
+    RETURN, /**< Return from the current function. */
+    COND,   /**< Conditional branch. */
+    SWITCH, /**< Multi-way branch. */
+    GOTO,   /**< Unconditional branch. */
+    LABEL,  /**< Label definition. */
+    ASM,    /**< Inline assembly statement. */
 
-    // structure and scope
     // GIMPLE_BIND, // lexical scope with variables
-    PHI, // phi node (if SSA) - SSA merge point
-    NOP, // nop
+    PHI, /**< SSA phi node at a control-flow merge point. */
+    NOP, /**< No-operation placeholder. */
     // GIMPLE_DEBUG, // debug information
     // GIMPLE_PREDICT, // branch prediction hint
-    CLOBBER,     // variable lifetime end
-    UNREACHABLE, // control flow dead end
-    ABORT,       // abort/trap/unreachable
+    CLOBBER,     /**< Variable lifetime end marker. */
+    UNREACHABLE, /**< Control-flow dead end. */
+    ABORT,       /**< Abort, trap, or unreachable terminator. */
 
-    // C extensions (GCC specific)
     // GIMPLE_TRY, // __attribute__((cleanup))
     // GIMPLE_TRANSACTION, // __transaction_atomic
 
-    UNKNOWN
+    UNKNOWN /**< Instruction without a dedicated representation. */
 };
 
+/**
+ * Convert an instruction kind to its stable textual name.
+ *
+ * @param kind Instruction kind to stringify.
+ *
+ * @return Short symbolic name used in debugging and serialization.
+ */
 constexpr std::string_view toString(InstructionKind kind) noexcept
 {
     switch (kind)

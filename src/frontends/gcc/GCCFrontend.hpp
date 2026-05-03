@@ -44,9 +44,11 @@ class GCCFrontend : public Core::IFrontend
      */
     explicit GCCFrontend(const Core::CodeModel &model);
 
+    /** @copydoc Core::IFrontend::run */
     bool run(std::vector<std::unique_ptr<Core::IAnalyzer>> &analyzers, CodeListener::AnalysisContext &ctx) override;
 
   private:
+    /** Completed model produced by the GCC pass pipeline. */
     const Core::CodeModel &model;
 };
 

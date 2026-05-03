@@ -36,7 +36,20 @@ namespace CodeListener::Exporters
 class JSONImporter
 {
   public:
+    /**
+     * Load a model from a JSON file.
+     *
+     * @param filepath Path to the JSON document.
+     * @return Deserialized CodeModel.
+     */
     static Core::CodeModel importFromFile(const std::string &filepath);
+
+    /**
+     * Load a model from an existing input stream.
+     *
+     * @param is Input stream containing a JSON document.
+     * @return Deserialized CodeModel.
+     */
     static Core::CodeModel importFromStream(std::istream &is);
 };
 

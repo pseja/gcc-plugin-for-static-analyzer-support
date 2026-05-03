@@ -30,12 +30,22 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one inline assembly statement. */
 struct AsmInstruction
 {
+    /** Raw assembly template string. */
     std::string assembly_string;
+
+    /** Input operands consumed by the assembly block. */
     std::vector<AsmOperandConstraint> inputs;
+
+    /** Output operands produced by the assembly block. */
     std::vector<AsmOperandConstraint> outputs;
+
+    /** Clobbered registers or special resources declared by the assembly block. */
     std::vector<std::string> clobbers;
+
+    /** Whether the statement is marked `volatile` and must not be optimized away. */
     bool is_volatile{false};
 };
 

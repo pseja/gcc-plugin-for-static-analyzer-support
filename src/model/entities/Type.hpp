@@ -31,25 +31,36 @@
 namespace CodeListener::Core
 {
 
+/** Represents one canonicalized type stored in the CodeModel. */
 struct Type
 {
+    /** Stable identifier of the type. */
     TypeId id;
-    std::string name; // "int", "struct Foo", ...
 
-    // qualifiers and attributes
+    /** Human-readable type name such as `int` or `struct Foo`. */
+    std::string name;
+
+    /** Whether the type is qualified with `const`. */
     bool is_const{false};
+
+    /** Whether the type is qualified with `volatile`. */
     bool is_volatile{false};
     // bool is_restrict{false}; // only for pointers
-    bool is_atomic{false}; // _Atomic
 
-    // size and memory layout
-    int size_bits; // for bitfields
+    /** Whether the type is qualified with `_Atomic`. */
+    bool is_atomic{false};
+
+    /** Size of the type in bits, primarily used for bit-fields. */
+    int size_bits;
     // int size_bytes; // sizeof
+
+    /** Alignment requirement of the type in bytes. */
     int alignment; // in bytes
 
-    // FIXME: not needed anymore thanks to the TypeData variant, but keeping it for easier querying and debugging
-    // for now
+    /** Cached coarse-grained kind used for quick checks and debugging. */
     TypeKind kind;
+
+    /** Detailed payload describing the concrete type shape. */
     TypeData data;
 };
 

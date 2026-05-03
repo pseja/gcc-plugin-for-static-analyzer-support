@@ -30,6 +30,7 @@
 namespace CodeListener::Core
 {
 
+/** Variant containing the concrete payload stored by one `Variable` entity. */
 using VariableData = std::variant<StandardVariable, FieldVariable>;
 
 } // namespace CodeListener::Core

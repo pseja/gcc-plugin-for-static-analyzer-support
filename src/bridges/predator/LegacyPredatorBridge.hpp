@@ -35,11 +35,18 @@ namespace CodeListener::CompilerAbstractionLayer
 class LegacyPredatorBridge : public Core::IAnalyzer
 {
   public:
+    /**
+     * Constructs a bridge over an already created legacy listener instance.
+     *
+     * @param listener Legacy analyzer instance created through the C ABI.
+     */
     explicit LegacyPredatorBridge(struct cl_code_listener *listener);
 
+    /** @copydoc Core::IAnalyzer::analyze */
     bool analyze(const Core::CodeModel &model, AnalysisContext &ctx) override;
 
   private:
+    /** Borrowed legacy listener instance receiving replayed callbacks. */
     struct cl_code_listener *listener;
 };
 

@@ -27,8 +27,10 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one unconditional branch instruction. */
 struct GotoInstruction
 {
+    /** Branch target block. */
     BlockId target;
 };
 

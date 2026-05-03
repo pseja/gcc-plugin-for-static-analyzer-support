@@ -28,7 +28,6 @@
 
 #include "IAnalyzer.hpp"
 #include "IFrontend.hpp"
-#include "JSONImporter.hpp"
 
 namespace CodeListener::Exporters
 {
@@ -42,11 +41,18 @@ namespace CodeListener::Exporters
 class JSONFrontend : public Core::IFrontend
 {
   public:
+    /**
+     * Constructs an offline frontend over a JSON file path.
+     *
+     * @param json_path Path to the serialized model.
+     */
     explicit JSONFrontend(std::string json_path);
 
+    /** @copydoc Core::IFrontend::run */
     bool run(std::vector<std::unique_ptr<Core::IAnalyzer>> &analyzers, CodeListener::AnalysisContext &ctx) override;
 
   private:
+    /** Path to the serialized model loaded by the frontend. */
     std::string json_path;
 };
 

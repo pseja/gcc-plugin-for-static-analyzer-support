@@ -27,15 +27,23 @@
 namespace CodeListener::Core
 {
 
+/** Describes the storage duration recorded for a variable. */
 enum class StorageDuration
 {
-    AUTO,
-    STATIC,
-    EXTERN,
-    REGISTER,
-    THREAD_LOCAL,
+    AUTO,         /**< Automatic storage tied to block or function lifetime. */
+    STATIC,       /**< Static storage lasting for the whole program execution. */
+    EXTERN,       /**< External declaration resolved in another translation unit. */
+    REGISTER,     /**< Register-qualified automatic storage. */
+    THREAD_LOCAL, /**< Thread-local storage with one instance per thread. */
 };
 
+/**
+ * Convert a storage-duration value to its stable textual name.
+ *
+ * @param storage_duration Storage-duration value to stringify.
+ *
+ * @return Short symbolic name used in diagnostics and exports.
+ */
 constexpr std::string_view toString(StorageDuration storage_duration) noexcept
 {
     switch (storage_duration)

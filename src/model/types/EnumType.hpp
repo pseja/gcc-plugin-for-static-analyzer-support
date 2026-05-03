@@ -25,8 +25,10 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing one enumeration type. */
 struct EnumType
 {
+    /** Whether the underlying enumeration representation is unsigned. */
     bool is_unsigned{false};
 };
 

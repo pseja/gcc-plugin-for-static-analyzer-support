@@ -25,6 +25,7 @@
 namespace CodeListener::Core
 {
 
+/** Payload representing the built-in `void` type. */
 struct VoidType
 {
 };
