@@ -49,7 +49,7 @@ The architecture of the original Code Listener is highly modular, effectively ac
 \end{figure}
 
 The utility of the Code Listener infrastructure is demonstrated by the advanced verification tools that rely on it.
-The two primary analyzers built on top of Code Listener are Predator~\cite{PredatorSuite2016} and Forester~\cite{CodeListener2012}.
+The two primary analyzers built on top of Code Listener are Predator and Forester.
 Predator is a tool for automated formal verification of low-level C programs that manipulate dynamic, pointer-like data structures, such as linked lists~\cite{PredatorWebsite}.
 Forester focuses on verifying programs that manipulate complex dynamic data structures using tree automata~\cite{ForesterWebsite}.
 By using Code Listener as a compiler plugin, these tools can seamlessly analyze anything the compiler can process.
@@ -59,22 +59,22 @@ This ensures that the user does not need to manually preprocess source code or m
 
 To contextualize the architectural choices of the Code Listener infrastructure, it is valuable to compare it against peer projects in the static analysis domain.
 
-The primary peer to Code Listener is the Frama-C platform, an extensible, open-source framework dedicated to the static analysis of C source code~\cite{FramaC2015}.
+The primary peer to Code Listener is the Frama-C platform, an extensible, open-source framework dedicated to the static analysis of C source code.
 Much like Code Listener, Frama-C isolates its analysis plug-ins from the raw compiler to provide a unified Application Programming Interface.
-It achieves this by using a modified version of the CIL (C Intermediate Language) front-end, which parses ISO C99 programs into a normalized Abstract Syntax Tree (AST)~\cite{FramaC2015}.
+It achieves this by using a modified version of the CIL (C Intermediate Language) front-end, which parses ISO C99 programs into a normalized Abstract Syntax Tree (AST).
 Frama-C utilizes a highly collaborative architecture where various plug-ins, such as those based on abstract interpretation or deductive verification, share this AST and communicate via ACSL (ANSI/ISO C Specification Language) annotations~\cite{FramaC2015}.
 While Frama-C operates primarily at the AST level, Code Listener translates compiler internals into a reduced, instruction-based control flow graph.
 The key advantage of Code Listener's approach is that it allows building of analyzers capable of handling everything industrial compilers are able to compile~\cite{CodeListener2012}, whereas Frama-C is limited to the subset of C that can be represented in its AST and supported by the CIL front-end~\cite{FramaC2015}.
 
 Other notable comparisons can be drawn from the LLVM compiler infrastructure.
 The Clang Static Analyzer, built on top of the Clang/LLVM architecture, provides an extensible framework for checking C and C++ code, though historically its scope has been more limited to compilation and AST-level linting than Frama-C's exhaustive verification~\cite{FramaC2015}.
-However, the LLVM core provides a highly optimized, typed, Static Single Assignment (SSA) intermediate representation~\cite{LLVMCompilationFramework}.
+However, the LLVM core provides a highly optimized, typed, Static Single Assignment (SSA) intermediate representation.
 Notably, modern LLVM utilizes an \texttt{AnalysisManager} approach that elegantly solves the \uv{God Object} anti-pattern observed in the legacy Code Listener, which is described in Section~\ref{sub:ir-pollution} on page~\pageref{sub:ir-pollution}.
 Instead of polluting the core Intermediate Representation (IR) with analysis results, LLVM's \texttt{AnalysisManager} computes results lazily and stores them externally, keyed by the IR node identity~\cite{LLVMCompilationFramework}.
 This clean separation of concerns heavily inspires the modernized architecture proposed in this thesis.
 
-Outside the C and C++ domain, the Soot framework provides a highly successful, conceptually similar infrastructure for the static analysis of Java programs~\cite{SootFramework2011}.
-Much like Code Listener acts as an abstraction layer over native compiler structures, Soot addresses the difficulty of directly analyzing stack-based Java Virtual Machine (JVM) bytecode by transforming it into a simplified, typed three-address intermediate representation known as Jimple~\cite{SootFramework2011}.
+Outside the C and C++ domain, the Soot framework provides a highly successful, conceptually similar infrastructure for the static analysis of Java programs.
+Much like Code Listener acts as an abstraction layer over native compiler structures, Soot addresses the difficulty of directly analyzing stack-based Java Virtual Machine (JVM) bytecode by transforming it into a simplified, typed three-address intermediate representation known as Jimple.
 By exposing local data flow along a Control Flow Graph (CFG), Soot isolates researchers from the complexities of the underlying bytecode, paralleling Code Listener's decoupling of analyzers from GCC~\cite{SootFramework2011}.
 
 \section{The GCC Architecture and GIMPLE Representation}\label{sec:gcc-gimple}
@@ -83,11 +83,11 @@ To understand how the Code Listener extracts program semantics, it is essential 
 GCC operates as a sequential pipeline divided into three primary blocks: the front end, the middle end, and the back end, and uses three main intermediate languages to represent a program during compilation, specifically GENERIC, GIMPLE, and RTL~\cite{GCCInternals}.
 
 The front end is responsible for the lexical analysis and parsing of a specific programming language.
-It generates GENERIC, a common, language-independent representation that can represent programs written in all languages supported by GCC~\cite{GCCInternals}.
+It generates GENERIC, a common, language-independent representation that can represent programs written in all languages supported by GCC.\@
 GENERIC serves as the standardized interface between the parser and the optimizer~\cite{GCCInternals}.
 
-The middle end optimizes the program using the GIMPLE representation~\cite{GCCInternals}.
-The compiler pass responsible for converting GENERIC into GIMPLE is called the \emph{gimplifier}~\cite{GCCInternals}.
+The middle end optimizes the program using the GIMPLE representation.
+The compiler pass responsible for converting GENERIC into GIMPLE is called the \emph{gimplifier}.
 At this stage, GCC also supports loadable modules called plugins, which are invoked at pre-determined locations in the compilation process to provide extra features to the compiler~\cite{GCCInternals}.
 The Code Listener infrastructure utilizes this plugin API, registering callbacks for specific events to intercept the compilation process and access the intermediate code without modifying the compiler itself~\cite{CodeListener2012}.
 
@@ -99,12 +99,12 @@ When intercepting the compilation pipeline, the Code Listener adapter parses the
 GIMPLE is a tree-based representation derived from GENERIC, specifically designed to facilitate target- and language-independent optimizations~\cite{GCCInternals}.
 
 A~defining characteristic of GIMPLE is its highly restrictive grammar.
-Expressions are broken down into a three-address representation consisting of tuples containing no more than three operands, with the exception of function calls~\cite{GCCInternals}.
-To accommodate the breakdown of complex expressions, the compiler introduces artificial temporary variables to hold intermediate values~\cite{GCCInternals}.
+Expressions are broken down into a three-address representation consisting of tuples containing no more than three operands, with the exception of function calls.
+To accommodate the breakdown of complex expressions, the compiler introduces artificial temporary variables to hold intermediate values.
 Furthermore, expressions with side effects are strictly limited to the right-hand side of assignments~\cite{GCCInternals}.
 
 Additionally, GIMPLE drastically simplifies the program's control flow.
-All high-level control structures used in GENERIC are dismantled and lowered into conditional jumps~\cite{GCCInternals}.
+All high-level control structures used in GENERIC are dismantled and lowered into conditional jumps.
 Lexical scopes are removed entirely, and exception regions are extracted and converted into an on-the-side exception region tree~\cite{GCCInternals}.
 
 By flattening source code into this concise, explicit-control-flow format, GIMPLE provides a highly predictable foundation.
