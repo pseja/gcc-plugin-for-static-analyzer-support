@@ -104,7 +104,7 @@ There are two concrete implementations of this interface:
 Once the active frontend finishes populating the Code Model, it iterates through all registered analyzers and invokes the analysis backend.
 Because both frontends implement the same contract, the live compiler plugin and the offline standalone tool are completely interchangeable from the perspective of the analysis tools.
 
-\section{Core --- Code Model and Query System}\label{sec:core}
+\section{Code Model and Query System}\label{sec:core}
 
 At the heart of the modernized infrastructure is the \texttt{CodeModel}.
 Once the Compiler Abstraction Layer intercepts and translates the compiler's intermediate representation, the \texttt{CodeModel} serves as the central, immutable, and parser-independent representation of the program.
