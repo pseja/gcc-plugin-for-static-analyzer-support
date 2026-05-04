@@ -221,7 +221,7 @@ Currently, the infrastructure implements two primary annotation services:
   \item \textbf{CallGraph:} This service analyzes the \texttt{CodeModel} to construct a directed graph of function invocations.
     Using Tarjan's strongly connected components (SCC) algorithm~\cite{Tarjan1972}, it computes topological orderings, identifies root functions, which are functions with no callers, and leaf functions.
   \item \textbf{SwitchToIf:} This service computes synthetic variable names and block-label allocations required to safely unfold \texttt{SWITCH} instructions into chains of conditional jumps.
-    Crucially, unlike the legacy \texttt{unfold\_switch} filter, which destructively mutated the IR, this service only precomputes the textual rendering data.
+    Crucially, unlike the legacy \texttt{unfold\_switch} filter, which destructively mutated the IR, this service only precomputes the auxilary metadata needed for the unfolded switch instructions.
     The pure \texttt{SwitchInstruction} remains perfectly intact within the \texttt{CodeModel} for any analyzer that natively supports it.
 \end{itemize}
 
