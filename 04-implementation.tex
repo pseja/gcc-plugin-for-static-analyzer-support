@@ -23,9 +23,9 @@ The build system must match the exact GCC installation used at runtime and compi
 This constraint is managed via a \texttt{TARGET\_GCC} CMake variable, which is set by default to \texttt{gcc-12}.
 If the required compiler headers are missing during configuration, the build is designed to abort immediately rather than producing a partially or silently broken binary.
 
-The implementation utilizes C++23, the latest stable version of the C++ standard available during development~\cite{gccCxxStatus}.
-This choice enables the internal models to leverage standard library facilities, thereby avoiding reliance on complex, custom framework code.
-For instance, \texttt{std::variant} was employed for closed type and instruction hierarchies, \texttt{std::optional} was used to safely handle incomplete compiler metadata, and modern range-based traversal was applied where appropriate within the Code Model.
+The implementation targets C++23, the latest stable version of the C++ standard available during development~\cite{gccCxxStatus}.
+This choice enables the codebase to rely on modern standard library facilities from recent C++ revisions, thereby avoiding reliance on complex, custom framework code.
+For instance, \texttt{std::variant} was employed for closed type and instruction hierarchies, \texttt{std::optional} was used to safely handle incomplete compiler metadata, and newer range-based traversal facilities were applied where appropriate within the Code Model.
 
 To ensure safety and compatibility, the generated binaries are compiled conservatively.
 All plugin-facing targets are compiled with \texttt{-fPIC} to support dynamic loading.
@@ -111,7 +111,7 @@ In the implementation, these pools for types, variables, functions, blocks, and 
 A~\texttt{std::deque} allocates memory in fixed chunks, meaning that as the GCC adapter incrementally populates the model and holds temporary references, the memory addresses of previously inserted entities remain perfectly stable~\cite{EffectiveSTL}.
 This avoids the pointer-invalidation issues common to \texttt{std::vector} reallocations, which were encountered in early prototypes.
 
-Because deep inheritance trees were avoided, instruction and type payloads are implemented using C++23 \texttt{std::variant}.
+Because deep inheritance trees were avoided, instruction and type payloads are implemented using \texttt{std::variant}, which was introduced in C++17 and is used here within an overall C++23 codebase.
 This allows each instruction to be stored as a plain value type.
 Later processing, such as exporting or analyzing the model, is performed cleanly by branching over the closed set of alternatives using \texttt{std::visit}.
 
