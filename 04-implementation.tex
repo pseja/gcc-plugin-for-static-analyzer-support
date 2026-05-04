@@ -108,7 +108,7 @@ These messages are emitted only when the verbosity level is explicitly raised to
 
 The internal Code Model is driven by centralized entity pools.
 In the implementation, these pools for types, variables, functions, blocks, and instructions are instantiated as \texttt{std::deque} containers.
-A~\texttt{std::deque} allocates memory in fixed chunks, meaning that as the GCC adapter incrementally populates the model and holds temporary references, the memory addresses of previously inserted entities remain perfectly stable~\cite{boostedCppDeque}.
+A~\texttt{std::deque} allocates memory in fixed chunks, meaning that as the GCC adapter incrementally populates the model and holds temporary references, the memory addresses of previously inserted entities remain perfectly stable~\cite{EffectiveSTL}.
 This avoids the pointer-invalidation issues common to \texttt{std::vector} reallocations, which were encountered in early prototypes.
 
 Because deep inheritance trees were avoided, instruction and type payloads are implemented using C++23 \texttt{std::variant}.
