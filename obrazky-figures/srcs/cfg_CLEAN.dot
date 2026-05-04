@@ -1,0 +1,106 @@
+digraph IR {
+    node [shape=none, fontname="Courier New", fontsize=10];
+    edge [fontname="Courier New", fontsize=9];
+    graph [rankdir=TB, splines=polyline, compound=true];
+
+    subgraph cluster_file_0 {
+        label="tests/integration_tests/017_recursion.c";
+        color="#d1d5db";
+        style=dashed;
+        bgcolor="#f9fafb";
+        margin=20;
+
+        subgraph cluster_func_0 {
+            label=<<b>factorial()</b>>;
+            style=filled;
+            fillcolor="#ffffff";
+            color="#9ca3af";
+            margin=15;
+
+        subgraph cluster_block_1 {
+            label="bb_2";
+            color="#6b7280";
+            style=dashed;
+            bgcolor="#ffffff";
+            margin=8;
+            block_1_0 [shape=box, color="#059669", fontcolor="#059669", style=bold, label="if"]
+        }
+        subgraph cluster_block_2 {
+            label="bb_3";
+            color="#6b7280";
+            style=dashed;
+            bgcolor="#ffffff";
+            margin=8;
+            block_2_0 [shape=box, color="#9ca3af", fontcolor="#9ca3af", style=dotted, label="..."]
+            block_2_1 [shape=box, color="#6b7280", fontcolor="#6b7280", style=bold, label="goto"]
+            block_2_0 -> block_2_1 [color="#9ca3af", style=dotted, arrowhead=open];
+        }
+        subgraph cluster_block_3 {
+            label="bb_4";
+            color="#6b7280";
+            style=dashed;
+            bgcolor="#ffffff";
+            margin=8;
+            block_3_0 [shape=box, color="#9ca3af", fontcolor="#9ca3af", style=dotted, label="..."]
+            block_3_1 [shape=box, color="#2563eb", fontcolor="#2563eb", style=dashed, label="call"]
+            block_3_2 [shape=box, color="#9ca3af", fontcolor="#9ca3af", style=dotted, label="..."]
+            block_3_3 [shape=box, color="#6b7280", fontcolor="#6b7280", style=bold, label="goto"]
+            block_3_0 -> block_3_1 [color="#9ca3af", style=dotted, arrowhead=open];
+            block_3_1 -> block_3_2 [color="#9ca3af", style=dotted, arrowhead=open];
+            block_3_2 -> block_3_3 [color="#9ca3af", style=dotted, arrowhead=open];
+        }
+        subgraph cluster_block_4 {
+            label="bb_5";
+            color="#6b7280";
+            style=dashed;
+            bgcolor="#ffffff";
+            margin=8;
+            block_4_0 [shape=box, color="#9ca3af", fontcolor="#9ca3af", style=dotted, label="..."]
+            block_4_1 [shape=box, color="#7c3aed", fontcolor="#7c3aed", style=bold, label="ret"]
+            block_4_0 -> block_4_1 [color="#9ca3af", style=dotted, arrowhead=open];
+        }
+        }
+
+        subgraph cluster_func_1 {
+            label=<<b>main()</b>>;
+            style=filled;
+            fillcolor="#ffffff";
+            color="#9ca3af";
+            margin=15;
+
+        subgraph cluster_block_7 {
+            label="bb_2";
+            color="#6b7280";
+            style=dashed;
+            bgcolor="#ffffff";
+            margin=8;
+            block_7_0 [shape=box, color="#9ca3af", fontcolor="#9ca3af", style=dotted, label="..."]
+            block_7_1 [shape=box, color="#2563eb", fontcolor="#2563eb", style=dashed, label="call"]
+            block_7_2 [shape=box, color="#9ca3af", fontcolor="#9ca3af", style=dotted, label="..."]
+            block_7_3 [shape=box, color="#6b7280", fontcolor="#6b7280", style=bold, label="goto"]
+            block_7_0 -> block_7_1 [color="#9ca3af", style=dotted, arrowhead=open];
+            block_7_1 -> block_7_2 [color="#9ca3af", style=dotted, arrowhead=open];
+            block_7_2 -> block_7_3 [color="#9ca3af", style=dotted, arrowhead=open];
+        }
+        subgraph cluster_block_8 {
+            label="bb_3";
+            color="#6b7280";
+            style=dashed;
+            bgcolor="#ffffff";
+            margin=8;
+            block_8_0 [shape=box, color="#9ca3af", fontcolor="#9ca3af", style=dotted, label="..."]
+            block_8_1 [shape=box, color="#7c3aed", fontcolor="#7c3aed", style=bold, label="ret"]
+            block_8_0 -> block_8_1 [color="#9ca3af", style=dotted, arrowhead=open];
+        }
+        }
+
+    }
+
+    block_7_1 -> block_1_0 [lhead=cluster_func_0, color="#6c757d"];
+    block_3_1 -> block_1_0 [lhead=cluster_func_0, color="#6c757d"];
+    block_1_0 -> block_2_0 [label="true", color="#059669", fontcolor="#059669"];
+    block_1_0 -> block_3_0 [label="false", color="#dc2626", fontcolor="#dc2626"];
+    block_2_1 -> block_4_0 [color="#6b7280"];
+    block_3_3 -> block_4_0 [color="#6b7280"];
+    block_7_3 -> block_8_0 [color="#6b7280"];
+}
