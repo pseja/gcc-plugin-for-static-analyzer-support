@@ -11,7 +11,7 @@ To effectively resolve the constraints of the legacy implementation, the moderni
 \begin{enumerate}
   \item \textbf{Clean Intermediate Representation (IR):} The core Code Model must remain a pure representation of the parsed program, strictly decoupling the IR from any embedded analysis results to eliminate the \uv{Large Class} anti-pattern~\cite{RefactoringGuruLargeClass}.
   \item \textbf{On-Demand Annotation Services:} The mandatory, eagerly evaluated \\pre-analyses must be replaced by a lazy evaluation system where auxiliary data is computed and cached only when explicitly requested by an analyzer.
-  \item \textbf{Unified Exporter Pipeline:} The infrastructure must provide a uniform mechanism to export the internal representation into various diagnostic and persistent formats (such as JSON, DOT, and pretty-printed text) from a single source of truth.
+  \item \textbf{Unified Exporter Pipeline:} The infrastructure must provide a uniform mechanism to export the internal representation into various diagnostic and persistent formats (such as JSON, DOT, and pretty-printed text) from the same underlying Code Model.
   \item \textbf{Compiler and Analyzer Independence:} Strict boundary interfaces, later introduced as \texttt{IFrontend} and \texttt{IAnalyzer}, must be introduced to fully decouple the core infrastructure from both the underlying compiler and the target analysis tools.
   \item \textbf{Backward Compatibility:} Existing analyzers, specifically the Predator tool suite, must be able to operate seamlessly on the new infrastructure without requiring any modifications to their own source code.
 \end{enumerate}
