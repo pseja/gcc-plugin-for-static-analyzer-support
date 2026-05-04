@@ -4,23 +4,13 @@
 
 \chapter{Introduction}\label{chap:introduction}
 
-This bachelor's thesis analyzes the original Code Listener infrastructure~\cite{CodeListener2012} and develops a modernized replacement for it.
-Code Listener serves as a bridge between industrial compilers and static analysis tools, most notably the Predator shape analysis suite~\cite{PredatorSuite2016}.
-The thesis addresses the main architectural constraints of the legacy design by replacing the callback-driven pipeline with a persistent Code Model, moving hard-wired pre-analyses behind optional on-demand annotation services, and introducing a structured query interface together with uniform export support, while preserving compatibility with the existing Predator workflow.
-
-\section{Motivation}\label{sec:motivation}
-
 Software development is a complex and error-prone process, especially as software systems grow in size and complexity.
 As software systems evolve, certain categories of defects become undetectable solely through testing, as test suites can only evaluate explicitly covered execution paths, leaving much of the program's state space unexplored.
 
 Nowhere is this limitation more critical than in low-level system programming languages such as C and C++, where developers bear the burden of manual memory management.
 In these environments, insidious bugs such as memory leaks, buffer overflows, use-after-free errors, and dangling pointer dereferences frequently hide within unexplored execution paths.
-The consequences of these hidden defects can be catastrophic, particularly in mission-critical domains like aerospace engineering.
-While rigorous testing prevents many fatal accidents, memory mismanagement has repeatedly compromised modern aircraft.
-For instance, regulatory agencies have had to issue mandatory airworthiness directives for both the Boeing 787 and the Airbus A350, requiring airlines to periodically reboot the aircraft to clear memory buffers and prevent the total mid-flight loss of critical systems~\cite{BoeingEASA,AirbusEASA}.
-These near-misses underscore a fundamental reality: traditional dynamic testing is insufficient to guarantee memory safety in high-stakes environments.
 
-To prevent such failures, developers must rely on advanced static analysis tools, such as the Predator shape analysis suite, which is capable of formally verifying a program's state space without executing it.
+To prevent these bugs, developers must rely on advanced static analysis tools, such as the Predator shape analysis suite, which is capable of formally verifying a program's state space without executing it.
 However, developing and maintaining these analyzers presents a significant architectural challenge: extracting the program's semantics from the compiler's internal representation.
 Analyzers must interface with compilers to understand the code, but native compiler APIs are notoriously complex, tightly coupled to specific versions, and largely undocumented.
 Building analysis tools directly on top of these raw APIs leads to brittle, maintenance-heavy software.
@@ -28,8 +18,6 @@ Building analysis tools directly on top of these raw APIs leads to brittle, main
 To overcome this bottleneck, a clean abstraction layer is required.
 Specifically, researchers need a modular middleware that can abstract away the massive, often undocumented codebases of industrial compilers, providing instead a concise, unified, and well-documented object-oriented API.\@
 This ensures that static analysis tools can be developed independently of the underlying compiler architecture.
-
-\section{Thesis structure}\label{sec:thesis_structure}
 
 The remainder of this thesis is structured as follows.
 Chapter~\ref{chap:sota} provides a deeper technical analysis of the legacy Code Listener architecture.
