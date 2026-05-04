@@ -18,13 +18,13 @@ The testing methodology was designed to isolate the architecture's distinct boun
 Because the infrastructure acts as a mediator between the compiler and the analyzers, defects could theoretically originate in the GCC extraction phase, the internal modeling phase, or the final analyzer handoff.
 
 To systematically verify each phase, the project utilizes the CTest framework to orchestrate four distinct regression suites.
-Testing was conducted on Linux, specifically Ubuntu 22.04 LTS and Arch Linux.
+Testing was conducted on Linux, specifically Ubuntu 24.04 LTS and Arch Linux.
 Within the checked-in CMake configuration, the plugin build is parameterized by the \texttt{TARGET\_GCC} variable, which defaults to \texttt{gcc-12}.
 To verify portability across supported compiler releases, the project was rebuilt from a clean state, and the full \texttt{make test} pipeline was rerun separately with GCC 12, GCC 13, and GCC 14.
 The testing pipeline is fully automated via the \texttt{make test} build target, with dedicated entry points for the \texttt{cl-adapter}, \texttt{codemodel}, \texttt{cl\_analyze}, and Predator compatibility suites.
 
 The two primary evaluation environments were intentionally different in character.
-The Ubuntu 22.04 setup ran under WSL 2 on a desktop-class machine with an Intel Core i5--8400 CPU (6 cores at 2.8~GHz), an NVIDIA GeForce GTX~1070~Ti GPU, and 16~GB of RAM.\@
+The Ubuntu 24.04 setup ran under WSL 2 on a desktop-class machine with an Intel Core i5--8400 CPU (6 cores at 2.8~GHz), an NVIDIA GeForce GTX~1070~Ti GPU, and 16~GB of RAM.\@
 The Arch Linux setup ran on a laptop with an Intel Core i5--1135G7 CPU (4 cores at 2.40~GHz), integrated Intel Iris Xe Graphics, and 24~GB of RAM.\@
 These systems were not used as a controlled benchmark platform, but they provide useful operational context for the executed regression campaign.
 On the Ubuntu/WSL 2 machine, a clean \texttt{make} rebuild took approximately 1~minute and 48~seconds, while the full \texttt{make test} pipeline completed in about 18~seconds.

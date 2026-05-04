@@ -17,7 +17,7 @@ In accordance with software engineering best practices, exhaustive source code l
 
 \section{Development Environment and Platform Constraints}\label{sec:dev-env}
 
-Like the original Predator toolchain, the modernized infrastructure targets Linux environments and was developed primarily on Ubuntu 22.04 LTS and Arch Linux.
+Like the original Predator toolchain, the modernized infrastructure targets Linux environments and was developed primarily on Ubuntu 24.04 LTS and Arch Linux.
 The plugin is compiled as a shared object and loaded directly into the GCC process memory space, which means that it is intrinsically tied to the GCC Plugin API.\@
 The build system must match the exact GCC installation used at runtime and compile against that specific version's plugin headers.
 This constraint is managed via a \texttt{TARGET\_GCC} CMake variable, which is set by default to \texttt{gcc-12}.
