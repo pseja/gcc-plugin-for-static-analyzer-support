@@ -20,7 +20,7 @@ digraph "CodeListener::AnnotationServices::AnnotationBase&lt; Derived &gt;"
 </TABLE>>
 ,height=0.2,width=0.4,color="gray40", fillcolor="white", style="filled",URL="$structCodeListener_1_1AnnotationServices_1_1Annotation.html",tooltip=" "];
   Node1 -> Node3 [id="edge7_Node000001_Node000003",dir="back",color="orange",style="solid",tooltip=" ",label=<<TABLE CELLBORDER="0" BORDER="0"><TR><TD VALIGN="top" ALIGN="LEFT" CELLPADDING="1" CELLSPACING="0">&lt; CallGraph &gt;</TD></TR>
-</TABLE>> ,fontcolor="grey" ];
+</TABLE>> ,fontcolor="black" ];
   Node3 [id="Node000003",shape=plain,label=<<TABLE CELLBORDER="0" BORDER="1"><TR><TD COLSPAN="2" CELLPADDING="1" CELLSPACING="0">CodeListener::Annotation<BR ALIGN="LEFT"/>Services::AnnotationBase<BR ALIGN="LEFT"/>&lt; CallGraph &gt;</TD></TR>
 <HR/>
 <TR><TD VALIGN="top" CELLPADDING="1" CELLSPACING="0">+</TD><TD VALIGN="top" ALIGN="LEFT" CELLPADDING="1" CELLSPACING="0">Key<BR ALIGN="LEFT"/></TD></TR>
@@ -42,7 +42,7 @@ digraph "CodeListener::AnnotationServices::AnnotationBase&lt; Derived &gt;"
 </TABLE>>
 ,height=0.2,width=0.4,color="gray40", fillcolor="white", style="filled",URL="$structCodeListener_1_1AnnotationServices_1_1CallGraph.html",tooltip=" "];
   Node1 -> Node5 [id="edge9_Node000001_Node000005",dir="back",color="orange",style="solid",tooltip=" ",label=<<TABLE CELLBORDER="0" BORDER="0"><TR><TD VALIGN="top" ALIGN="LEFT" CELLPADDING="1" CELLSPACING="0">&lt; SwitchToIf &gt;</TD></TR>
-</TABLE>> ,fontcolor="grey" ];
+</TABLE>> ,fontcolor="black" ];
   Node5 [id="Node000005",shape=plain,label=<<TABLE CELLBORDER="0" BORDER="1"><TR><TD COLSPAN="2" CELLPADDING="1" CELLSPACING="0">CodeListener::Annotation<BR ALIGN="LEFT"/>Services::AnnotationBase<BR ALIGN="LEFT"/>&lt; SwitchToIf &gt;</TD></TR>
 <HR/>
 <TR><TD VALIGN="top" CELLPADDING="1" CELLSPACING="0">+</TD><TD VALIGN="top" ALIGN="LEFT" CELLPADDING="1" CELLSPACING="0">Key<BR ALIGN="LEFT"/></TD></TR>
