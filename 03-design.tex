@@ -68,7 +68,7 @@ This strict boundary ensures that no GCC-specific headers or data structures lea
 
 Furthermore, even diagnostic reporting is abstracted.
 A~dedicated \\\texttt{GCCDiagnosticReporter} class wraps GCC's native error-reporting functions.
-This ensures that any defects found by downstream analyzers are emitted with the correct file, line, and column information in the standard compiler error format, without the analyzers themselves needing to know they are running inside GCC.\@
+This ensures that any defects found by downstream analyzers are emitted through GCC's diagnostic API with the correct file, line, and column information, without the analyzers themselves needing to know they are running inside GCC.\@
 
 \subsection*{Modernized Plugin Arguments}\label{sub:plugin-arguments}
 

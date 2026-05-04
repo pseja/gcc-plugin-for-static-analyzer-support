@@ -100,7 +100,7 @@ To optimize this translation:
 \end{itemize}
 
 Finally, diagnostic messages are routed through \texttt{GCCDiagnosticReporter.cpp}.
-This class maps framework diagnostics into native GCC calls, specifically \texttt{inform}, \texttt{warning\_at}, \texttt{error\_at}, \texttt{fatal\_error}, ensuring that any bugs found by an analyzer appear to the user exactly like standard compiler errors.
+This class maps framework diagnostics into native GCC calls, specifically \texttt{inform}, \texttt{warning\_at}, \texttt{error\_at}, \texttt{fatal\_error}, ensuring that any bugs found by an analyzer are reported through GCC's own diagnostic machinery with the same source-location handling as ordinary compiler diagnostics.
 Since GCC has no built-in debug-level reporting channel, the plugin provides a development-only path that prints grey \texttt{stderr} lines containing the relative file path, line number, function name, and message text.
 These messages are emitted only when the verbosity level is explicitly raised to 2 or higher, allowing adapter debugging to remain available on demand without affecting ordinary analyzer runs.
 

@@ -33,7 +33,7 @@ The architecture of the original Code Listener is highly modular, effectively ac
     This component allows the analyzers to look up containers of types, variables, and functions, and to navigate the CFG of each function.
 
   \item \textbf{Analyzers} are the static analysis tools that can query the API and begin their formal verification operations once the code storage builds the complete object model.
-    Any diagnostic messages emitted by the analyzers are passed back to the code parser interface, which formats them in the standard way expected by the compiler, including file names and line numbers, so that they can be easily understood by developers.
+    Any diagnostic messages emitted by the analyzers are passed back to the code parser interface, which reports them through the parser's diagnostic channel, including source locations such as file names and line numbers, so that they appear as ordinary compiler diagnostics to developers and build tools.
 
 \end{itemize}
 
@@ -44,7 +44,7 @@ The architecture of the original Code Listener is highly modular, effectively ac
     Block diagram of the legacy Code Listener infrastructure.
     The system is divided into interconnected modules, beginning with the code parser interface, which extracts intermediate representations from compilers such as GCC or Sparse.
     This data flows through optional filters, such as \texttt{switch to if} transformations, and listeners like the CFG plotters before being aggregated into a persistent object model within the code storage component.
-    Finally, static analyzers such as Predator and Forester can query this code storage to perform formal verification, routing any discovered defects back through the code parser interface and the code parser's error stream to maintain consistent compiler-like error reporting~\cite{CodeListener2012}.
+    Finally, static analyzers such as Predator and Forester can query this code storage to perform formal verification, routing any discovered defects back through the code parser interface and the code parser's diagnostic stream so that users and build tools receive ordinary source-located parser diagnostics~\cite{CodeListener2012}.
   }\label{fig:old-architecture}
 \end{figure}
 
