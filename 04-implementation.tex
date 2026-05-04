@@ -131,7 +131,7 @@ Because the \texttt{AnalysisManager} uses lazy evaluation, multiple analyzers th
 
 Conversely, backward compatibility is handled by \texttt{PredatorAdapter.cpp}.
 This adapter systematically walks the modern Code Model and reconstructs the legacy structures.
-The emission sequence was carefully implemented to match historical expectations: all \texttt{cl\_type} and \texttt{cl\_var} structures are pre-registered before any function bodies are streamed.
+The order in which the adapter delivers the legacy listener data was carefully implemented to match historical expectations: all \texttt{cl\_type} and \texttt{cl\_var} structures are pre-registered before the adapter begins streaming any function bodies.
 This exact ordering ensures the legacy Predator verification kernel functions entirely unmodified.
 
 \section{Exporter Infrastructure}\label{sec:exporter-infrastructure}
