@@ -31,7 +31,6 @@
 namespace CodeListener::CompilerAbstractionLayer
 {
 
-// TODO: rename to something more specific
 /** GCC pass wrapper that forwards each visited function body to the adapter. */
 class Pass : public gimple_opt_pass
 {
