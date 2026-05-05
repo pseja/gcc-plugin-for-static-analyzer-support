@@ -21,6 +21,7 @@
  */
 
 #include <iostream> // std::cerr
+#include <cstring>  // std::strcmp
 
 #include <gcc-plugin.h>     // plugin_init, plugin_is_GPL_compatible
 #include <plugin-version.h> // gcc_version
@@ -29,6 +30,22 @@
 #include "PluginContext.hpp"
 #include "StderrDiagnosticReporter.hpp"
 #include "register_plugin.hpp"
+
+namespace
+{
+
+bool has_compatible_base_version(const plugin_gcc_version *version)
+{
+    return version && version->basever && gcc_version.basever &&
+           std::strcmp(version->basever, gcc_version.basever) == 0;
+}
+
+const char *safe_basever(const plugin_gcc_version *version)
+{
+    return (version && version->basever) ? version->basever : "<unknown>";
+}
+
+} // namespace
 
 // required by GCC to indicate that the plugin is GPL-compatible
 int plugin_is_GPL_compatible;
@@ -82,11 +99,10 @@ int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
         return 0;
     }
 
-    // FIXME: old cl had less strict version check for predator
-    if (!plugin_default_version_check(version, &gcc_version))
+    if (!has_compatible_base_version(version))
     {
-        std::cerr << "Incompatible GCC version: This plugin was compiled for version " << GCCPLUGIN_VERSION_MAJOR << "."
-                  << GCCPLUGIN_VERSION_MINOR << ", but the current GCC version is " << version->basever << "\n";
+        std::cerr << "Incompatible GCC version: This plugin was compiled against GCC " << safe_basever(&gcc_version)
+                  << ", but the current GCC version is " << safe_basever(version) << "\n";
 
         return 1;
     }
