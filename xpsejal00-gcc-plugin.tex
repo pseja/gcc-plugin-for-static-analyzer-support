@@ -216,7 +216,7 @@
 \extendedabstract{Infrastruktura Code Listener historicky sloužila jako mezivrstva mezi překladačem a statickými analyzátory programů v~jazycích C a C++.
   Jejím úkolem bylo převzít vnitřní reprezentaci programu z~překladače, převést ji do jednotného tvaru a předat ji analyzátorům, především analyzátoru Predator.
   Přestože tento přístup umožnil praktické nasazení několika analýz, původní implementace postupně nashromáždila zásadní architektonická omezení.
-  Specificky vnitřní reprezentace programu byla přímo znečištěna výsledky pomocných analýz a zpracování bylo svázáno s~povinným řetězcem transformací.
+  Specificky výsledky pomocných analýz byly ukládány přímo do vnitřní reprezentace programu, což vedlo k~její úzké provázanosti s~odvozenými daty, a zpracování bylo navíc svázáno s~povinným řetězcem transformací.
   To vedlo ke komplikované údržbě a obtížnému rozšiřování.
   Cílem této bakalářské práce bylo proto původní Code Listener analyzovat, navrhnout a implementovat modernizovanou infrastrukturu, která zachová zpětnou kompatibilitu s~analyzátorem Predator, ale současně vytvoří čistší základ pro další vývoj a výzkum.\par
 
@@ -240,8 +240,8 @@
   Praktickým důsledkem je, že z~téhož modelu lze konzistentně generovat JSON reprezentaci, grafové výstupy v~DOT formátu nebo čitelný textový výpis programu.
   Tato část návrhu zajišťuje, že modernizovaná infrastruktura není pouze náhradou historického pluginu, ale samostatnou platformou, nad níž lze vytvářet nové nástroje, analyzátory i vývojové workflow.\par
 
-  Implementační část práce převádí navrženou architekturu do funkčního prototypu v~jazyce C++23.
-  Výsledkem je nový plugin pro GCC, který se registruje do životního cyklu překladače, sleduje zpracovávané překladové jednotky a pomocí modulu \texttt{GCCAdapter} převádí GCC stromy a GIMPLE instrukce do \texttt{CodeModelu}.
+  Implementační část práce převádí navrženou architekturu do funkčního prototypu implementovaného v~C++23.
+  Výsledkem je nový plugin pro GCC, který se registruje do jeho životního cyklu, sleduje zpracovávané překladové jednotky a pomocí modulu \texttt{GCCAdapter} převádí GCC stromy a GIMPLE instrukce do \texttt{CodeModelu}.
   Adaptér přitom řeší praktické problémy reálného překladačového prostředí: kešuje již vytvořené typy a proměnné, normalizuje zdrojové lokace, přiřazuje syntetická jména anonymním agregátům a zajišťuje, že výsledný model neobsahuje žádné ukazatele do paměti GCC, takže může bezpečně přežít samotný překladačový proces.
   Pro práci mimo živý běh pluginu byly implementovány nástroje \texttt{cl\_merge} a \texttt{cl\_analyze}, které umožňují serializovat více překladových jednotek do JSON, sloučit je do jednoho celoprogramového modelu a následně nad nimi spouštět analyzátory nebo vestavěné exportéry.
   Tím práce rozšiřuje původní převážně pluginově orientovaný scénář o~explicitní offline workflow založené na serializaci do JSON, slučování modelů z~více překladových jednotek a následné analýze mimo běh GCC.\par
