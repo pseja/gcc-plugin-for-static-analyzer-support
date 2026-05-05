@@ -429,36 +429,33 @@ Core::CodeModel ModelMerger::merge(std::vector<Core::CodeModel> models)
             if (!is_field)
             {
                 const auto &sv = std::get<Core::StandardVariable>(v.data);
-                if (sv.linkage != Core::Linkage::EXTERNAL)
+                if (sv.linkage == Core::Linkage::EXTERNAL)
                 {
-                    continue;
-                }
-
-                auto it = extern_vars.find(v.name);
-                if (it != extern_vars.end())
-                {
-                    maps.var_map[v.id] = it->second;
-
-                    if (sv.initial_value)
+                    auto it = extern_vars.find(v.name);
+                    if (it != extern_vars.end())
                     {
-                        auto *existing = merged.getVariableMutable(it->second);
-                        auto &esv = std::get<Core::StandardVariable>(existing->data);
-                        if (!esv.initial_value)
+                        maps.var_map[v.id] = it->second;
+
+                        if (sv.initial_value)
                         {
-                            esv.initial_value = sv.initial_value;
+                            auto *existing = merged.getVariableMutable(it->second);
+                            auto &esv = std::get<Core::StandardVariable>(existing->data);
+                            if (!esv.initial_value)
+                            {
+                                esv.initial_value = sv.initial_value;
+                            }
                         }
+
+                        continue;
                     }
 
+                    Core::Variable *vp = merged.createVariable();
+                    *vp = v;
+                    vp->id = Core::VariableId{merged.variables().size() - 1};
+                    maps.var_map[v.id] = vp->id;
+                    extern_vars[v.name] = vp->id;
                     continue;
                 }
-
-                // fall through to import
-                Core::Variable *vp = merged.createVariable();
-                *vp = v;
-                vp->id = Core::VariableId{merged.variables().size() - 1};
-                maps.var_map[v.id] = vp->id;
-                extern_vars[v.name] = vp->id;
-                continue;
             }
 
             // field var, or INTERNAL/NONE standard var - always import
