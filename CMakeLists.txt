@@ -7,20 +7,55 @@ enable_testing()
 set(TARGET_VERSION "12")
 set(TARGET_GCC
     "gcc-${TARGET_VERSION}"
-    CACHE STRING "The GCC compiler executable to build the plugin for")
+    CACHE
+      STRING
+      "The GCC compiler executable name or absolute path to build the plugin for"
+)
+
+if(IS_ABSOLUTE "${TARGET_GCC}")
+  if(NOT EXISTS "${TARGET_GCC}")
+    message(FATAL_ERROR "Configured TARGET_GCC does not exist: ${TARGET_GCC}")
+  endif()
+
+  set(TARGET_GCC_BIN "${TARGET_GCC}")
+else()
+  find_program(
+    TARGET_GCC_BIN
+    NAMES ${TARGET_GCC} REQUIRED
+    DOC "Resolved path to the GCC compiler executable used by the build")
+endif()
+
+set(GCC_PLUGIN_INCLUDE_DIR
+    ""
+    CACHE PATH
+          "Path to the GCC plugin header directory containing gcc-plugin.h")
 
 option(WITH_PREDATOR
        "Build predator (libsl_analyzer.so) and its regression tests" ON)
 
-execute_process(
-  COMMAND ${TARGET_GCC} -print-file-name=plugin
-  OUTPUT_VARIABLE GCC_PLUGIN_DIR
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(NOT GCC_PLUGIN_INCLUDE_DIR)
+  execute_process(
+    COMMAND "${TARGET_GCC_BIN}" -print-file-name=plugin
+    RESULT_VARIABLE GCC_PLUGIN_DIR_STATUS
+    OUTPUT_VARIABLE GCC_PLUGIN_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-if("${GCC_PLUGIN_DIR}" STREQUAL "")
+  if(NOT GCC_PLUGIN_DIR_STATUS EQUAL 0 OR "${GCC_PLUGIN_DIR}" STREQUAL "")
+    message(
+      FATAL_ERROR
+        "Could not query the GCC plugin directory from `${TARGET_GCC_BIN}`. Install the matching plugin headers for that compiler, or set GCC_PLUGIN_INCLUDE_DIR manually."
+    )
+  endif()
+
+  set(GCC_PLUGIN_INCLUDE_DIR "${GCC_PLUGIN_DIR}/include")
+else()
+  set(GCC_PLUGIN_DIR "<manual override>")
+endif()
+
+if(NOT EXISTS "${GCC_PLUGIN_INCLUDE_DIR}/gcc-plugin.h")
   message(
     FATAL_ERROR
-      "Could not find GCC plugin directory. Install `${TARGET_GCC}-plugin-dev` and `g++-${TARGET_VERSION}`"
+      "Could not find gcc-plugin.h in `${GCC_PLUGIN_INCLUDE_DIR}`. `${TARGET_GCC_BIN} -print-file-name=plugin` may return a plugin directory even when the matching plugin headers are not installed. Install the matching plugin headers for that compiler, or set GCC_PLUGIN_INCLUDE_DIR to a local unpacked header tree."
   )
 endif()
 
@@ -31,14 +66,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(json)
 
 message(STATUS "Target GCC: ${TARGET_GCC}")
+message(STATUS "Resolved Target GCC: ${TARGET_GCC_BIN}")
 message(STATUS "GCC Plugin Directory: ${GCC_PLUGIN_DIR}")
-
-set(GCC_PLUGIN_INCLUDE_DIR "${GCC_PLUGIN_DIR}/include")
+message(STATUS "GCC Plugin Include Directory: ${GCC_PLUGIN_INCLUDE_DIR}")
 
 file(
   GENERATE
   OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/make-config.mk"
-  CONTENT "TARGET_GCC := ${TARGET_GCC}\nCC := ${TARGET_GCC}\n")
+  CONTENT "TARGET_GCC := ${TARGET_GCC_BIN}\nCC := ${TARGET_GCC_BIN}\n")
 
 function(collect_subdirectories out_var base_dir)
   set(dirs "${base_dir}")
@@ -167,9 +202,7 @@ add_cl_tool(cl_analyze)
 # after a top-level build the tests can be run with: ctest --test-dir
 # <build>/predator/sl_build -R "^new-plugin-"
 if(WITH_PREDATOR)
-  find_program(
-    GCC_HOST_BIN ${TARGET_GCC} REQUIRED
-    DOC "GCC used by predator tests (must match the plugin's TARGET_GCC)")
+  set(GCC_HOST_BIN "${TARGET_GCC_BIN}")
 
   set(PREDATOR_SRC "${CMAKE_CURRENT_SOURCE_DIR}/analyzers/predator")
   set(PREDATOR_BUILD "${CMAKE_CURRENT_BINARY_DIR}/analyzers/predator/sl_build")

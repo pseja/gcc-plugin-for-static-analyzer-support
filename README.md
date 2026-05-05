@@ -67,7 +67,8 @@ Optional cmake variables:
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `TARGET_GCC` | `gcc-12` | GCC executable to build for and test against |
+| `TARGET_GCC` | `gcc-12` | GCC executable name or absolute path to build for and test against |
+| `GCC_PLUGIN_INCLUDE_DIR` | auto-detected | Directory containing `gcc-plugin.h`; use to point at a locally unpacked plugin header tree |
 | `WITH_PREDATOR` | `ON` | Build Predator and its regression tests |
 
 ### 3. Build
