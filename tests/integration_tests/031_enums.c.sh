@@ -43,7 +43,15 @@ echo "$SIZE" | grep -qE '^(8|16|32|64)$' || fail "unexpected enum size_bits: $SI
 N=$(jq '[.instructions[] | select(.kind == "COND")] | length' "$JSON")
 [ "$N" -ge 1 ] || fail "expected at least one COND instruction (enum comparison)"
 
-# enum constant 5 (STATE_RUNNING) or 10 (STATE_ERROR) appears in an ASSIGN
-HIT=$(jq '[.instructions[] | select(.kind == "ASSIGN") |
-           (.rhs1.value // "") | select(. == "5" or . == "10")] | length' "$JSON")
-[ "$HIT" -ge 1 ] || fail "expected enum constant 5 or 10 in an ASSIGN operand"
+# enum constants must be lowered through CONST_DECL as literal operands, not variables
+ASSIGN=$(jq '[.instructions[]
+			| select(.kind == "ASSIGN")
+			| select((.rhs1.type // "") == "constant")
+			| select((.rhs1.value // "") == "5" or (.rhs1.value // "") == "10")] | length' "$JSON")
+[ "$ASSIGN" -ge 1 ] || fail "expected enum constant 5 or 10 as a constant ASSIGN operand"
+
+COND=$(jq '[.instructions[]
+		    | select(.kind == "COND")
+		    | select(((.lhs.type // "") == "constant" and ((.lhs.value // "") == "10" or (.lhs.value // "") == "5"))
+			    or ((.rhs.type // "") == "constant" and ((.rhs.value // "") == "10" or (.rhs.value // "") == "5")))] | length' "$JSON")
+[ "$COND" -ge 1 ] || fail "expected enum constant 5 or 10 as a constant COND operand"
