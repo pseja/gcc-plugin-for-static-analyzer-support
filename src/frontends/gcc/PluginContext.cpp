@@ -123,20 +123,10 @@ bool PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     // implementation is there for future analyzers
     static struct register_pass_info cl_plugin_pass = {
         .pass = p, .reference_pass_name = "cfg", .ref_pass_instance_number = 0, .pos_op = PASS_POS_INSERT_AFTER};
+
+    // register callbacks
     register_callback(plugin_info->base_name, PLUGIN_PASS_MANAGER_SETUP, nullptr, &cl_plugin_pass);
-
-    // TODO: register callbacks
     register_callback(plugin_info->base_name, PLUGIN_START_UNIT, on_start_unit, this);
-
-    // register_callback(plugin_info->base_name, PLUGIN_START_PARSE_FUNCTION, on_start_function, nullptr);
-
-    // register_callback(plugin_info->base_name, PLUGIN_FINISH_TYPE, on_finish_type, nullptr);
-
-    // register_callback(plugin_info->base_name, PLUGIN_FINISH_PARSE_FUNCTION, on_finish_function, nullptr);
-
-    // register_callback(plugin_info->base_name, PLUGIN_FINISH_UNIT, on_finish_unit, nullptr);
-
-    // cleanup
     register_callback(plugin_info->base_name, PLUGIN_FINISH, on_plugin_finish, this);
 
     // load external analyzer (e.g. libsl_analyzer.so) if requested
