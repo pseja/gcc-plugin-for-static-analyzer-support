@@ -69,10 +69,10 @@ bool writePidFile(const std::string &pid_file, Core::DiagnosticReporter &reporte
 
 } // namespace
 
-// TODO: plugin arguments?
 struct plugin_info PluginContext::plugin_info = {
     .version = "0.1",
-    .help = "A plugin to support static analyzers like Predator",
+    .help = "Translate GCC GIMPLE into the CodeListener CodeModel and run configured exporters or analyzers. Use "
+            "-fplugin-arg-libcl_gcc-help for the full option list.",
 };
 
 static void on_start_unit(void *gcc_data, void *user_data)
