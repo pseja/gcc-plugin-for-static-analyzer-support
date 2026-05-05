@@ -487,7 +487,12 @@ static Operand parseOperand(const json &j)
         {
             vo.access_path.push_back(parseAccessor(acc_j));
         }
-        // TODO: result_type_id is not serialized - leave as nullopt
+        if (const auto it = j.find("result_type_id"); it != j.end() && !it->is_null())
+        {
+            TypeId result_type_id;
+            it->get_to(result_type_id);
+            vo.result_type_id = result_type_id;
+        }
 
         return vo;
     }

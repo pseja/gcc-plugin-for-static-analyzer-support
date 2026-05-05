@@ -134,6 +134,10 @@ void to_json(json &j, const Operand &op)
                    },
                    [&](const VariableOperand &vo) -> void {
                        j = json{{"type", "variable"}, {"variable_id", vo.id}, {"access_path", vo.access_path}};
+                       if (vo.result_type_id)
+                       {
+                           j["result_type_id"] = vo.result_type_id.value();
+                       }
                    }},
                op);
 }
