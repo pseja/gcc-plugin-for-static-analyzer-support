@@ -231,7 +231,7 @@ void PredatorAdapter::emit()
 
     if (listener->file_open)
     {
-        listener->file_open(listener, persistString(model.getFilename())); // TODO: Map main source file
+        listener->file_open(listener, persistString(model.getFilename()));
     }
 
     emitFunctions();
