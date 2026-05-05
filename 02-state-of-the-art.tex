@@ -20,7 +20,7 @@ Its primary goal is to wrap the complex and often undocumented interfaces of exi
 By transforming the native internal representations of compilers into its own simplified format, the Code Listener API exposed to static analyzers becomes completely independent of the underlying parser.
 This abstraction layer allows the same analysis tool to run across different compilers without requiring modifications to the analyzer's source code~\cite{CodeListener2012}.
 
-The architecture of the original Code Listener is highly modular, effectively acting as a bridge between the compiler's internal representations and the static analysis tools, as illustrated in Figure~\ref{fig:old-architecture} on page~\pageref{fig:old-architecture}, and is composed of several key components:
+The architecture of the original Code Listener is highly modular, effectively acting as a bridge between the compiler's internal representations and the static analysis tools, as illustrated in Figure~\ref{fig:old-architecture} on page~\pageref{fig:old-architecture}, where data flows from the code parser interface through optional listeners and through mandatory filters into the persistent code storage and finally to the analyzers, and is composed of several key components:
 \begin{itemize}
   \item \textbf{Code Parser Interface} is a layer that communicates directly with the source code parsers, such as the GCC compiler.
     Small adapters embedded within the code parsers are responsible for translating the parser's specific intermediate representation into the parser-independent representation required by Code Listener.
@@ -40,12 +40,8 @@ The architecture of the original Code Listener is highly modular, effectively ac
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{obrazky-figures/codelistener-old.pdf}
-  \caption{
-    Block diagram of the legacy Code Listener infrastructure.
-    The system is divided into interconnected modules, beginning with the code parser interface, which extracts intermediate representations from compilers such as GCC or Sparse.
-    This data flows through optional filters, such as \texttt{switch to if} transformations, and listeners like the CFG plotters before being aggregated into a persistent object model within the code storage component.
-    Finally, static analyzers such as Predator and Forester can query this code storage to perform formal verification, routing any discovered defects back through the code parser interface and the code parser's diagnostic stream so that users and build tools receive ordinary source-located parser diagnostics~\cite{CodeListener2012}.
-  }\label{fig:old-architecture}
+  \caption{High-level architecture of the legacy Code Listener infrastructure.
+  Reproduced from~\cite{CodeListener2012}}\label{fig:old-architecture}
 \end{figure}
 
 The utility of the Code Listener infrastructure is demonstrated by the advanced verification tools that rely on it.
@@ -114,6 +110,7 @@ The Code Listener adapter systematically translates these GIMPLE trees into its 
 
 To decouple static analysis tools from the GCC compiler, the Code Listener adapter systematically translates GIMPLE into its own simplified format, the Code Listener Intermediate Representation (CL IR).
 In this representation, the execution structure of each parsed function is modeled using a Control Flow Graph (CFG)~\cite{CodeListener2012}.
+Figure~\ref{fig:cfg} on page~\pageref{fig:cfg} shows this organization: each basic block contains a sequence of non-terminal instructions and ends with exactly one terminal instruction that determines the outgoing CFG edges.
 
 A~Control Flow Graph is a directed mathematical graph where the vertices represent basic blocks, and the edges represent the possible transfers of control flow during program execution~\cite{CodeListener2012}.
 A~basic block is defined as a straight-line sequence of code with exactly one entry point and one exit point.
@@ -131,13 +128,8 @@ To construct these blocks, the Code Listener API restricts its intermediate inst
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{obrazky-figures/cfg_bbs.png}
-  \caption{
-    Control Flow Graph (CFG) representation of functions within the Code Listener Intermediate Representation.
-    The graph models the execution structure using basic blocks as vertices and control flow transitions as directed edges.
-    Each basic block contains a strictly sequential list of non-terminal instructions, such as function calls (\texttt{CALL}) or binary operations (\texttt{BINOP}).
-    To determine the subsequent flow of execution, every block concludes with exactly one terminal instruction, such as an unconditional jump (\texttt{JMP}), conditional jump (\texttt{COND}), or return (\texttt{RET})~\cite{CodeListener2012}.
-    Taken from~\cite{CodeListener2012}.
-  }\label{fig:cfg}
+  \caption{Control Flow Graph (CFG) representation of functions in the Code Listener IR.\@
+  Taken from~\cite{CodeListener2012}.}\label{fig:cfg}
 \end{figure}
 
 Instructions manipulate data through operands, represented by the \texttt{cl\_operand} structure.

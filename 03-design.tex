@@ -19,16 +19,11 @@ To effectively resolve the constraints of the legacy implementation, the moderni
 \begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{obrazky-figures/codelistener-new-high-level.pdf}
-  \caption{
-    Block diagram of the New Code Listener architecture.
-    The Compiler Abstraction Layer translates GCC GIMPLE into the compiler-independent Code Model.
-    The Core provides the Code Model, Analysis Manager, Annotation Services, and Diagnostic Reporter.
-    Exporters produce DOT, JSON, and pretty-printed text (PP) output.
-    The Public API separates the engine from the built-in bridges: the Predator Compatibility Layer bridges to unmodified Predator via PredatorAdapter, while the Native Analyzer Bridge loads third-party analyzers via \texttt{dlopen}.
-  }\label{fig:new-high-level}
+  \caption{High-level architecture of the modernized Code Listener infrastructure.}\label{fig:new-high-level}
 \end{figure}
 
 As illustrated in Figure~\ref{fig:new-high-level} on page~\pageref{fig:new-high-level}, the new architecture models the data flow sequentially from left to right.
+The Compiler Abstraction Layer translates GCC GIMPLE into the compiler-independent Code Model, the Core provides the model together with the analysis and diagnostic services, the exporters produce DOT, JSON, and pretty-printed output, and the Public API hands the result either to native analyzers or to Predator through the compatibility bridge.
 The process begins with the compiler (e.g., GCC), which passes its internal representation to the Compiler Abstraction Layer.
 This layer is responsible for translating the compiler-specific data into the unified, persistent Code Model housed within the Core.
 
@@ -95,12 +90,10 @@ There are two concrete implementations of this interface:
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{obrazky-figures/IFrontend_inherit_graph.pdf}
-  \caption{
-    Class diagram of the \texttt{IFrontend} Strategy pattern~\cite{GoF}.
-    The interface abstracts the source of the program model, allowing the analysis backend to operate identically whether running as a live GCC compiler plugin via \texttt{GCCFrontend} or as a standalone offline tool parsing JSON data via \texttt{JSONFrontend}.
-  }\label{fig:ifrontend-inherit-graph}
+  \caption{\texttt{IFrontend} hierarchy used by the frontend Strategy pattern~\cite{GoF}.}\label{fig:ifrontend-inherit-graph}
 \end{figure}
 
+Figure~\ref{fig:ifrontend-inherit-graph} on page~\pageref{fig:ifrontend-inherit-graph} highlights that this abstraction lets the same analysis backend run either live inside GCC via \texttt{GCCFrontend} or offline on serialized input via \texttt{JSONFrontend}.
 Once the active frontend finishes populating the Code Model, it iterates through all registered analyzers and invokes the analysis backend.
 Because both frontends implement the same contract, the live compiler plugin and the offline standalone tool are completely interchangeable from the perspective of the analysis tools.
 
@@ -128,16 +121,12 @@ These pools use \texttt{std::deque<T>} containers, which guarantee that memory a
 
 Entities reference each other exclusively through lightweight, strongly typed identifiers: \texttt{TypeId}, \texttt{VariableId}, \texttt{FunctionId}, \texttt{BlockId}, and \texttt{InstructionId}.
 This ID-based referencing provides several major advantages: it completely eliminates the risk of dangling pointers, vastly simplifies memory ownership, and trivially enables the serialization of the entire model, such as exporting the parsed program to JSON.\@
+Figure~\ref{fig:code-model-entity-relationship} on page~\pageref{fig:code-model-entity-relationship} summarizes this flattened pool layout and the ID-based links between entities.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{obrazky-figures/codemodel-erd.pdf}
-  \caption{
-    Entity relationship diagram of the Code Model.
-    The model uses a flat, data-oriented structure in which all types, variables, functions, blocks, and instructions reside in centralized pools.
-    Entities navigate the graph by storing lightweight IDs.
-    For example, a \texttt{Function} holds a vector of \texttt{BlockId}s rather than raw memory pointers, ensuring safe serialization and decoupling.
-  }\label{fig:code-model-entity-relationship}
+  \caption{Entity relationship diagram of the Code Model pools and their ID-based links.}\label{fig:code-model-entity-relationship}
 \end{figure}
 
 \subsection*{Modernized Type and Instruction Hierarchies}\label{sub:type-instruction-hierarchy}
@@ -204,13 +193,12 @@ This CRTP base automatically injects two critical components into every service:
     This elegant, low-overhead pattern guarantees globally unique keys per annotation type and heavily mirrors the \texttt{AnalysisInfoMixin} design found in modern LLVM\footnote{\url{https://llvm.org/doxygen/structllvm_1_1AnalysisInfoMixin.html\#details}}.\@
 \end{enumerate}
 
+Figure~\ref{fig:crtp-inheritance} on page~\pageref{fig:crtp-inheritance} shows how \texttt{AnnotationBase} provides both the standard \texttt{build()} factory contract and the unique \texttt{AnalysisKey} used by the cache.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.4\textwidth]{obrazky-figures/CRTP_inherit_graph.pdf}
-  \caption{
-    Class diagram illustrating the Curiously Recurring Template Pattern (CRTP) used for Annotation Services.
-    Inheriting from \texttt{AnnotationBase} guarantees that each service exposes a unique \texttt{AnalysisKey} and a standard \texttt{build()} factory, allowing the \texttt{AnalysisManager} to instantiate and cache them generically.
-  }\label{fig:crtp-inheritance}
+  \caption{CRTP structure used by the annotation services.}\label{fig:crtp-inheritance}
 \end{figure}
 
 \subsection*{Implemented Services}\label{sub:implemented-services}
@@ -247,15 +235,12 @@ This class orchestrates the export process by combining three classical design p
 
 Furthermore, while the main analysis pipeline shares a single \texttt{AnalysisManager} instance, each concrete \texttt{Exporter} is instantiated with its own independent \texttt{AnalysisManager}.
 This allows the exporter to lazily request and utilize auxiliary data, such as the \texttt{SwitchToIf} annotation, internally without polluting the primary analysis cache.
+Figure~\ref{fig:exporter-inheritance} on page~\pageref{fig:exporter-inheritance} summarizes the shared traversal base and its DOT, JSON, and PP specializations.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{obrazky-figures/Exporter_inherit_graph.pdf}
-  \caption{
-    Class diagram of the Exporter hierarchy.
-    The Exporter utilizes the Visitor and Template Method patterns to traverse the Code Model.
-    Concrete implementations, specifically \texttt{DOTExporter}, \texttt{JSONExporter}, or \texttt{PPExporter}, provide specific serialization formats.
-  }\label{fig:exporter-inheritance}
+  \caption{Exporter hierarchy for DOT, JSON, and pretty-printed output.}\label{fig:exporter-inheritance}
 \end{figure}
 
 \subsection*{Diagnostic and Visual Exporters}\label{sub:diagnostic-exporters}
@@ -265,6 +250,7 @@ The infrastructure implements two exporters primarily designed for human inspect
 \begin{itemize}
   \item \textbf{DOTExporter:} This component generates a Graphviz \texttt{.dot} representation of the Control Flow Graph (CFG) for each parsed function.
     It is parameterized by a \texttt{DotVerbosity} flag, that allows the user to toggle the inclusion of detailed type information and unique variable identifiers.
+    As illustrated in Figure~\ref{fig:generated-dot} on page~\pageref{fig:generated-dot}, \texttt{CLEAN} emphasizes quick topology inspection, \texttt{COMPACT} keeps full instruction text and operand names while suppressing ENTRY/EXIT pseudo-blocks, and \texttt{FULL} adds block IDs, source line numbers, and the pseudo-blocks needed when debugging the extractor itself.
     This fulfills the program graph visualization requirement, providing analysts with immediate visual confirmation of the extracted execution paths~\cite{CleanArchitecture}.
   \item \textbf{PPExporter:} Serving as a direct, modernized replacement for the legacy \texttt{cl\_pp} listener, the Pretty Printer exporter outputs a human-readable, three-address code (3AC) listing of the program.
 \end{itemize}
@@ -274,24 +260,21 @@ The infrastructure implements two exporters primarily designed for human inspect
   \begin{subfigure}[t]{0.25\textwidth}
     \centering
     \includegraphics[width=\textwidth]{obrazky-figures/cfg_CLEAN.pdf}
-    \caption{\texttt{CLEAN} has block structure only, instruction types are shown as keywords, and mirrors the legacy look.}\label{fig:dot-clean}
+    \caption{\texttt{CLEAN} verbosity.}\label{fig:dot-clean}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.6\textwidth}
     \centering
     \includegraphics[width=\textwidth]{obrazky-figures/cfg_COMPACT.pdf}
-    \caption{\texttt{COMPACT} has full instruction text and operand names, ENTRY/EXIT pseudo-blocks are suppressed.}\label{fig:dot-compact}
+    \caption{\texttt{COMPACT} verbosity.}\label{fig:dot-compact}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{obrazky-figures/cfg_FULL.pdf}
-    \caption{\texttt{FULL} adds block IDs, source line numbers, and ENTRY/EXIT pseudo-blocks.}\label{fig:dot-full}
+    \caption{\texttt{FULL} verbosity.}\label{fig:dot-full}
   \end{subfigure}
-  \caption{
-    Control Flow Graphs of a recursive \texttt{factorial} program generated by the \texttt{DOTExporter} at the three available verbosity levels.
-    \texttt{CLEAN} is suited for quick topology inspection, \texttt{COMPACT} for human-readable analysis, and \texttt{FULL} for debugging the extractor itself.
-  }\label{fig:generated-dot}
+  \caption{\texttt{DOTExporter} output for a recursive \texttt{factorial} program at the three available verbosity levels.}\label{fig:generated-dot}
 \end{figure}
 
 \subsection*{Persistent Storage and the JSON Round-Trip}\label{sub:json-round-trip}
@@ -330,14 +313,12 @@ virtual void analyze(const CodeModel&, AnalysisContext&) = 0;
 \end{lstlisting}
 
 The framework provides two built-in implementations of this interface that bridge the gap between the internal Code Model and the external analysis tools: the \\\texttt{NativeAnalyzerBridge} for modern plugins, and the \texttt{LegacyPredatorBridge} for backward compatibility.
+Figure~\ref{fig:ianalyzer-inheritance} on page~\pageref{fig:ianalyzer-inheritance} contrasts these two integration paths.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{obrazky-figures/IAnalyzer_inherit_graph.pdf}
-  \caption{
-    Class diagram of the \texttt{IAnalyzer} interface.
-    The \texttt{NativeAnalyzerBridge} provides a modern integration path for dynamically loaded tools, while the \texttt{LegacyPredatorBridge} provides a backward-compatibility layer.
-  }\label{fig:ianalyzer-inheritance}
+  \caption{\texttt{IAnalyzer} bridge hierarchy.}\label{fig:ianalyzer-inheritance}
 \end{figure}
 
 \subsection*{Native Analyzer Bridge}\label{sub:native-analyzer-bridge}
@@ -356,15 +337,12 @@ The most critical constraint of the modernization effort was ensuring that the V
 Predator expects its input in the form of the legacy \texttt{cl\_code\_listener} C API, which is a stream of sequential function-pointer callbacks such as \texttt{fnc\_open}, \texttt{insn}, or \texttt{fnc\_close}.
 
 To bridge this fundamental architectural gap, the infrastructure implements the classic Adapter design pattern~\cite{GoF}.
-The \texttt{LegacyPredatorBridge} instantiates a \texttt{PredatorAdapter}, which systematically traverses the new, object-oriented \texttt{CodeModel} and translates its entities back into the legacy stream of C callbacks.
+The \texttt{LegacyPredatorBridge} instantiates a \texttt{PredatorAdapter}, which systematically traverses the new, object-oriented \texttt{CodeModel} and translates its entities back into the legacy stream of C callbacks, as shown in Figure~\ref{fig:predator-adapter-flow} on page~\pageref{fig:predator-adapter-flow}.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.7\textwidth]{obrazky-figures/predatoradapter-flow-diagram.pdf}
-  \caption{
-    Data flow diagram of the Predator Compatibility Layer.
-    The \texttt{PredatorAdapter} structurally adapts the modern \texttt{CodeModel} to fulfill the legacy \texttt{cl\_code\_listener} callback interface expected by Predator, seamlessly preserving backward compatibility.
-  }\label{fig:predator-adapter-flow}
+  \caption{Flow of data through the Predator compatibility layer.}\label{fig:predator-adapter-flow}
 \end{figure}
 
 \subsection*{Capability Asymmetry and the Illusion of Pre-Analyses}\label{sub:capability-asymmetry}
