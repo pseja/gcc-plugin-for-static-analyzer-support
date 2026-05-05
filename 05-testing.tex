@@ -20,7 +20,7 @@ Because the infrastructure acts as a mediator between the compiler and the analy
 To systematically verify each phase, the project utilizes the CTest framework to orchestrate four distinct regression suites.
 Testing was conducted on Linux, specifically Ubuntu 24.04 LTS and Arch Linux.
 Within the checked-in CMake configuration, the plugin build is parameterized by the \texttt{TARGET\_GCC} variable, which defaults to \texttt{gcc-12}.
-To verify portability across supported compiler releases, the project was rebuilt from a clean state, and the full \texttt{make test} pipeline was rerun separately with GCC 12, GCC 13, and GCC 14.
+To verify portability across supported compiler releases, the project was rebuilt from a clean state, and the full \texttt{make test} pipeline was rerun separately with GCC 12, GCC 13, GCC 14 and GCC 15.
 The testing pipeline is fully automated via the \texttt{make test} build target, with dedicated entry points for the \texttt{cl-adapter}, \texttt{codemodel}, \texttt{cl\_analyze}, and Predator compatibility suites.
 
 The two primary evaluation environments were intentionally different in character.
@@ -59,7 +59,7 @@ These tests cover pointer arithmetic, dynamically linked structures, sorting rou
 
 To evaluate backward compatibility, the patched Predator kernel is compiled against the new infrastructure and invoked through the \texttt{LegacyPredatorBridge} and \texttt{PredatorAdapter}.
 The harness compares the filtered diagnostic output of the new plugin path against the same expected \texttt{.err} files used by Predator's GCC-based regression workflow.
-Across the clean rebuilds performed for GCC 12, GCC 13, and GCC 14, all 1,192 registered \texttt{new-plugin} tests passed successfully.
+Across the clean rebuilds performed for GCC 12, GCC 13, GCC 14, and GCC 15, all 1,192 registered \texttt{new-plugin} tests passed successfully.
 
 During development, compatibility debugging was driven repeatedly against this regression harness, with a quick verification subset covering tests 1 through 20 used to track the adapter fixes summarized in the implementation chapter.
 

@@ -7,7 +7,7 @@
 This thesis analyzed the original Code Listener infrastructure and developed a modern replacement that preserves its static-analysis role while addressing accumulated architectural limitations.
 To achieve these goals, a new GCC plugin and supporting toolchain were designed around a compiler-independent \texttt{CodeModel}, lazy annotation services, and unified interfaces for export and analysis.
 The resulting prototype enables live analysis inside GCC, offline JSON-based processing through \texttt{cl\_merge} and \texttt{cl\_analyze}, and backward-compatible integration with the existing Predator toolchain.
-Evaluation showed strong continuity: the native regression suites passed successfully, and the Predator compatibility path passed all 1,192 registered \texttt{new-plugin} regression tests during clean rebuilds using GCC 12, GCC 13, and GCC 14.
+Evaluation showed strong continuity: the native regression suites passed successfully, and the Predator compatibility path passed all 1,192 registered \texttt{new-plugin} regression tests during clean rebuilds using GCC 12, GCC 13, GCC 14, and GCC 15.
 Collectively, these results show that the modernization preserves the historical analyzer boundary while also providing a more maintainable and extensible foundation for future analyzers and workflows.
 
 Building on these results, the most natural continuation of this work is to expand the framework along the trajectory in which it was originally designed, ensuring cohesive growth.
