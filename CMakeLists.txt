@@ -4,27 +4,236 @@ project(cl)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
 
-set(TARGET_VERSION "12")
+# GCC plugin builds require a GCC binary and matching plugin headers. The
+# minimum supported version is kept explicit so both auto-detection and
+# diagnostics can refer to the same baseline.
+set(TARGET_GCC_MINIMUM_VERSION "12")
 set(TARGET_GCC
-    "gcc-${TARGET_VERSION}"
+    ""
     CACHE
       STRING
-      "The GCC compiler executable name or absolute path to build the plugin for"
+      "The GCC compiler executable name or absolute path to build the plugin for. Leave empty to auto-detect a usable GCC >= ${TARGET_GCC_MINIMUM_VERSION}."
 )
 
-if(IS_ABSOLUTE "${TARGET_GCC}")
-  if(NOT EXISTS "${TARGET_GCC}")
-    message(FATAL_ERROR "Configured TARGET_GCC does not exist: ${TARGET_GCC}")
+# resolve a candidate compiler name or path to a canonical executable path
+function(resolve_gcc_binary out_var candidate)
+  if(IS_ABSOLUTE "${candidate}")
+    if(EXISTS "${candidate}")
+      file(REAL_PATH "${candidate}" resolved_gcc_bin)
+      set(${out_var}
+          "${resolved_gcc_bin}"
+          PARENT_SCOPE)
+    else()
+      set(${out_var}
+          ""
+          PARENT_SCOPE)
+    endif()
+    return()
   endif()
 
-  set(TARGET_GCC_BIN "${TARGET_GCC}")
-else()
-  find_program(
+  find_program(resolved_gcc_bin NAMES "${candidate}")
+  if(resolved_gcc_bin)
+    file(REAL_PATH "${resolved_gcc_bin}" resolved_gcc_bin)
+  endif()
+  set(${out_var}
+      "${resolved_gcc_bin}"
+      PARENT_SCOPE)
+endfunction()
+
+# inspect one GCC candidate for version support and plugin-header availability
+function(
+  inspect_gcc_candidate
+  candidate
+  out_ok
+  out_bin
+  out_version
+  out_plugin_dir
+  out_default_include
+  out_has_headers
+  out_reason)
+  resolve_gcc_binary(candidate_bin "${candidate}")
+  if(NOT candidate_bin)
+    set(${out_ok}
+        FALSE
+        PARENT_SCOPE)
+    set(${out_reason}
+        "not found"
+        PARENT_SCOPE)
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${candidate_bin}" -dumpfullversion
+    OUTPUT_VARIABLE candidate_version
+    OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+  if("${candidate_version}" STREQUAL "")
+    execute_process(
+      COMMAND "${candidate_bin}" -dumpversion
+      OUTPUT_VARIABLE candidate_version
+      OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+  endif()
+
+  string(REGEX MATCH "^[0-9]+" candidate_major "${candidate_version}")
+  if("${candidate_major}" STREQUAL "")
+    set(${out_ok}
+        FALSE
+        PARENT_SCOPE)
+    set(${out_reason}
+        "could not determine GCC version"
+        PARENT_SCOPE)
+    return()
+  endif()
+
+  if("${candidate_major}" VERSION_LESS "${TARGET_GCC_MINIMUM_VERSION}")
+    set(${out_ok}
+        FALSE
+        PARENT_SCOPE)
+    set(${out_reason}
+        "version ${candidate_version} is below the minimum supported GCC ${TARGET_GCC_MINIMUM_VERSION}"
+        PARENT_SCOPE)
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${candidate_bin}" -print-file-name=plugin
+    RESULT_VARIABLE candidate_plugin_status
+    OUTPUT_VARIABLE candidate_plugin_dir
+    OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+
+  if(NOT candidate_plugin_status EQUAL 0
+     OR "${candidate_plugin_dir}" STREQUAL ""
+     OR "${candidate_plugin_dir}" STREQUAL "plugin")
+    set(${out_ok}
+        FALSE
+        PARENT_SCOPE)
+    set(${out_reason}
+        "could not query the GCC plugin directory"
+        PARENT_SCOPE)
+    return()
+  endif()
+
+  set(candidate_default_include "${candidate_plugin_dir}/include")
+  if(EXISTS "${candidate_default_include}/gcc-plugin.h")
+    set(candidate_has_headers TRUE)
+  else()
+    set(candidate_has_headers FALSE)
+  endif()
+
+  set(${out_ok}
+      TRUE
+      PARENT_SCOPE)
+  set(${out_bin}
+      "${candidate_bin}"
+      PARENT_SCOPE)
+  set(${out_version}
+      "${candidate_version}"
+      PARENT_SCOPE)
+  set(${out_plugin_dir}
+      "${candidate_plugin_dir}"
+      PARENT_SCOPE)
+  set(${out_default_include}
+      "${candidate_default_include}"
+      PARENT_SCOPE)
+  set(${out_has_headers}
+      ${candidate_has_headers}
+      PARENT_SCOPE)
+  set(${out_reason}
+      ""
+      PARENT_SCOPE)
+endfunction()
+
+# either validate the user-provided TARGET_GCC or auto-detect the first usable
+# GCC >= the supported minimum that has matching plugin headers
+if(TARGET_GCC)
+  inspect_gcc_candidate(
+    "${TARGET_GCC}"
+    TARGET_GCC_OK
     TARGET_GCC_BIN
-    NAMES ${TARGET_GCC} REQUIRED
-    DOC "Resolved path to the GCC compiler executable used by the build")
+    TARGET_GCC_VERSION
+    GCC_PLUGIN_DIR
+    TARGET_GCC_DEFAULT_INCLUDE
+    TARGET_GCC_HAS_HEADERS
+    TARGET_GCC_ERROR)
+  if(NOT TARGET_GCC_OK)
+    message(
+      FATAL_ERROR
+        "Configured TARGET_GCC `${TARGET_GCC}` is unusable: ${TARGET_GCC_ERROR}"
+    )
+  endif()
+
+  set(TARGET_GCC_SELECTION "manual")
+else()
+  set(target_gcc_candidates)
+
+  # prefer explicit versioned GCC binaries starting at the minimum supported
+  # version
+  foreach(version RANGE ${TARGET_GCC_MINIMUM_VERSION} 20)
+    list(APPEND target_gcc_candidates "gcc-${version}")
+  endforeach()
+
+  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    list(APPEND target_gcc_candidates "${CMAKE_C_COMPILER}")
+  endif()
+  list(APPEND target_gcc_candidates gcc)
+  list(REMOVE_DUPLICATES target_gcc_candidates)
+
+  set(target_gcc_rejections)
+  foreach(candidate IN LISTS target_gcc_candidates)
+    inspect_gcc_candidate(
+      "${candidate}"
+      candidate_ok
+      candidate_bin
+      candidate_version
+      candidate_plugin_dir
+      candidate_default_include
+      candidate_has_headers
+      candidate_error)
+    if(candidate_ok)
+      if(GCC_PLUGIN_INCLUDE_DIR OR candidate_has_headers)
+        set(TARGET_GCC_BIN "${candidate_bin}")
+        set(TARGET_GCC_VERSION "${candidate_version}")
+        set(GCC_PLUGIN_DIR "${candidate_plugin_dir}")
+        set(TARGET_GCC_DEFAULT_INCLUDE "${candidate_default_include}")
+        set(TARGET_GCC_HAS_HEADERS "${candidate_has_headers}")
+        set(TARGET_GCC_SELECTION "auto")
+        break()
+      endif()
+
+      list(
+        APPEND
+        target_gcc_rejections
+        "${candidate_bin} (version ${candidate_version}) does not provide ${candidate_default_include}/gcc-plugin.h"
+      )
+    else()
+      list(APPEND target_gcc_rejections "${candidate}: ${candidate_error}")
+    endif()
+  endforeach()
+
+  if(NOT TARGET_GCC_BIN)
+    if(target_gcc_rejections)
+      string(JOIN "\n  - " target_gcc_rejections_text ${target_gcc_rejections})
+      set(target_gcc_rejections_block
+          "\nChecked candidates:\n  - ${target_gcc_rejections_text}")
+    else()
+      set(target_gcc_rejections_block "")
+    endif()
+
+    if(GCC_PLUGIN_INCLUDE_DIR)
+      message(
+        FATAL_ERROR
+          "Could not auto-detect a usable GCC >= ${TARGET_GCC_MINIMUM_VERSION}. Set TARGET_GCC to a compiler name or absolute path.${target_gcc_rejections_block}"
+      )
+    else()
+      message(
+        FATAL_ERROR
+          "Could not auto-detect a usable GCC >= ${TARGET_GCC_MINIMUM_VERSION} with installed plugin headers. Install a matching gcc-<version>-plugin-dev package, or set TARGET_GCC and optionally GCC_PLUGIN_INCLUDE_DIR manually.${target_gcc_rejections_block}"
+      )
+    endif()
+  endif()
 endif()
 
+# allow a manual override when the plugin headers come from a locally unpacked
+# GCC tree rather than the selected compiler's default plugin include
 set(GCC_PLUGIN_INCLUDE_DIR
     ""
     CACHE PATH
@@ -34,22 +243,7 @@ option(WITH_PREDATOR
        "Build predator (libsl_analyzer.so) and its regression tests" ON)
 
 if(NOT GCC_PLUGIN_INCLUDE_DIR)
-  execute_process(
-    COMMAND "${TARGET_GCC_BIN}" -print-file-name=plugin
-    RESULT_VARIABLE GCC_PLUGIN_DIR_STATUS
-    OUTPUT_VARIABLE GCC_PLUGIN_DIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  if(NOT GCC_PLUGIN_DIR_STATUS EQUAL 0 OR "${GCC_PLUGIN_DIR}" STREQUAL "")
-    message(
-      FATAL_ERROR
-        "Could not query the GCC plugin directory from `${TARGET_GCC_BIN}`. Install the matching plugin headers for that compiler, or set GCC_PLUGIN_INCLUDE_DIR manually."
-    )
-  endif()
-
-  set(GCC_PLUGIN_INCLUDE_DIR "${GCC_PLUGIN_DIR}/include")
-else()
-  set(GCC_PLUGIN_DIR "<manual override>")
+  set(GCC_PLUGIN_INCLUDE_DIR "${TARGET_GCC_DEFAULT_INCLUDE}")
 endif()
 
 if(NOT EXISTS "${GCC_PLUGIN_INCLUDE_DIR}/gcc-plugin.h")
@@ -59,6 +253,8 @@ if(NOT EXISTS "${GCC_PLUGIN_INCLUDE_DIR}/gcc-plugin.h")
   )
 endif()
 
+# fetch nlohmann/json for the CodeModel JSON import/export pipeline TODO: only
+# download if find_package fails
 include(FetchContent)
 FetchContent_Declare(
   json
@@ -66,15 +262,20 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(json)
 
 message(STATUS "Target GCC: ${TARGET_GCC}")
+message(STATUS "Target GCC Selection: ${TARGET_GCC_SELECTION}")
 message(STATUS "Resolved Target GCC: ${TARGET_GCC_BIN}")
+message(STATUS "Resolved Target GCC Version: ${TARGET_GCC_VERSION}")
 message(STATUS "GCC Plugin Directory: ${GCC_PLUGIN_DIR}")
 message(STATUS "GCC Plugin Include Directory: ${GCC_PLUGIN_INCLUDE_DIR}")
 
+# export the resolved GCC choice so the top-level Makefile uses the exact same
+# compiler for plugin runs and analyzer helpers
 file(
   GENERATE
   OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/make-config.mk"
   CONTENT "TARGET_GCC := ${TARGET_GCC_BIN}\nCC := ${TARGET_GCC_BIN}\n")
 
+# gather all source subdirectories
 function(collect_subdirectories out_var base_dir)
   set(dirs "${base_dir}")
   file(
@@ -92,6 +293,8 @@ function(collect_subdirectories out_var base_dir)
       PARENT_SCOPE)
 endfunction()
 
+# expose both src/ and include/ roots to every target that still relies on the
+# current flat include style
 collect_subdirectories(CL_SRC_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src")
 list(APPEND CL_SRC_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include")
 

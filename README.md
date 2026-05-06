@@ -28,8 +28,8 @@ cl_analyze <merged.json> --analyzer=<lib.so> [--args=<string>]
 
 | Dependency | Version | Notes |
 | --- | --- | --- |
-| GCC | 12+ | Must match `TARGET_GCC` cmake option |
-| `gcc-12-plugin-dev` | - | Provides plugin headers (adjust for your GCC version) |
+| GCC | 12+ | Auto-detected by default; can also be forced with `TARGET_GCC` |
+| `gcc-12-plugin-dev` | - | Example plugin-header package; install the matching `gcc-<version>-plugin-dev` for the GCC you want to use |
 | `g++-12` | - | |
 | CMake | >= 3.28 | |
 | patch | any | Used to apply the Predator shim patch |
@@ -39,6 +39,8 @@ cl_analyze <merged.json> --analyzer=<lib.so> [--args=<string>]
 ```bash
 sudo apt install gcc-12 g++-12 gcc-12-plugin-dev cmake patch
 ```
+
+If your system has a newer supported GCC, install the matching package instead, for example `gcc-13-plugin-dev` or `gcc-14-plugin-dev`.
 
 ## Getting Started
 
@@ -63,13 +65,21 @@ make configure
 cmake -B build -DTARGET_GCC=gcc-12
 ```
 
+When `TARGET_GCC` is left unset, CMake auto-detects the first usable GCC `>= 12` that also provides `gcc-plugin.h` in its plugin include directory.
+
 Optional cmake variables:
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `TARGET_GCC` | `gcc-12` | GCC executable name or absolute path to build for and test against |
+| `TARGET_GCC` | auto-detected | GCC executable name or absolute path to build for and test against |
 | `GCC_PLUGIN_INCLUDE_DIR` | auto-detected | Directory containing `gcc-plugin.h`; use to point at a locally unpacked plugin header tree |
 | `WITH_PREDATOR` | `ON` | Build Predator and its regression tests |
+
+If auto-detection picks the wrong compiler on a machine with multiple GCC installs, point it at the exact binary you want:
+
+```bash
+make configure TARGET_GCC=/usr/bin/gcc-13
+```
 
 ### 3. Build
 

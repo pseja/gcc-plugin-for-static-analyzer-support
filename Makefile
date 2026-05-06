@@ -1,6 +1,9 @@
 BUILD := build
 MAKE_CONFIG := $(BUILD)/make-config.mk
-TARGET_GCC ?= gcc-12
+TARGET_GCC ?=
+GCC_PLUGIN_INCLUDE_DIR ?=
+WITH_PREDATOR ?= OFF
+CMAKE_ARGS ?=
 CC ?= $(TARGET_GCC)
 JOBS := $(shell nproc)
 
@@ -55,17 +58,22 @@ define run_analyzer
 	  $(2)
 endef
 
+CMAKE_CONFIGURE_ARGS := $(if $(TARGET_GCC),-DTARGET_GCC=$(TARGET_GCC)) \
+	$(if $(GCC_PLUGIN_INCLUDE_DIR),-DGCC_PLUGIN_INCLUDE_DIR=$(GCC_PLUGIN_INCLUDE_DIR)) \
+	$(if $(WITH_PREDATOR),-DWITH_PREDATOR=$(WITH_PREDATOR)) \
+	$(CMAKE_ARGS)
+
 all: build
 
 # build
 
 ## run CMake configuration (no build)
 configure:
-	cmake -S . -B $(BUILD) -DTARGET_GCC=$(TARGET_GCC)
+	cmake -S . -B $(BUILD) $(CMAKE_CONFIGURE_ARGS)
 
 ## configure (if needed) and compile everything
 build:
-	cmake -S . -B $(BUILD) -DTARGET_GCC=$(TARGET_GCC)
+	cmake -S . -B $(BUILD) $(CMAKE_CONFIGURE_ARGS)
 	cmake --build $(BUILD) -j$(JOBS)
 
 ## callgraph FILE=<src> [ARGS=<output.dot>]
@@ -183,9 +191,16 @@ help:
 	@echo " Build:"
 	@echo "     make build          - configure (if needed) and compile everything"
 	@echo "     make configure      - run CMake configuration (no build)"
+	@echo "                           auto-detects a usable GCC >= 12 unless TARGET_GCC=/path/to/gcc is set"
 	@echo "     make clean          - remove the build directory"
 	@echo "     make clean-docs     - remove generated Doxygen output from docs/doxygen"
 	@echo "     make clean-predator - reset the Predator submodule to a clean state"
+	@echo ""
+	@echo " Configure overrides:"
+	@echo "     TARGET_GCC=/path/to/gcc            - force a specific GCC executable"
+	@echo "     GCC_PLUGIN_INCLUDE_DIR=/path       - use a manual gcc-plugin.h tree"
+	@echo "     WITH_PREDATOR=ON                   - run Predator and its tests"
+	@echo "     CMAKE_ARGS='...'                   - pass additional options to CMake"
 	@echo ""
 	@echo " Analyzers (single translation unit):"
 	@echo "     make callgraph  FILE=foo.c [ARGS=callgraph.dot]     - emit a Graphviz call-graph DOT file"
