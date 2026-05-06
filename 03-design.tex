@@ -9,7 +9,7 @@ Building upon the limitations identified in the previous chapter, the new design
 
 To effectively resolve the constraints of the legacy implementation, the modernized architecture was designed with five primary goals:
 \begin{enumerate}
-  \item \textbf{Clean Intermediate Representation (IR):} The core Code Model must remain a pure representation of the parsed program, strictly decoupling the IR from any embedded analysis results to eliminate the \uv{Large Class} anti-pattern~\cite{RefactoringGuruLargeClass}.
+  \item \textbf{Clean Intermediate Representation (IR):} The core Code Model must remain a pure representation of the parsed program, strictly decoupling the IR from any embedded analysis results to eliminate the \uv{Large Class} anti-pattern~\cite{Refactoring}.
   \item \textbf{On-Demand Annotation Services:} The mandatory, eagerly evaluated \\pre-analyses must be replaced by a lazy evaluation system where auxiliary data is computed and cached only when explicitly requested by an analyzer.
   \item \textbf{Unified Exporter Pipeline:} The infrastructure must provide a uniform mechanism to export the internal representation into various diagnostic and persistent formats (such as JSON, DOT, and pretty-printed text) from the same underlying Code Model.
   \item \textbf{Compiler and Analyzer Independence:} Strict boundary interfaces, later introduced as \texttt{IFrontend} and \texttt{IAnalyzer}, must be introduced to fully decouple the core infrastructure from both the underlying compiler and the target analysis tools.
@@ -105,7 +105,7 @@ Once the Compiler Abstraction Layer intercepts and translates the compiler's int
 \subsection*{Resolving Intermediate Representation Pollution}\label{sub:resolve-ir-pollution}
 
 The most critical architectural shift in the \texttt{CodeModel} is its strict adherence to the Single Responsibility Principle.
-As identified in the legacy architecture Section~\ref{sec:cl-architecture} on page~\pageref{sec:cl-architecture}, the original data structures, namely the \texttt{Fnc}, \texttt{Insn}, and \texttt{Storage}, suffered from severe Intermediate Representation (IR) pollution, acting as \uv{Large Class}~\cite{RefactoringGuruLargeClass} that directly embedded the results of mandatory pre-analyses such as points-to and call graphs, and also variable liveness sets.
+As identified in the legacy architecture Section~\ref{sec:cl-architecture} on page~\pageref{sec:cl-architecture}, the original data structures, namely the \texttt{Fnc}, \texttt{Insn}, and \texttt{Storage}, suffered from severe Intermediate Representation (IR) pollution, acting as \uv{Large Class}~\cite{Refactoring} that directly embedded the results of mandatory pre-analyses such as points-to and call graphs, and also variable liveness sets.
 
 The new \texttt{CodeModel} contains absolutely zero analysis data.
 It is a pure, structural representation of the parsed source code.

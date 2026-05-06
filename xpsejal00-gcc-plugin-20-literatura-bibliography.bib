@@ -37,7 +37,6 @@
   author       = {{VeriFIT Research Group}},
   title        = {Predator},
   howpublished = {online},
-  publisher    = {},
   year         = {2026},
   url          = {https://www.fit.vut.cz/research/group/verifit/public/tools/predator/},
   cited        = {2026-04-27}
@@ -47,40 +46,41 @@
   author       = {{VeriFIT Research Group}},
   title        = {Forester},
   howpublished = {online},
-  publisher    = {},
   year         = {2019},
   url          = {https://www.fit.vut.cz/research/group/verifit/public/tools/forester/},
   cited        = {2026-04-27}
 }
 
-@webpage{RefactoringGuruLargeClass,
-  author       = {Alexander Shvets},
-  title        = {Large Class: {C}ode {S}mell},
-  howpublished = {online},
-  publisher    = {},
-  year         = {2026},
-  url          = {https://refactoring.guru/smells/large-class},
-  cited        = {2026-04-27}
+@book{Refactoring,
+  address    = {Boston Columbus New York San Francisco Amsterdam Cape Town Dubai London Munich},
+  edition    = {Second edition},
+  series     = {The Addison-Wesley signature series},
+  title      = {Refactoring: Improving the Design of Existing Code},
+  isbn       = {9780134757599},
+  publisher  = {Addison-Wesley},
+  author     = {Fowler, Martin and Beck, Kent},
+  year       = {2019},
+  collection = {The Addison-Wesley signature series},
+  language   = {eng},
+  url        = {http://martinfowler.com/books/refactoring.html}
 }
 
-% (2025). C++ Standards Support in GCC - GNU Project. GNU Project. https://gcc.gnu.org/projects/cxx-status.html
+% (2026). C++ Standards Support in GCC - GNU Project. GNU Project. https://gcc.gnu.org/projects/cxx-status.html
 @webpage{gccCxxStatus,
-  author       = {{GNU Project}},
+  author       = {{Free Software Foundation, Inc.}},
   title        = {C++ Standards Support in GCC},
   howpublished = {online},
-  publisher    = {},
-  year         = {2025},
+  year         = {2026},
   url          = {https://gcc.gnu.org/projects/cxx-status.html},
-  cited        = {2026-04-27}
+  cited        = {2026-05-06}
 }
 
-% (2025). Header only - JSON for Modern C++. nlohmann/json. https://json.nlohmann.me/integration/index.html
+% (2026). Header only - JSON for Modern C++. nlohmann/json. https://json.nlohmann.me/integration/index.html
 @webpage{nlohmannJson,
   author       = {Niels Lohmann},
-  title        = {JSON for Modern C++: Header Only},
+  title        = {JSON for Modern C++},
   howpublished = {online},
-  publisher    = {},
-  year         = {2025},
+  year         = {2026},
   url          = {https://json.nlohmann.me/integration/index.html},
   cited        = {2026-04-27}
 }
@@ -95,21 +95,6 @@
   author     = {Meyers, Scott},
   year       = {2001},
   edition    = {1}
-}
-
-% PredatorHP revamped (SV-COMP 2020 competition contribution)
-@inproceedings{PredatorHP2020,
-  author    = {Petr Peringer and Veronika {\v{S}}okov{\'{a}} and Tom{\'{a}}{\v{s}} Vojnar},
-  title     = {{PredatorHP} Revamped (Not Only) for Interval-Sized Memory Regions
-               and Memory Reallocation (Competition Contribution)},
-  booktitle = {Tools and Algorithms for the Construction and Analysis of Systems
-               (TACAS 2020), Part~II},
-  series    = {Lecture Notes in Computer Science},
-  volume    = {12079},
-  pages     = {article, Competition Contribution},
-  publisher = {Springer},
-  year      = {2020},
-  doi       = {10.1007/978-3-030-45237-7_31}
 }
 
 @book{CleanArchitecture,
@@ -148,14 +133,15 @@
 }
 
 % C++ extension for Code Listener's GCC adapter
-@mastersthesis{CppExtension2014,
+@bachelorsthesis{CppExtension2014,
   author   = {David Ka{\v{s}}par},
   title    = {Extension of the {Code Listener} Infrastructure Adding {C++} Support},
   school   = {Brno University of Technology, Faculty of Information Technology},
   year     = {2015},
   type     = {Bachelor's Thesis},
   location = {Brno, Czech Republic},
-  language = {english}
+  language = {english},
+  url      = {https://www.vut.cz/studenti/zav-prace/detail/88423}
 }
 
 % GCC compiler
@@ -208,7 +194,7 @@
   year      = {2015},
   pages     = {573--609},
   month     = {May},
-  issn      = {1433-299X},
+  issn      = {0934-5043, 1433-299X},
   doi       = {10.1007/s00165-014-0326-7},
   url       = {https://doi.org/10.1007/s00165-014-0326-7},
   publisher = {Springer}
@@ -240,28 +226,35 @@
   url          = {http://tubiblio.ulb.tu-darmstadt.de/59322/}
 }
 
-
 % Design Patterns: GoF book
 @book{GoF,
-  author    = {Erich Gamma and Richard Helm and Ralph Johnson and John Vlissides},
-  title     = {Design Patterns: Elements of Reusable Object-Oriented Software},
-  edition   = {1},
-  publisher = {Addison-Wesley},
-  year      = {1994},
-  isbn      = {978-0-201-63361-0}
+  author     = {Erich Gamma and Richard Helm and Ralph Johnson and John Vlissides},
+  address    = {Boston, Mass. Munich},
+  edition    = {1},
+  series     = {Addison-Wesley professional computing series},
+  title      = {Design Patterns: Elements of Reusable Object-Oriented Software},
+  isbn       = {9780201633610},
+  publisher  = {Addison-Wesley Professional},
+  year       = {1994},
+  collection = {Addison-Wesley professional computing series},
+  language   = {eng}
 }
 
 @article{Tarjan1972,
-  title     = {Depth-first search and linear graph algorithms},
+  title     = {Depth-First Search and Linear Graph Algorithms},
   author    = {Tarjan, Robert},
-  journal   = {SIAM journal on computing},
+  journal   = {SIAM Journal on Computing},
   volume    = {1},
   number    = {2},
   pages     = {146--160},
   year      = {1972},
-  publisher = {SIAM}
+  month     = {June},
+  publisher = {SIAM},
+  issn      = {0097-5397, 1095-7111},
+  doi       = {10.1137/0201010},
+  url       = {http://epubs.siam.org/doi/10.1137/0201010},
+  language  = {en}
 }
-
 
 % Sparse semantic checker
 @webpage{Sparse,
@@ -270,6 +263,30 @@
   howpublished = {online},
   url          = {https://sparse.docs.kernel.org/},
   cited        = {2026-04-04}
+}
+
+@manual{AirbusEASA,
+  author      = {{European Union Aviation Safety Agency (EASA)}},
+  title       = {2017-0129R1: Integrated Modular Avionics -- Internal Timer -- Power Cycle (Reset)},
+  institution = {European Union Aviation Safety Agency},
+  year        = {2019},
+  type        = {Airworthiness Directive},
+  number      = {2017-0129R1},
+  url         = {https://ad.easa.europa.eu/ad/2017-0129R1},
+  urldate     = {2026-05-03},
+  note        = {Accessed via EASA Safety Publications Tool}
+}
+
+@manual{BoeingEASA,
+  author      = {{European Union Aviation Safety Agency (EASA)}},
+  title       = {US-2020-06-14: Integrated Modular Avionics -- Electrical Power -- Repetitive Cycling},
+  institution = {European Union Aviation Safety Agency},
+  year        = {2020},
+  type        = {Airworthiness Directive},
+  number      = {US-2020-06-14},
+  url         = {https://ad.easa.europa.eu/ad/US-2020-06-14},
+  urldate     = {2026-05-03},
+  note        = {Accessed via EASA Safety Publications Tool}
 }
 
 % FIXME: remove template references after finishing
