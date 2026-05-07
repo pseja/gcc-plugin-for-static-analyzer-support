@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.28)
-
-# ------------------------------------------------------------------------------
-# cl_analyze pipeline tests
-# ------------------------------------------------------------------------------
+# @file CMakeLists.txt
+# @author Lukáš Pšeja <xpsejal00@vutbr.cz>
+# @brief cl_analyze pipeline tests.
 # Each test compiles a .c file through the GCC plugin (with cl_json_dump) to
 # produce a CodeModel JSON file, feeds that JSON to cl_analyze together with a
 # specific native analyzer, and runs a .sh assertion script against the
@@ -13,9 +11,29 @@ cmake_minimum_required(VERSION 3.28)
 # Sources shared with integration tests live in tests/integration_tests/.
 # Sources that are specific to this suite live alongside this CMakeLists.txt.
 #
-# To add a new test: 1. Identify or add the .c source file. 2. Write a .sh
-# assertion script in this directory. 3. Call add_cl_analyze_test() below.
-# ------------------------------------------------------------------------------
+# To add a new test: 
+# 1. Identify or add the .c source file. 
+# 2. Write a .sh assertion script in this directory. 
+# 3. Call add_cl_analyze_test() below.
+#
+# @date 2026-04-19
+#
+# @copyright Copyright (c) 2026 Lukáš Pšeja
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+cmake_minimum_required(VERSION 3.28)
 
 set(INTEGRATION_SRC_DIR "${CMAKE_SOURCE_DIR}/tests/integration_tests")
 set(LOCAL_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")

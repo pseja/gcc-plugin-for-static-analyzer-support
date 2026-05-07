@@ -50,7 +50,7 @@ index 7129f377..97b04006 100644
 +            set(cmd "${cmd} -fplugin-arg-libcl_gcc-preserve-ec")
 +            set(cmd "${cmd} 2>&1")
 +
-+            # filter out messages unrelated to our plug-in
++            # filter out messages unrelated to the new plug-in
 +            set(cmd "${cmd} | (grep -E '\\\\[-fplugin=libcl_gcc.so\\\\]\$|compiler error|undefined symbol|CL_BREAK_IF'; true)")
 +            set(cmd "${cmd} | sed 's/ \\\\[-fplugin=libcl_gcc.so\\\\]\$//'")
 +
@@ -101,13 +101,27 @@ new file mode 100644
 index 0000000..12d32883d11a76002ef135ecd9282b907b59a2ac
 --- /dev/null
 +++ b/sl/sl_analyzer_shim.cc
-@@ -0,0 +1,139 @@
+@@ -0,0 +1,153 @@
 +/*
-+ * Shim that exposes predator's ClEasy listener to the new CodeListener GCC plugin (libcl_gcc.so)
++ * Copyright (C) 2026 Lukáš Pšeja <luk4sps3j4@gmail.com>
++ *
++ * This file is part of predator.
++ *
++ * predator is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * any later version.
++ *
++ * predator is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with predator.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
 +#include <cstdio>
-+#include <cstdlib>
 +#include <cstring>
 +#include <string>
 +

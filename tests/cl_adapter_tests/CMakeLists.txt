@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.28)
-
-# ------------------------------------------------------------------------------
-# CL-Adapter (gcc-adapter) tests
-# ------------------------------------------------------------------------------
+# @file CMakeLists.txt
+# @author Lukáš Pšeja <xpsejal00@vutbr.cz>
+# @brief CL-Adapter (gcc-adapter) tests.
 # Each test compiles a .c file from the predator gcc-adapter test suite through
 # the GCC plugin with cl_json_dump, then runs a .sh assertion script against the
 # resulting JSON using jq.
@@ -10,10 +8,29 @@ cmake_minimum_required(VERSION 3.28)
 # Source files directory:  analyzers/predator/cl/tests/gcc-adapter/C/ Check
 # scripts directory: tests/cl_adapter_tests/
 #
-# To add a new test: 1. Identify or add a .c file in the source directory 2. Add
-# a matching .sh check script named <source_file>.sh here 3. Call
-# add_cl_adapter_test() for it below
-# ------------------------------------------------------------------------------
+# To add a new test:
+# 1. Identify or add a .c file in the source directory
+# 2. Add a matching .sh check script named <source_file>.sh here
+# 3. Call add_cl_adapter_test() for it below
+#
+# @date 2026-05-07
+#
+# @copyright Copyright (c) 2026 Lukáš Pšeja
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+cmake_minimum_required(VERSION 3.28)
 
 set(CL_ADAPT_SRC_DIR
     "${CMAKE_SOURCE_DIR}/analyzers/predator/cl/tests/gcc-adapter/C")

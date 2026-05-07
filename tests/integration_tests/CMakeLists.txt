@@ -1,14 +1,30 @@
-cmake_minimum_required(VERSION 3.28)
-
-# ------------------------------------------------------------------------------
-# CodeModel integration tests
-# ------------------------------------------------------------------------------
-# Each test compiles a .c file through the GCC plugin with cl_json_dump, then
+# @file CMakeLists.txt
+# @author Lukáš Pšeja <xpsejal00@vutbr.cz>
+# @brief CodeModel integration tests.
+# Each test compiles a .c file through the GCC plugin with cl_json_dump, then 
 # runs a .sh assertion script against the resulting JSON using jq.
 #
 # To add a new test: 1. Add a .c source file here 2. Add a matching .sh check
 # script (same name + ".sh")
-# ------------------------------------------------------------------------------
+#
+# @date 2026-04-19
+#
+# @copyright Copyright (c) 2026 Lukáš Pšeja
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <https://www.gnu.org/licenses/>.
+
+cmake_minimum_required(VERSION 3.28)
 
 function(add_codemodel_test test_name source_file)
   set(src "${CMAKE_CURRENT_SOURCE_DIR}/${source_file}")
