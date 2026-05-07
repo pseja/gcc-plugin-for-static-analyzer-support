@@ -44,7 +44,7 @@ function(add_cl_analyze_test test_name source_file analyzer_target check_script
     COMMAND
       bash -c
       # compile .c to JSON model
-      "${TARGET_GCC} \
+      "${TARGET_GCC_BIN} \
                 -S ${src} -o /dev/null \
                 -fplugin=$<TARGET_FILE:cl_gcc> \
                 -fplugin-arg-libcl_gcc-load-analyzer=$<TARGET_FILE:cl_json_dump> \

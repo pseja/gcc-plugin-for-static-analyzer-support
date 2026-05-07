@@ -25,7 +25,7 @@ function(add_codemodel_test test_name source_file)
     NAME "codemodel_${test_name}"
     COMMAND
       bash -c
-      "${TARGET_GCC} \
+      "${TARGET_GCC_BIN} \
                 -S ${src} -o /dev/null \
                 -fplugin=$<TARGET_FILE:cl_gcc> \
                 -fplugin-arg-libcl_gcc-load-analyzer=$<TARGET_FILE:cl_json_dump> \

@@ -2,7 +2,7 @@ BUILD := build
 MAKE_CONFIG := $(BUILD)/make-config.mk
 TARGET_GCC ?=
 GCC_PLUGIN_INCLUDE_DIR ?=
-WITH_PREDATOR ?= OFF
+WITH_PREDATOR ?= ON
 CMAKE_ARGS ?=
 CC ?= $(TARGET_GCC)
 JOBS := $(shell nproc)
@@ -149,6 +149,11 @@ merge: json-multi dot-multi
 
 ## run the full Predator regression test suite
 test-predator:
+	@if [ "$(WITH_PREDATOR)" != "ON" ]; then \
+		echo "Predator tests are unavailable because WITH_PREDATOR=OFF in the current build."; \
+		echo "Reconfigure with 'make build WITH_PREDATOR=ON' to enable them."; \
+		exit 1; \
+	fi
 	ctest --test-dir $(PRED_TESTS) -R "^new-plugin-" -j$(JOBS) --progress
 
 ## run the CL GCC-adapter tests
@@ -164,7 +169,13 @@ test-cl-analyze:
 	ctest --test-dir $(BUILD) -L cl-analyze -j$(JOBS) --output-on-failure --progress
 
 ## run all test suites
-test: test-cl-adapter test-predator test-codemodel test-cl-analyze
+ifeq ($(WITH_PREDATOR),ON)
+TEST_TARGETS := test-cl-adapter test-predator test-codemodel test-cl-analyze
+else
+TEST_TARGETS := test-cl-adapter test-codemodel test-cl-analyze
+endif
+
+test: $(TEST_TARGETS)
 
 # cleanup
 
@@ -199,7 +210,7 @@ help:
 	@echo " Configure overrides:"
 	@echo "     TARGET_GCC=/path/to/gcc            - force a specific GCC executable"
 	@echo "     GCC_PLUGIN_INCLUDE_DIR=/path       - use a manual gcc-plugin.h tree"
-	@echo "     WITH_PREDATOR=ON                   - run Predator and its tests"
+	@echo "     WITH_PREDATOR=OFF                  - don't run Predator and its tests"
 	@echo "     CMAKE_ARGS='...'                   - pass additional options to CMake"
 	@echo ""
 	@echo " Analyzers (single translation unit):"

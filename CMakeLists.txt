@@ -273,7 +273,9 @@ message(STATUS "GCC Plugin Include Directory: ${GCC_PLUGIN_INCLUDE_DIR}")
 file(
   GENERATE
   OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/make-config.mk"
-  CONTENT "TARGET_GCC := ${TARGET_GCC_BIN}\nCC := ${TARGET_GCC_BIN}\n")
+  CONTENT
+    "TARGET_GCC := ${TARGET_GCC_BIN}\nCC := ${TARGET_GCC_BIN}\nWITH_PREDATOR := ${WITH_PREDATOR}\n"
+)
 
 # gather all source subdirectories
 function(collect_subdirectories out_var base_dir)

@@ -34,7 +34,7 @@ function(add_cl_adapter_test test_name source_file)
     NAME "cl_adapter_${test_name}"
     COMMAND
       bash -c
-      "${TARGET_GCC} \
+      "${TARGET_GCC_BIN} \
                 -S ${src} -o /dev/null \
                 -std=gnu89 -O0 -DPREDATOR -DNDEBUG \
                 -fplugin=$<TARGET_FILE:cl_gcc> \
