@@ -33,7 +33,8 @@ VERBOSITY ?= CLEAN
 # MAKEFLAGS += --no-builtin-rules
 .PHONY: all build configure callgraph json recursion predator \
 	json-multi merge dot-multi \
-	test-predator test-cl-adapter test-codemodel test-cl-analyze test clean clean-docs help doxygen
+	test-predator test-cl-adapter test-codemodel test-cl-analyze test \
+	check-deps clean clean-docs help doxygen
 
 # silently check that FILE was provided before an analyzer target runs
 define require_file
@@ -66,6 +67,14 @@ CMAKE_CONFIGURE_ARGS := $(if $(TARGET_GCC),-DTARGET_GCC=$(TARGET_GCC)) \
 all: build
 
 # build
+
+## verify required tools and package-level prerequisites for build/run/test
+check-deps:
+	@TARGET_GCC="$(TARGET_GCC)" \
+	GCC_PLUGIN_INCLUDE_DIR="$(GCC_PLUGIN_INCLUDE_DIR)" \
+	WITH_PREDATOR="$(WITH_PREDATOR)" \
+	MAKE_CONFIG="$(MAKE_CONFIG)" \
+	bash ./build-aux/check-deps.sh
 
 ## run CMake configuration (no build)
 configure:
@@ -200,6 +209,7 @@ doxygen:
 # help message
 help:
 	@echo " Build:"
+	@echo "     make check-deps     - verify required tools and package-level prerequisites"
 	@echo "     make build          - configure (if needed) and compile everything"
 	@echo "     make configure      - run CMake configuration (no build)"
 	@echo "                           auto-detects a usable GCC >= 12 unless TARGET_GCC=/path/to/gcc is set"

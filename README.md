@@ -30,14 +30,15 @@ cl_analyze <merged.json> --analyzer=<lib.so> [--args=<string>]
 | --- | --- | --- |
 | GCC | 12+ | Auto-detected by default; can also be forced with `TARGET_GCC` |
 | `gcc-12-plugin-dev` | - | Example plugin-header package; install the matching `gcc-<version>-plugin-dev` for the GCC you want to use |
-| `g++-12` | - | |
+| `c++` / `g++` | C++23-capable | Used by CMake to build the C++ code |
 | CMake | >= 3.28 | |
+| `jq` | any | Required by the shell-based test suites |
 | patch | any | Used to apply the Predator shim patch |
 
 ### Debian/Ubuntu
 
 ```bash
-sudo apt install gcc-12 g++-12 gcc-12-plugin-dev cmake patch
+sudo apt install gcc-12 g++-12 gcc-12-plugin-dev cmake jq patch
 ```
 
 If your system has a newer supported GCC, install the matching package instead, for example `gcc-13-plugin-dev` or `gcc-14-plugin-dev`.
@@ -57,7 +58,21 @@ If you already cloned without `--recurse-submodules`:
 git submodule update --init --recursive
 ```
 
-### 2. Configure
+### 2. Check dependencies
+
+```bash
+make check-deps
+```
+
+This verifies the tools and headers needed for the full build, run, and test workflow, and if required dependency check fails and `dpkg-query` is available prints Debian/Ubuntu package hints.
+
+If you do not plan to build Predator, you can match the check to that configuration:
+
+```bash
+make check-deps WITH_PREDATOR=OFF
+```
+
+### 3. Configure
 
 ```bash
 make configure
@@ -81,7 +96,7 @@ If auto-detection picks the wrong compiler on a machine with multiple GCC instal
 make configure TARGET_GCC=/usr/bin/gcc-13
 ```
 
-### 3. Build
+### 4. Build
 
 ```bash
 make build
