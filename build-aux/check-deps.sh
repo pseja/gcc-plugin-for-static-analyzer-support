@@ -69,6 +69,10 @@ resolve_binary() {
 
 select_gcc_candidate() {
 	local cached_target_gcc=""
+	local candidate_bin=""
+	local candidate_version=""
+	local candidate_major=""
+	local candidate_plugin_dir=""
 	local version
 
 	if [[ -n "$TARGET_GCC_OVERRIDE" ]]; then
@@ -83,15 +87,45 @@ select_gcc_candidate() {
 	fi
 
 	for version in $(seq 12 20); do
-		if have_command "gcc-${version}"; then
-			printf 'gcc-%s\n' "$version"
-			return 0
+		if candidate_bin=$(resolve_binary "gcc-${version}" 2>/dev/null); then
+			candidate_version=$("$candidate_bin" -dumpfullversion 2>/dev/null)
+			if [[ -z "$candidate_version" ]]; then
+				candidate_version=$("$candidate_bin" -dumpversion 2>/dev/null)
+			fi
+
+			candidate_major=$(printf '%s' "$candidate_version" | grep -Eo '^[0-9]+' || true)
+			if [[ -z "$candidate_major" ]] || ((candidate_major < 12)); then
+				continue
+			fi
+
+			candidate_plugin_dir=$("$candidate_bin" -print-file-name=plugin 2>/dev/null)
+			if [[ -z "$candidate_plugin_dir" ]] || [[ "$candidate_plugin_dir" == "plugin" ]]; then
+				continue
+			fi
+
+			if [[ -n "$GCC_PLUGIN_INCLUDE_OVERRIDE" ]] || [[ -f "$candidate_plugin_dir/include/gcc-plugin.h" ]]; then
+				printf '%s\n' "$candidate_bin"
+				return 0
+			fi
 		fi
 	done
 
-	if have_command gcc; then
-		printf 'gcc\n'
-		return 0
+	if candidate_bin=$(resolve_binary gcc 2>/dev/null); then
+		candidate_version=$("$candidate_bin" -dumpfullversion 2>/dev/null)
+		if [[ -z "$candidate_version" ]]; then
+			candidate_version=$("$candidate_bin" -dumpversion 2>/dev/null)
+		fi
+
+		candidate_major=$(printf '%s' "$candidate_version" | grep -Eo '^[0-9]+' || true)
+		if [[ -n "$candidate_major" ]] && ((candidate_major >= 12)); then
+			candidate_plugin_dir=$("$candidate_bin" -print-file-name=plugin 2>/dev/null)
+			if [[ -n "$candidate_plugin_dir" ]] && [[ "$candidate_plugin_dir" != "plugin" ]]; then
+				if [[ -n "$GCC_PLUGIN_INCLUDE_OVERRIDE" ]] || [[ -f "$candidate_plugin_dir/include/gcc-plugin.h" ]]; then
+					printf '%s\n' "$candidate_bin"
+					return 0
+				fi
+			fi
+		fi
 	fi
 
 	return 1
