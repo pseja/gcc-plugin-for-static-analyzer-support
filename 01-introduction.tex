@@ -4,26 +4,26 @@
 
 \chapter{Introduction}\label{chap:introduction}
 
-Software development is a complex and error-prone process, especially as software systems grow in size and complexity.
+Software development is a~complex and error-prone process, especially as software systems grow in size and complexity.
 As software systems evolve, certain categories of defects become undetectable solely through testing, as test suites can only evaluate explicitly covered execution paths, leaving much of the program's state space unexplored.
 
 Nowhere is this limitation more critical than in low-level system programming languages such as C and C++, where developers bear the burden of manual memory management.
 In these environments, insidious bugs such as memory leaks, buffer overflows, use-after-free errors, and dangling pointer dereferences frequently hide within unexplored execution paths.
 
-To prevent these bugs, developers must rely on advanced static analysis tools, such as the Predator shape analysis suite, which is capable of formally verifying a program's state space without executing it.
-However, developing and maintaining these analyzers presents a significant architectural challenge: extracting the program's semantics from the compiler's internal representation.
+To prevent these bugs, developers must rely on advanced static analysis tools, such as the Predator shape analysis suite, which is capable of formally verifying a~program's state space without executing it.
+However, developing and maintaining these analyzers presents a~significant architectural challenge: extracting the program's semantics from the compiler's internal representation.
 Analyzers must interface with compilers to understand the code, but native compiler APIs are notoriously complex, tightly coupled to specific versions, and largely undocumented.
 Building analysis tools directly on top of these raw APIs leads to brittle, maintenance-heavy software.
 
-To overcome this bottleneck, a clean abstraction layer is required.
-Specifically, researchers need a modular middleware that can abstract away the massive, often undocumented codebases of industrial compilers, providing instead a concise, unified, and well-documented object-oriented API.\@
+To overcome this bottleneck, a~clean abstraction layer is required.
+Specifically, researchers need a~modular middleware that can abstract away the massive, often undocumented codebases of industrial compilers, providing instead a~concise, unified, and well-documented object-oriented API.\@
 This ensures that static analysis tools can be developed independently of the underlying compiler architecture.
 
 The remainder of this thesis is structured as follows.
-Chapter~\ref{chap:sota} provides a deeper technical analysis of the legacy Code Listener architecture.
-Chapter~\ref{chap:design} outlines the architectural modernization, detailing the transition from a callback-driven pipeline to a persistent Code Model.
+Chapter~\ref{chap:sota} provides a~deeper technical analysis of the legacy Code Listener architecture.
+Chapter~\ref{chap:design} outlines the architectural modernization, detailing the transition from a~callback-driven pipeline to a~persistent Code Model.
 Chapter~\ref{chap:implementation} documents the implementation process, including development environment setup, portability considerations, and code metrics regarding the refactored infrastructure.
-Chapter~\ref{chap:testing} presents the testing methodology and results, covering both the native validation suites and the backward-compatibility regression tests, and concludes with a qualitative discussion of the architectural performance trade-offs of the new implementation.
+Chapter~\ref{chap:testing} presents the testing methodology and results, covering both the native validation suites and the backward-compatibility regression tests, and concludes with a~qualitative discussion of the architectural performance trade-offs of the new implementation.
 Finally, Chapter~\ref{chap:conclusion} summarizes the contributions of this work and outlines potential avenues for future research and development.
 
 \end{document}

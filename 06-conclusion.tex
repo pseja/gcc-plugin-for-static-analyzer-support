@@ -4,15 +4,15 @@
 
 \chapter{Conclusion}\label{chap:conclusion}
 
-This thesis analyzed the original Code Listener infrastructure and developed a modern replacement that preserves its static-analysis role while addressing accumulated architectural limitations.
-To achieve these goals, a new GCC plugin and supporting toolchain were designed around a compiler-independent \texttt{CodeModel}, lazy annotation services, and unified interfaces for export and analysis.
+This thesis analyzed the original Code Listener infrastructure and developed a~modern replacement that preserves its static-analysis role while addressing accumulated architectural limitations.
+To achieve these goals, a~new GCC plugin and supporting toolchain were designed around a~compiler-independent \texttt{CodeModel}, lazy annotation services, and unified interfaces for export and analysis.
 The resulting prototype enables live analysis inside GCC, offline JSON-based processing through \texttt{cl\_merge} and \texttt{cl\_analyze}, and backward-compatible integration with the existing Predator toolchain.
 Evaluation showed strong continuity: the native regression suites passed successfully, and the Predator compatibility path passed all 1,192 registered \texttt{new-plugin} regression tests during clean rebuilds using GCC 12, GCC 13, GCC 14, and GCC 15.
-Collectively, these results show that the modernization preserves the historical analyzer boundary while also providing a more maintainable and extensible foundation for future analyzers and workflows.
+Collectively, these results show that the modernization preserves the historical analyzer boundary while also providing a~more maintainable and extensible foundation for future analyzers and workflows.
 
 Building on these results, the most natural continuation of this work is to expand the framework along the trajectory in which it was originally designed, ensuring cohesive growth.
 Short-term improvements include introducing the planned \texttt{ModelBuilder} abstraction to cleanly separate the incremental GCC extraction logic from the \texttt{CodeModel}'s internal storage layout, as well as implementing additional annotation services for analyses currently available only in legacy form, such as loop-closing edges, points-to information, and variable liveness.
-In the longer term, the architecture could be broadened with another compiler frontend, most notably, an LLVM/Clang adapter, and the offline workflow could be extended to support legacy analyzers without requiring a live GCC execution.
-Collectively, these directions preserve the main contribution of this thesis: providing a practical compatibility bridge for existing tools and a cleaner platform for future research and engineering.
+In the longer term, the architecture could be broadened with another compiler frontend, most notably, an LLVM/Clang adapter, and the offline workflow could be extended to support legacy analyzers without requiring a~live GCC execution.
+Collectively, these directions preserve the main contribution of this thesis: providing a~practical compatibility bridge for existing tools and a~cleaner platform for future research and engineering.
 
 \end{document}

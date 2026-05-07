@@ -24,7 +24,7 @@
 %\documentclass[zadani,print]{fitthesis} % pro černobílý tisk - odkazy jsou černé
 %\documentclass[english,zadani,print]{fitthesis} % for the black and white print - links are black
 %\documentclass[zadani,cprint]{fitthesis} % pro barevný tisk - odkazy jsou černé, znak VUT barevný
-%\documentclass[english,zadani,cprint]{fitthesis} % for the print - links are black, logo is color
+%\documentclass[engliscompletely correct and normal for lowercaseh,zadani,cprint]{fitthesis} % for the print - links are black, logo is color
 % * Je-li práce psaná v anglickém jazyce, je zapotřebí u třídy použít
 %   parametr english následovně:
 %   If thesis is written in English, it is necessary to use
@@ -178,7 +178,7 @@
   abstract.en={
     This bachelor's thesis modernizes the Code Listener infrastructure, which serves as an integration layer between compilers and static analyzers for C and C++ programs.
     It first analyzes the original architecture and identifies its main limitations, namely mandatory transformations and the tight coupling of analysis results with the internal program representation.
-    Based on this analysis, the thesis designs and implements a new GCC plugin built around a compiler-independent CodeModel, lazily evaluated annotation services, a unified analyzer interface, and JSON export for offline processing.
+    Based on this analysis, the thesis designs and implements a~new GCC plugin built around a~compiler-independent CodeModel, lazily evaluated annotation services, a~unified analyzer interface, and JSON export for offline processing.
     The solution preserves backward compatibility with Predator through an adapter that reconstructs the original callback stream from the new CodeModel.
     Correctness and practical viability were validated by native regression suites and by 1,192 Predator compatibility tests executed after rebuilds with GCC 12, 13, 14, and 15.
   }, % abstrakt v anglickém jazyce / abstract in english
@@ -189,11 +189,10 @@
   % Uvedl jsem všechny literární prameny, publikace a další zdroje, ze kterých jsem čerpal.
   % Pro jazykovou revizi technické zprávy jsem použil(a) nástroj ChatGPT.
   % Při tvorbě odevzdaného programového kódu jsem využíval nástroj Github Copilot. [konkretizujte a upravte podle skutečnosti].},
-  declaration={I hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of Dr.\ Ing. Petr Peringer.
-    % The supplementary information was provided by Mr. Y
-    I have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis.
-    I have used Grammarly to improve the linguistic quality and spelling of this thesis.
-    I utilized GitHub Copilot when working on the software, specifically during the software development phase, where this tool was used exclusively for reviewing, consulting, and verifying my original interface designs and implementation choices, rather than for the automated code generation.
+  declaration={I~hereby declare that this Bachelor's thesis was prepared as an original work by the author under the supervision of Dr.\ Ing. Petr Peringer.
+    I~have listed all the literary sources, publications and other sources, which were used during the preparation of this thesis.
+    I~have used Grammarly to improve the linguistic quality and spelling of this thesis.
+    I~utilized GitHub Copilot when working on the software, specifically during the software development phase, where this tool was used exclusively for reviewing, consulting, and verifying my original interface designs and implementation choices, rather than for the automated code generation.
   },
   % Poděkování (nepovinné, nejlépe v jazyce práce; nechcete-li, zakomentujte pro skrytí nadpisu. / Acknowledgement (optional, ideally in the language of the thesis; comment out to hide it including a heading.)
   %   acknowledgment={V této sekci je možno uvést poděkování vedoucímu práce a těm, kteří poskytli odbornou pomoc
