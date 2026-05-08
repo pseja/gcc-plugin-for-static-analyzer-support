@@ -114,7 +114,7 @@ class PluginContext
      *
      * @param version GCC version structure for the running compiler.
      */
-    void init_print(const plugin_gcc_version *version);
+    void initPrint(const plugin_gcc_version *version);
 
     /**
      * Load one analyzer shared library and wrap its exposed ABI in an `IAnalyzer` implementation.
@@ -123,7 +123,7 @@ class PluginContext
      * @param analyzer_args Opaque argument string forwarded to the analyzer.
      * @param plugin_full_name Full plugin path used by legacy analyzers.
      */
-    void load_analyzer(const std::string &path, const std::string &analyzer_args, const std::string &plugin_full_name);
+    void loadAnalyzer(const std::string &path, const std::string &analyzer_args, const std::string &plugin_full_name);
 
     /**
      * Final GCC callback that runs exports and analyzers once the unit has finished.
@@ -131,7 +131,7 @@ class PluginContext
      * @param gcc_data Unused GCC callback payload.
      * @param user_data User payload supplied during callback registration.
      */
-    static void on_plugin_finish(void *gcc_data, void *user_data);
+    static void onPluginFinish(void *gcc_data, void *user_data);
 };
 
 } // namespace CodeListener::CompilerAbstractionLayer

@@ -113,7 +113,7 @@ bool PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
 
     adapter = std::make_unique<GCCAdapter>(model, reporter);
 
-    init_print(version);
+    initPrint(version);
 
     // metadata
     register_callback(plugin_info->base_name, PLUGIN_INFO, nullptr, &PluginContext::plugin_info);
@@ -127,13 +127,13 @@ bool PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     // register callbacks
     register_callback(plugin_info->base_name, PLUGIN_PASS_MANAGER_SETUP, nullptr, &cl_plugin_pass);
     register_callback(plugin_info->base_name, PLUGIN_START_UNIT, on_start_unit, this);
-    register_callback(plugin_info->base_name, PLUGIN_FINISH, on_plugin_finish, this);
+    register_callback(plugin_info->base_name, PLUGIN_FINISH, onPluginFinish, this);
 
     // load external analyzer (e.g. libsl_analyzer.so) if requested
     if (args->use_analyzer && args->load_analyzer.has_value())
     {
         const std::string &an_args = args->analyzer_args.has_value() ? args->analyzer_args.value() : "";
-        load_analyzer(args->load_analyzer.value(), an_args, plugin_info->full_name ? plugin_info->full_name : "");
+        loadAnalyzer(args->load_analyzer.value(), an_args, plugin_info->full_name ? plugin_info->full_name : "");
     }
     else if (!args->use_analyzer && args->load_analyzer.has_value())
     {
@@ -166,7 +166,7 @@ GCCAdapter *PluginContext::getAdapter()
     return adapter.get();
 }
 
-void PluginContext::load_analyzer(const std::string &path, const std::string &analyzer_args,
+void PluginContext::loadAnalyzer(const std::string &path, const std::string &analyzer_args,
                                   const std::string &plugin_full_name)
 {
     // dlopen the analyzer shared library
@@ -251,7 +251,7 @@ void PluginContext::load_analyzer(const std::string &path, const std::string &an
     reporter.report(Core::DiagnosticLevel::Info, "Analyzer loaded from '" + path + "'");
 }
 
-void PluginContext::init_print(const plugin_gcc_version *version)
+void PluginContext::initPrint(const plugin_gcc_version *version)
 {
     reporter.report(Core::DiagnosticLevel::Info, "Initializing Code Listener GCC plugin");
     reporter.report(Core::DiagnosticLevel::Info, std::string("GCC version: ") + version->basever);
@@ -262,7 +262,7 @@ void PluginContext::init_print(const plugin_gcc_version *version)
     }
 }
 
-void PluginContext::on_plugin_finish(void *gcc_data, void *user_data)
+void PluginContext::onPluginFinish(void *gcc_data, void *user_data)
 {
     (void)gcc_data;
     (void)user_data;
