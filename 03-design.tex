@@ -9,11 +9,11 @@ Building upon the limitations identified in the previous chapter, the new design
 
 To effectively resolve the constraints of the legacy implementation, the modernized architecture was designed with five primary goals:
 \begin{enumerate}
-  \item \textbf{Clean Intermediate Representation (IR):} The core Code Model must remain a~pure representation of the parsed program, strictly decoupling the IR from any embedded analysis results to eliminate the \uv{Large Class} anti-pattern~\cite{Refactoring}.
-  \item \textbf{On-Demand Annotation Services:} The mandatory, eagerly evaluated \\pre-analyses must be replaced by a~lazy evaluation system where auxiliary data is computed and cached only when explicitly requested by an analyzer.
-  \item \textbf{Unified Exporter Pipeline:} The infrastructure must provide a~uniform mechanism to export the internal representation into various diagnostic and persistent formats (such as JSON, DOT, and pretty-printed text) from the same underlying Code Model.
-  \item \textbf{Compiler and Analyzer Independence:} Strict boundary interfaces, later introduced as \texttt{IFrontend} and \texttt{IAnalyzer}, must be introduced to fully decouple the core infrastructure from both the underlying compiler and the target analysis tools.
-  \item \textbf{Backward Compatibility:} Existing analyzers, specifically the Predator tool suite, must be able to operate seamlessly on the new infrastructure without requiring any modifications to their own source code.
+  \item \textit{Clean Intermediate Representation (IR):} The core Code Model must remain a~pure representation of the parsed program, strictly decoupling the IR from any embedded analysis results to eliminate the \uv{Large Class} anti-pattern~\cite{Refactoring}.
+  \item \textit{On-Demand Annotation Services:} The mandatory, eagerly evaluated \\pre-analyses must be replaced by a~lazy evaluation system where auxiliary data is computed and cached only when explicitly requested by an analyzer.
+  \item \textit{Unified Exporter Pipeline:} The infrastructure must provide a~uniform mechanism to export the internal representation into various diagnostic and persistent formats (such as JSON, DOT, and pretty-printed text) from the same underlying Code Model.
+  \item \textit{Compiler and Analyzer Independence:} Strict boundary interfaces, later introduced as \texttt{IFrontend} and \texttt{IAnalyzer}, must be introduced to fully decouple the core infrastructure from both the underlying compiler and the target analysis tools.
+  \item \textit{Backward Compatibility:} Existing analyzers, specifically the Predator tool suite, must be able to operate seamlessly on the new infrastructure without requiring any modifications to their own source code.
 \end{enumerate}
 
 \begin{figure}[H]
@@ -136,8 +136,8 @@ To achieve safe and efficient polymorphism without the overhead of deep class in
 
 % TODO: full list of currently available types and instructions in the appendix, maybe even some diagram?
 \begin{itemize}
-  \item \textbf{Type Hierarchy:} The \texttt{Type} entity acts as a~wrapper over \texttt{TypeData}, which holds a~\texttt{std::variant} of concrete types such as \texttt{PointerType}, \texttt{StructType}, \texttt{ArrayType}, or \texttt{VoidType}.
-  \item \textbf{Instruction Hierarchy:} Similarly, the \texttt{Instruction} entity wraps \texttt{InstructionData}, a~\texttt{std::variant} over operations like \texttt{AssignInstruction}, \texttt{CallInstruction}, and \texttt{SwitchInstruction}.
+  \item \textit{Type Hierarchy:} The \texttt{Type} entity acts as a~wrapper over \texttt{TypeData}, which holds a~\texttt{std::variant} of concrete types such as \texttt{PointerType}, \texttt{StructType}, \texttt{ArrayType}, or \texttt{VoidType}.
+  \item \textit{Instruction Hierarchy:} Similarly, the \texttt{Instruction} entity wraps \texttt{InstructionData}, a~\texttt{std::variant} over operations like \texttt{AssignInstruction}, \texttt{CallInstruction}, and \texttt{SwitchInstruction}.
 \end{itemize}
 
 Notably, because the new architecture does not force hardwired filters upon the analyzer, \texttt{SwitchInstruction} is preserved natively within the \texttt{CodeModel}.
@@ -206,9 +206,9 @@ Figure~\ref{fig:crtp-inheritance} on page~\pageref{fig:crtp-inheritance} shows h
 Currently, the infrastructure implements two primary annotation services:
 
 \begin{itemize}
-  \item \textbf{CallGraph:} This service analyzes the \texttt{CodeModel} to construct a~directed graph of function invocations.
+  \item \textit{CallGraph:} This service analyzes the \texttt{CodeModel} to construct a~directed graph of function invocations.
     Using Tarjan's strongly connected components (SCC) algorithm~\cite{Tarjan1972}, it computes topological orderings, identifies root functions, which are functions with no callers, and leaf functions.
-  \item \textbf{SwitchToIf:} This service computes synthetic variable names and block-label allocations required to safely unfold \texttt{SWITCH} instructions into chains of conditional jumps.
+  \item \textit{SwitchToIf:} This service computes synthetic variable names and block-label allocations required to safely unfold \texttt{SWITCH} instructions into chains of conditional jumps.
     Crucially, unlike the legacy \texttt{unfold\_switch} filter, which destructively mutated the IR, this service only precomputes the auxilary metadata needed for the unfolded switch instructions.
     The pure \texttt{SwitchInstruction} remains perfectly intact within the \texttt{CodeModel} for any analyzer that natively supports it.
 \end{itemize}
@@ -227,9 +227,9 @@ All export functionality is rooted in the abstract \texttt{Exporter} base class.
 This class orchestrates the export process by combining three classical design patterns:
 
 \begin{itemize}
-  \item \textbf{Visitor Pattern:} The \texttt{Exporter} inherits from a~\texttt{CodeModelVisitor} interface, allowing it to systematically traverse the hierarchical structure of the \texttt{CodeModel}, those being the functions, blocks, instructions, and operands, without modifying the entity classes themselves.
-  \item \textbf{Template Method Pattern:} The base class defines the overarching traversal algorithm, providing virtual hooks that the concrete subclasses override to emit format-specific output.
-  \item \textbf{Strategy Pattern:} The active exporter is selected dynamically at runtime via the \texttt{AnalysisContext}.
+  \item \textit{Visitor Pattern:} The \texttt{Exporter} inherits from a~\texttt{CodeModelVisitor} interface, allowing it to systematically traverse the hierarchical structure of the \texttt{CodeModel}, those being the functions, blocks, instructions, and operands, without modifying the entity classes themselves.
+  \item \textit{Template Method Pattern:} The base class defines the overarching traversal algorithm, providing virtual hooks that the concrete subclasses override to emit format-specific output.
+  \item \textit{Strategy Pattern:} The active exporter is selected dynamically at runtime via the \texttt{AnalysisContext}.
     The export methods, specifically either \texttt{exportDot()}, \\\texttt{exportJson()}, or \texttt{exportPP()}, allow the infrastructure to swap export strategies seamlessly.
 \end{itemize}
 
@@ -248,11 +248,11 @@ Figure~\ref{fig:exporter-inheritance} on page~\pageref{fig:exporter-inheritance}
 The infrastructure implements two exporters primarily designed for human inspection and diagnostics:
 
 \begin{itemize}
-  \item \textbf{DOTExporter:} This component generates a~Graphviz \texttt{.dot} representation of the Control Flow Graph (CFG) for each parsed function.
+  \item \textit{DOTExporter:} This component generates a~Graphviz \texttt{.dot} representation of the Control Flow Graph (CFG) for each parsed function.
     It is parameterized by a~\texttt{DotVerbosity} flag, that allows the user to toggle the inclusion of detailed type information and unique variable identifiers.
     As illustrated in Figure~\ref{fig:generated-dot} on page~\pageref{fig:generated-dot}, \texttt{CLEAN} emphasizes quick topology inspection, \texttt{COMPACT} keeps full instruction text and operand names while suppressing ENTRY/EXIT pseudo-blocks, and \texttt{FULL} adds block IDs, source line numbers, and the pseudo-blocks needed when debugging the extractor itself.
     This fulfills the program graph visualization requirement, providing analysts with immediate visual confirmation of the extracted execution paths~\cite{CleanArchitecture}.
-  \item \textbf{PPExporter:} Serving as a~direct, modernized replacement for the legacy \texttt{cl\_pp} listener, the Pretty Printer exporter outputs a~human-readable, three-address code (3AC) listing of the program.
+  \item \textit{PPExporter:} Serving as a~direct, modernized replacement for the legacy \texttt{cl\_pp} listener, the Pretty Printer exporter outputs a~human-readable, three-address code (3AC) listing of the program.
 \end{itemize}
 
 \begin{figure}[H]
@@ -294,8 +294,8 @@ It accepts an arbitrary number of deserialized \texttt{CodeModel} objects and sa
 By leveraging the JSON round-trip and the \texttt{IFrontend} Strategy pattern, the infrastructure provides two standalone, offline command-line tools:
 
 \begin{enumerate}
-  \item \textbf{cl\_merge:} A~utility that parses multiple \texttt{.json} files exported during a~build process, invokes the \texttt{ModelMerger}, and outputs a~single, consolidated JSON representation of the entire software project.
-  \item \textbf{cl\_analyze:} A~standalone analysis driver.
+  \item \textit{cl\_merge:} A~utility that parses multiple \texttt{.json} files exported during a~build process, invokes the \texttt{ModelMerger}, and outputs a~single, consolidated JSON representation of the entire software project.
+  \item \textit{cl\_analyze:} A~standalone analysis driver.
     Instead of running as a~live GCC plugin, it utilizes the \texttt{JSONFrontend} to load a~pre-merged \texttt{CodeModel} from disk.
     It then invokes the registered analysis backend identically to the \texttt{GCCFrontend}.
     From the perspective of the static analyzers, there is absolutely no difference between running live inside GCC or running offline via \texttt{cl\_analyze}.

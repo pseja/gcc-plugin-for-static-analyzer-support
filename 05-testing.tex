@@ -38,12 +38,12 @@ This ensures that the foundational C++23 implementations, specifically the entit
 This verification is covered by three dedicated test suites:
 
 \begin{enumerate}
-  \item \textbf{GCC-Adapter Tests (46 tests):} These tests compile historical C programs through the new live GCC plugin.
+  \item \textit{GCC-Adapter Tests (46 tests):} These tests compile historical C programs through the new live GCC plugin.
     The generated JSON output is compared against expected fixtures using shell checks built around \texttt{jq}\footnote{\url{https://github.com/jqlang/jq}}.
     This suite proves that the Compiler Abstraction Layer correctly intercepts GCC's GIMPLE passes, recovers source locations, and accurately identifies types and control flow edges.
-  \item \textbf{Code Model Integration Tests (38 tests):} These tests compile dedicated C inputs through the live plugin and inspect the resulting JSON model through suite-specific assertion scripts.
+  \item \textit{Code Model Integration Tests (38 tests):} These tests compile dedicated C inputs through the live plugin and inspect the resulting JSON model through suite-specific assertion scripts.
     They verify the representation of primitive and aggregate types, function calls, control flow constructs, initializers, and other edge cases that stress the internal Code Model layout.
-  \item \textbf{Offline Pipeline Tests (3 tests):} These end-to-end tests exercise the standalone \texttt{cl\_analyze} tool.
+  \item \textit{Offline Pipeline Tests (3 tests):} These end-to-end tests exercise the standalone \texttt{cl\_analyze} tool.
     Each test first exports a~Code Model to JSON through the live plugin, then invokes \texttt{cl\_analyze} with a~native analyzer and checks the produced output file.
     These tests exercise the \texttt{JSONFrontend} to \texttt{NativeAnalyzerBridge} path using the reference \texttt{callgraph\_dot} and \texttt{recursion\_check} analyzers.
 \end{enumerate}

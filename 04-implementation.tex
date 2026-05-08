@@ -46,9 +46,9 @@ The build process produces five distinct categories of artifacts:
 \begin{enumerate}
   \item \texttt{cl\_gcc}: The shared library that GCC dynamically loads as the actual plugin.
   \item \texttt{cl\_core}: The compiler-independent shared library housing the Code Model and the common infrastructure reused by tools, exporters, and analyzers.
-  \item \textbf{Analyzer Libraries:} Dedicated shared libraries including \texttt{cl\_callgraph\_dot} and \texttt{cl\_recursion\_check}, with additional analyzers built in the same way.
-  \item \textbf{Standalone Executables:} The offline tools \texttt{cl\_merge} and \texttt{cl\_analyze}.
-  \item \textbf{Auxiliary Outputs:} Generated Doxygen documentation, class diagrams, and CTest registrations.
+  \item \textit{Analyzer Libraries:} Dedicated shared libraries including \texttt{cl\_callgraph\_dot} and \texttt{cl\_recursion\_check}, with additional analyzers built in the same way.
+  \item \textit{Standalone Executables:} The offline tools \texttt{cl\_merge} and \texttt{cl\_analyze}.
+  \item \textit{Auxiliary Outputs:} Generated Doxygen documentation, class diagrams, and CTest registrations.
 \end{enumerate}
 
 \section{Source Code Organization}\label{sec:source-organization}
@@ -178,10 +178,10 @@ When the \texttt{WITH\_PREDATOR} CMake option is enabled, the build system compi
 
 To verify correctness across the different architectural boundaries, CTest is configured with four separate regression suites:
 \begin{enumerate}
-  \item \textbf{GCC-Adapter Tests}: 46 tests validating that the GIMPLE translation produces the correct JSON output against historical fixtures.
-  \item \textbf{Code Model Integration Tests}: 38 tests focusing specifically on types, initializers, control flow edges, and edge cases.
-  \item \textbf{Offline Pipeline Tests}: 3 end-to-end tests covering the offline analysis path through the \texttt{cl\_analyze} tool.
-  \item \textbf{Predator Regression Suite}: 1,192 tests executed against the patched Predator kernel to validate backward compatibility on the preserved listener interface.
+  \item \textit{GCC-Adapter Tests}: 46 tests validating that the GIMPLE translation produces the correct JSON output against historical fixtures.
+  \item \textit{Code Model Integration Tests}: 38 tests focusing specifically on types, initializers, control flow edges, and edge cases.
+  \item \textit{Offline Pipeline Tests}: 3 end-to-end tests covering the offline analysis path through the \texttt{cl\_analyze} tool.
+  \item \textit{Predator Regression Suite}: 1,192 tests executed against the patched Predator kernel to validate backward compatibility on the preserved listener interface.
 \end{enumerate}
 
 \section{Tooling and Practical Workflow}\label{sec:tooling-workflow}
