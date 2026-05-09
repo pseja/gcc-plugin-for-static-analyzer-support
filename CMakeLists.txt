@@ -1,6 +1,6 @@
 # @file CMakeLists.txt
 # @author Lukáš Pšeja <xpsejal00@vutbr.cz>
-# @brief 
+# @brief The main CMakeLists.txt for the CodeListener project.
 # @date 2026-02-09
 #
 # @copyright Copyright (c) 2026 Lukáš Pšeja
