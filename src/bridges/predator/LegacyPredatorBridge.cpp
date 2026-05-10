@@ -33,10 +33,7 @@ LegacyPredatorBridge::LegacyPredatorBridge(struct cl_code_listener *listener) : 
 
 bool LegacyPredatorBridge::analyze(const Core::CodeModel &model, AnalysisContext &ctx)
 {
-    // the legacy Predator C API has its own internal reporter
-    (void)ctx;
-
-    CodeListener::Adapters::PredatorAdapter pa(model, listener);
+    CodeListener::Adapters::PredatorAdapter pa(model, listener, ctx.statistics_report);
     pa.emit();
     return true;
 }

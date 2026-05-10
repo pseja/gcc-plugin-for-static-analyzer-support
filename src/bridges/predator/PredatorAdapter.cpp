@@ -27,6 +27,7 @@
 #include "FunctionType.hpp"
 #include "Initializer.hpp"
 #include "PredatorAdapter.hpp"
+#include "StageTimer.hpp"
 #include "UnionType.hpp"
 #include "utility.hpp"
 
@@ -35,8 +36,9 @@ using CodeListener::Exporters::overloaded;
 namespace CodeListener::Adapters
 {
 
-PredatorAdapter::PredatorAdapter(const Core::CodeModel &model, struct cl_code_listener *listener)
-    : model(model), listener(listener)
+PredatorAdapter::PredatorAdapter(const Core::CodeModel &model, struct cl_code_listener *listener,
+                                 Core::StatisticsReport *statistics)
+    : model(model), listener(listener), statistics_report(statistics)
 {
 }
 
@@ -47,204 +49,218 @@ void PredatorAdapter::emit()
         return;
     }
 
+    // fallback accumulator used when timing is disabled
+    Core::StageStats dummy_stats;
+    const bool statistics_enabled = statistics_report != nullptr;
+    auto stage = [&](const std::string &name) -> Core::StageStats & {
+        return statistics_enabled ? statistics_report->getStage(name) : dummy_stats;
+    };
+
     // pre-passes for types and variables, because old cl expects to know them already
-    for (const auto &type : model.types())
     {
-        cl_types_pool.emplace_back();
-        struct cl_type *cl_t = &cl_types_pool.back();
-        type_map[type.id] = cl_t;
-
-        cl_t->uid = static_cast<int>(type.id.index);
-        cl_t->name = persistString(type.name);
-        cl_t->size = type.size_bits / 8;
-
-        switch (type.kind)
+        Core::StageTimer t(statistics_enabled, stage("predator_adapter:serialize"));
+        for (const auto &type : model.types())
         {
-        case Core::TypeKind::VOID:
-            cl_t->code = CL_TYPE_VOID;
-            break;
-        case Core::TypeKind::UNKNOWN:
-            cl_t->code = CL_TYPE_UNKNOWN;
-            break;
-        case Core::TypeKind::POINTER:
-            cl_t->code = CL_TYPE_PTR;
-            break;
-        case Core::TypeKind::STRUCT:
-            cl_t->code = CL_TYPE_STRUCT;
-            break;
-        case Core::TypeKind::UNION:
-            cl_t->code = CL_TYPE_UNION;
-            break;
-        case Core::TypeKind::ARRAY:
-            cl_t->code = CL_TYPE_ARRAY;
-            break;
-        case Core::TypeKind::FUNCTION:
-            cl_t->code = CL_TYPE_FNC;
-            break;
-        case Core::TypeKind::INTEGER:
-            cl_t->code = CL_TYPE_INT;
-            break;
-        case Core::TypeKind::BOOL:
-            cl_t->code = CL_TYPE_BOOL;
-            break;
-        case Core::TypeKind::ENUM:
-            cl_t->code = CL_TYPE_ENUM;
-            break;
-        case Core::TypeKind::REAL:
-            cl_t->code = CL_TYPE_REAL;
-            break;
-        default:
-            cl_t->code = CL_TYPE_UNKNOWN;
-            break;
-        }
-    }
+            cl_types_pool.emplace_back();
+            struct cl_type *cl_t = &cl_types_pool.back();
+            type_map[type.id] = cl_t;
 
-    for (const auto &type : model.types())
-    {
-        struct cl_type *cl_t = type_map[type.id];
+            cl_t->uid = static_cast<int>(type.id.index);
+            cl_t->name = persistString(type.name);
+            cl_t->size = type.size_bits / 8;
 
-        std::visit(overloaded{[&](const Core::ArrayType &at) {
-                                  cl_t->item_cnt = 1;
-                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(1));
-                                  cl_t->items = cl_type_items_pool.back().data();
-                                  cl_t->items[0].type = type_map[at.element_type_id];
-                              },
-                              [&](const Core::FunctionType &ft) {
-                                  cl_t->item_cnt = 1 + static_cast<int>(ft.parameter_type_ids.size());
-                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
-                                  cl_t->items = cl_type_items_pool.back().data();
-                                  cl_t->items[0].type = type_map[ft.return_type_id];
-                                  for (size_t i = 0; i < ft.parameter_type_ids.size(); ++i)
-                                  {
-                                      cl_t->items[i + 1].type = type_map[ft.parameter_type_ids[i]];
-                                  }
-                              },
-                              [&](const Core::PointerType &pt) {
-                                  cl_t->item_cnt = 1;
-                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(1));
-                                  cl_t->items = cl_type_items_pool.back().data();
-                                  cl_t->items[0].type = type_map[pt.pointee_type_id];
-                              },
-                              [&](const Core::StructType &st) {
-                                  cl_t->item_cnt = static_cast<int>(st.fields.size());
-                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
-                                  cl_t->items = cl_type_items_pool.back().data();
-                                  for (size_t i = 0; i < st.fields.size(); ++i)
-                                  {
-                                      const auto *field_var = model.getVariable(st.fields[i]);
-                                      cl_t->items[i].type = type_map[field_var->type_id];
-                                      cl_t->items[i].name = persistString(field_var->name);
-                                      if (auto *fv = std::get_if<Core::FieldVariable>(&field_var->data))
-                                      {
-                                          cl_t->items[i].offset = fv->byte_offset.value_or(0);
-                                      }
-                                      else
-                                      {
-                                          cl_t->items[i].offset = 0;
-                                      }
-                                  }
-                              },
-                              [&](const Core::UnionType &st) {
-                                  cl_t->item_cnt = static_cast<int>(st.fields.size());
-                                  cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
-                                  cl_t->items = cl_type_items_pool.back().data();
-                                  for (size_t i = 0; i < st.fields.size(); ++i)
-                                  {
-                                      const auto *field_var = model.getVariable(st.fields[i]);
-                                      cl_t->items[i].type = type_map[field_var->type_id];
-                                      cl_t->items[i].name = persistString(field_var->name);
-                                      if (auto *fv = std::get_if<Core::FieldVariable>(&field_var->data))
-                                      {
-                                          cl_t->items[i].offset = fv->byte_offset.value_or(0);
-                                      }
-                                      else
-                                      {
-                                          cl_t->items[i].offset = 0;
-                                      }
-                                  }
-                              },
-                              [&](const Core::IntegerType &it) { cl_t->is_unsigned = it.is_unsigned; },
-                              [&](const Core::EnumType &et) { cl_t->is_unsigned = et.is_unsigned; },
-                              [&](const auto &) { /* primitives have no items */ }},
-                   type.data);
-    }
-
-    for (const auto &var : model.variables())
-    {
-        cl_vars_pool.emplace_back();
-        struct cl_var *cl_v = &cl_vars_pool.back();
-        var_map[var.id] = cl_v;
-
-        cl_v->uid = static_cast<int>(var.id.index);
-        cl_v->name = var.name.empty() ? nullptr : persistString(var.name);
-        cl_v->artificial = var.artificial;
-        cl_v->loc = mapLocation(var.source_location);
-
-        if (const auto *sv = std::get_if<Core::StandardVariable>(&var.data))
-        {
-            cl_v->is_extern = (sv->storage_duration == Core::StorageDuration::EXTERN);
-            // global and static variables are always zero-initialized in C (unless explicitly initialized)
-            // match original predator plugin behavior: set initialized=true for all non-extern globals/statics
-            if (!cl_v->is_extern && (sv->scope == Core::Scope::GLOBAL || sv->scope == Core::Scope::STATIC))
+            switch (type.kind)
             {
-                cl_v->initialized = true;
-            }
-            else
-            {
-                cl_v->initialized = sv->initial_value.has_value();
+            case Core::TypeKind::VOID:
+                cl_t->code = CL_TYPE_VOID;
+                break;
+            case Core::TypeKind::UNKNOWN:
+                cl_t->code = CL_TYPE_UNKNOWN;
+                break;
+            case Core::TypeKind::POINTER:
+                cl_t->code = CL_TYPE_PTR;
+                break;
+            case Core::TypeKind::STRUCT:
+                cl_t->code = CL_TYPE_STRUCT;
+                break;
+            case Core::TypeKind::UNION:
+                cl_t->code = CL_TYPE_UNION;
+                break;
+            case Core::TypeKind::ARRAY:
+                cl_t->code = CL_TYPE_ARRAY;
+                break;
+            case Core::TypeKind::FUNCTION:
+                cl_t->code = CL_TYPE_FNC;
+                break;
+            case Core::TypeKind::INTEGER:
+                cl_t->code = CL_TYPE_INT;
+                break;
+            case Core::TypeKind::BOOL:
+                cl_t->code = CL_TYPE_BOOL;
+                break;
+            case Core::TypeKind::ENUM:
+                cl_t->code = CL_TYPE_ENUM;
+                break;
+            case Core::TypeKind::REAL:
+                cl_t->code = CL_TYPE_REAL;
+                break;
+            default:
+                cl_t->code = CL_TYPE_UNKNOWN;
+                break;
             }
         }
-    }
 
-    // pre-populate function name-to-uid map so initializer chains can reference functions correctly
-    for (const auto &func : model.functions())
-    {
-        name_to_func_uid[func.name] = static_cast<int>(func.id.index) + 1000000;
-    }
-
-    // build cl_initializer chains for variables that have initial values
-    // (done after all vars/types are registered so mapOperand can resolve cross-references)
-    for (const auto &var : model.variables())
-    {
-        const auto *sv = std::get_if<Core::StandardVariable>(&var.data);
-        if (!sv || !sv->initial_value.has_value())
+        for (const auto &type : model.types())
         {
-            continue;
+            struct cl_type *cl_t = type_map[type.id];
+
+            std::visit(overloaded{[&](const Core::ArrayType &at) {
+                                      cl_t->item_cnt = 1;
+                                      cl_type_items_pool.push_back(std::vector<cl_type_item>(1));
+                                      cl_t->items = cl_type_items_pool.back().data();
+                                      cl_t->items[0].type = type_map[at.element_type_id];
+                                  },
+                                  [&](const Core::FunctionType &ft) {
+                                      cl_t->item_cnt = 1 + static_cast<int>(ft.parameter_type_ids.size());
+                                      cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
+                                      cl_t->items = cl_type_items_pool.back().data();
+                                      cl_t->items[0].type = type_map[ft.return_type_id];
+                                      for (size_t i = 0; i < ft.parameter_type_ids.size(); i++)
+                                      {
+                                          cl_t->items[i + 1].type = type_map[ft.parameter_type_ids[i]];
+                                      }
+                                  },
+                                  [&](const Core::PointerType &pt) {
+                                      cl_t->item_cnt = 1;
+                                      cl_type_items_pool.push_back(std::vector<cl_type_item>(1));
+                                      cl_t->items = cl_type_items_pool.back().data();
+                                      cl_t->items[0].type = type_map[pt.pointee_type_id];
+                                  },
+                                  [&](const Core::StructType &st) {
+                                      cl_t->item_cnt = static_cast<int>(st.fields.size());
+                                      cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
+                                      cl_t->items = cl_type_items_pool.back().data();
+                                      for (size_t i = 0; i < st.fields.size(); i++)
+                                      {
+                                          const auto *field_var = model.getVariable(st.fields[i]);
+                                          cl_t->items[i].type = type_map[field_var->type_id];
+                                          cl_t->items[i].name = persistString(field_var->name);
+                                          if (auto *fv = std::get_if<Core::FieldVariable>(&field_var->data))
+                                          {
+                                              cl_t->items[i].offset = fv->byte_offset.value_or(0);
+                                          }
+                                          else
+                                          {
+                                              cl_t->items[i].offset = 0;
+                                          }
+                                      }
+                                  },
+                                  [&](const Core::UnionType &st) {
+                                      cl_t->item_cnt = static_cast<int>(st.fields.size());
+                                      cl_type_items_pool.push_back(std::vector<cl_type_item>(cl_t->item_cnt));
+                                      cl_t->items = cl_type_items_pool.back().data();
+                                      for (size_t i = 0; i < st.fields.size(); i++)
+                                      {
+                                          const auto *field_var = model.getVariable(st.fields[i]);
+                                          cl_t->items[i].type = type_map[field_var->type_id];
+                                          cl_t->items[i].name = persistString(field_var->name);
+                                          if (auto *fv = std::get_if<Core::FieldVariable>(&field_var->data))
+                                          {
+                                              cl_t->items[i].offset = fv->byte_offset.value_or(0);
+                                          }
+                                          else
+                                          {
+                                              cl_t->items[i].offset = 0;
+                                          }
+                                      }
+                                  },
+                                  [&](const Core::IntegerType &it) { cl_t->is_unsigned = it.is_unsigned; },
+                                  [&](const Core::EnumType &et) { cl_t->is_unsigned = et.is_unsigned; },
+                                  [&](const auto &) { /* primitives have no items */ }},
+                       type.data);
         }
 
-        struct cl_var *cl_v = var_map[var.id];
-        if (!cl_v)
+        for (const auto &var : model.variables())
         {
-            continue;
+            cl_vars_pool.emplace_back();
+            struct cl_var *cl_v = &cl_vars_pool.back();
+            var_map[var.id] = cl_v;
+
+            cl_v->uid = static_cast<int>(var.id.index);
+            cl_v->name = var.name.empty() ? nullptr : persistString(var.name);
+            cl_v->artificial = var.artificial;
+            cl_v->loc = mapLocation(var.source_location);
+
+            if (const auto *sv = std::get_if<Core::StandardVariable>(&var.data))
+            {
+                cl_v->is_extern = (sv->storage_duration == Core::StorageDuration::EXTERN);
+                // global and static variables are always zero-initialized in C (unless explicitly initialized)
+                // match original predator plugin behavior: set initialized=true for all non-extern globals/statics
+                if (!cl_v->is_extern && (sv->scope == Core::Scope::GLOBAL || sv->scope == Core::Scope::STATIC))
+                {
+                    cl_v->initialized = true;
+                }
+                else
+                {
+                    cl_v->initialized = sv->initial_value.has_value();
+                }
+            }
         }
 
-        const struct cl_type *var_cl_type = nullptr;
-        if (var.type_id.isValid())
+        // pre-populate function name-to-uid map so initializer chains can reference functions correctly
+        for (const auto &func : model.functions())
         {
-            const Core::Type *var_type = model.getType(var.type_id);
-            var_cl_type = findType(var_type);
+            name_to_func_uid[func.name] = static_cast<int>(func.id.index) + 1000000;
         }
 
-        std::vector<std::pair<const struct cl_type *, int>> field_path;
-        cl_v->initial = buildInitializerChain(sv->initial_value.value(), cl_v, var_cl_type, field_path);
-    }
+        // build cl_initializer chains for variables that have initial values
+        // (done after all vars/types are registered so mapOperand can resolve cross-references)
+        for (const auto &var : model.variables())
+        {
+            const auto *sv = std::get_if<Core::StandardVariable>(&var.data);
+            if (!sv || !sv->initial_value.has_value())
+            {
+                continue;
+            }
 
-    if (listener->file_open)
+            struct cl_var *cl_v = var_map[var.id];
+            if (!cl_v)
+            {
+                continue;
+            }
+
+            const struct cl_type *var_cl_type = nullptr;
+            if (var.type_id.isValid())
+            {
+                const Core::Type *var_type = model.getType(var.type_id);
+                var_cl_type = findType(var_type);
+            }
+
+            std::vector<std::pair<const struct cl_type *, int>> field_path;
+            cl_v->initial = buildInitializerChain(sv->initial_value.value(), cl_v, var_cl_type, field_path);
+        }
+
+        if (listener->file_open)
+        {
+            listener->file_open(listener, persistString(model.getFilename()));
+        }
+
+        emitFunctions();
+
+        if (listener->file_close)
+        {
+            listener->file_close(listener);
+        }
+    } // predator_adapter:serialize
+
     {
-        listener->file_open(listener, persistString(model.getFilename()));
-    }
+        Core::StageTimer t(statistics_enabled, stage("predator_adapter:analyze"));
 
-    emitFunctions();
-
-    if (listener->file_close)
-    {
-        listener->file_close(listener);
-    }
-
-    if (listener->acknowledge)
-    {
-        listener->acknowledge(listener);
-    }
+        if (listener->acknowledge)
+        {
+            listener->acknowledge(listener);
+        }
+    } // predator_adapter:analyze
 }
 
 void PredatorAdapter::emitFunctions()
@@ -781,7 +797,7 @@ struct cl_initializer *PredatorAdapter::buildInitializerChain(
         struct cl_initializer *head = nullptr;
         struct cl_initializer **tail_ptr = &head;
 
-        for (int i = 0; i < static_cast<int>((*list)->elements.size()); ++i)
+        for (int i = 0; i < static_cast<int>((*list)->elements.size()); i++)
         {
             // determine element type:
             // - for structs/unions: items[i].type (field type), item_cnt == number of fields
@@ -1088,7 +1104,7 @@ struct cl_operand PredatorAdapter::mapOperand(const Core::Operand &op)
                     cl_a->data.item.id = 0;
                     if (current_type && field_var)
                     {
-                        for (int i = 0; i < current_type->item_cnt; ++i)
+                        for (int i = 0; i < current_type->item_cnt; i++)
                         {
                             if (current_type->items[i].name && field_var->name == current_type->items[i].name)
                             {

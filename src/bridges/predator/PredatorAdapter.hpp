@@ -26,7 +26,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "AnalysisContext.hpp"
 #include "CodeModel.hpp"
+#include "StatisticsReport.hpp"
 #include "../../../analyzers/predator/include/cl/code_listener.h"
 
 namespace CodeListener::Adapters
@@ -39,10 +41,12 @@ class PredatorAdapter
     /**
      * Constructs an adapter over the completed model and the legacy listener callbacks.
      *
-     * @param model Model to replay.
+     * @param model    Model to replay.
      * @param listener Legacy listener receiving converted callbacks.
+     * @param statistics Optional statistics report; null when reporting is disabled.
      */
-    PredatorAdapter(const Core::CodeModel &model, struct cl_code_listener *listener);
+    PredatorAdapter(const Core::CodeModel &model, struct cl_code_listener *listener,
+                    Core::StatisticsReport *statistics = nullptr);
 
     /** Default destructor is sufficient because all pools are self-owned containers. */
     ~PredatorAdapter() = default;
@@ -56,6 +60,9 @@ class PredatorAdapter
 
     /** Legacy listener receiving converted callbacks. */
     struct cl_code_listener *listener;
+
+    /** Optional statistics report; used to record adapter stage timings when enabled. */
+    Core::StatisticsReport *statistics_report;
 
     /** Stable storage for converted legacy type records. */
     std::deque<struct cl_type> cl_types_pool;
