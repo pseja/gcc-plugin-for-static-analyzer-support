@@ -15,7 +15,7 @@ Finally, the chapter concludes with Section~\ref{sec:limitations} on page~\pager
 \section{The Code Listener Infrastructure}\label{sec:cl-infrastructure}
 
 The Code Listener (CL) infrastructure is an open-source middleware designed to simplify the construction of static analysis tools for C~\cite{CodeListener2012} and, by extension, C++~\cite{CppExtension2014} programs.
-It was developed by the VeriFIT research group\footnote{\url{https://www.fit.vut.cz/research/group/verifit/.en}} at Brno University of Technology mainly in the years 2009--2015, with some contributors continuing work on it until the present\footnote{\url{https://github.com/kdudka/predator/graphs/contributors}}.
+It was developed by the VeriFIT research group~\cite{VeriFIT} at Brno University of Technology mainly in the years 2009--2015, with some contributors continuing work on it until the present\footnote{\url{https://github.com/kdudka/predator/graphs/contributors}}.
 Its primary goal is to wrap the complex and often undocumented interfaces of existing code parsers to provide a~unified, well-documented, and object-oriented Application Programming Interface (API) for static analysis tool developers~\cite{CodeListener2012}.
 By transforming the native internal representations of compilers into its own simplified format, the Code Listener API exposed to static analyzers becomes completely independent of the underlying parser.
 This abstraction layer allows the same analysis tool to run across different compilers without requiring modifications to the analyzer's source code~\cite{CodeListener2012}.
@@ -55,15 +55,15 @@ This ensures that the user does not need to manually preprocess source code or m
 
 To contextualize the architectural choices of the Code Listener infrastructure, it is valuable to compare it against peer projects in the static analysis domain.
 
-The primary peer to Code Listener is the Frama-C platform, an extensible, open-source framework dedicated to the static analysis of C source code.
+The primary peer to Code Listener is the Frama-C platform~\cite{FramaC2015}, an extensible, open-source framework dedicated to the static analysis of C source code.
 Much like Code Listener, Frama-C isolates its analysis plug-ins from the raw compiler to provide a~unified Application Programming Interface.
 It achieves this by using a~modified version of the CIL (C Intermediate Language) front-end, which parses ISO C99 programs into a~normalized Abstract Syntax Tree (AST).
-Frama-C utilizes a~highly collaborative architecture where various plug-ins, such as those based on abstract interpretation or deductive verification, share this AST and communicate via ACSL (ANSI/ISO C Specification Language) annotations~\cite{FramaC2015}.
+Frama-C utilizes a~highly collaborative architecture where various plug-ins, such as those based on abstract interpretation or deductive verification, share this AST and communicate via ACSL (ANSI/ISO C Specification Language) annotations~\cite{ACSL}.
 While Frama-C operates primarily at the AST level, Code Listener translates compiler internals into a~reduced, instruction-based control flow graph.
 The key advantage of Code Listener's approach is that it allows building of analyzers capable of handling everything industrial compilers are able to compile~\cite{CodeListener2012}, whereas Frama-C is limited to the subset of C that can be represented in its AST and supported by the CIL front-end~\cite{FramaC2015}.
 
 Other notable comparisons can be drawn from the LLVM compiler infrastructure.
-The Clang Static Analyzer, built on top of the Clang/LLVM architecture, provides an extensible framework for checking C and C++ code, though historically its scope has been more limited to compilation and AST-level linting than Frama-C's exhaustive verification~\cite{FramaC2015}.
+The Clang Static Analyzer~\cite{ClangStaticAnalyzer}, built on top of the Clang/LLVM architecture, provides an extensible framework for checking C and C++ code, though historically its scope has been more limited to compilation and AST-level linting than Frama-C's exhaustive verification~\cite{FramaC2015}.
 However, the LLVM core provides a~highly optimized, typed, Static Single Assignment (SSA) intermediate representation.
 Notably, modern LLVM utilizes an \texttt{AnalysisManager} approach that elegantly solves the \uv{God Object} anti-pattern observed in the legacy Code Listener, which is described in Section~\ref{sub:ir-pollution} on page~\pageref{sub:ir-pollution}.
 Instead of polluting the core Intermediate Representation (IR) with analysis results, LLVM's \texttt{AnalysisManager} computes results lazily and stores them externally, keyed by the IR node identity~\cite{LLVMCompilationFramework}.

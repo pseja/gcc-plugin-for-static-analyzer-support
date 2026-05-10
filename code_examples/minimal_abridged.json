@@ -1,0 +1,20 @@
+{
+    "annotations": { "call_graph": {
+        "has_callbacks": false, "has_indirect_calls": false, "leaves": [0], "nodes": [{"address_taken_at": [], "function_id": 0, "incoming_calls": [], "outgoing_calls": []}], "roots": [0], "topological_order": [[0]]
+    }},
+    "blocks": [{
+        "id": 1, "instruction_ids": [0], "name": "bb_2", "parent": 0, "predecessors": [0], "successors": [2]
+    }],
+    "functions": [{
+        "block_ids": [0, 1, 2, 3], "id": 0, "local_variable_ids": [], "name": "main", "parameter_ids": [], "return_type_id": 0, "source_location": {"column": 5, "file": "example.c", "function": "main", "line": 1}
+    }],
+    "instructions": [{
+        "id": 0, "is_terminator": false, "kind": "ASSIGN", "lhs": {"access_path": [], "type": "variable", "variable_id": 0}, "location": {"column": 12, "file": "example.c", "function": "main", "line": 3}, "opcode": "NONE", "parent_block_id": 1, "rhs1": {"type": "constant", "type_id": 0, "value": "0"}
+    }],
+    "types": [{
+        "alignment": 4, "id": 0, "is_atomic": false, "is_const": false, "is_unsigned": false, "is_volatile": false, "kind": "INTEGER", "name": "int", "size_bits": 32
+    }],
+    "variables": [{
+        "artificial": true, "id": 0, "linkage": "NONE", "location": {"column": 12, "file": "example.c", "function": "main", "line": 3}, "name": "", "scope": "FUNCTION", "storage_duration": "AUTO", "type_id": 0
+    }]
+}

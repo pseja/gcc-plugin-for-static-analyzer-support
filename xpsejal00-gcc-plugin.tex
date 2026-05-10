@@ -47,15 +47,47 @@
 \usepackage{xcolor}
 \usepackage{listings}
 
+\definecolor{BrickRed}{cmyk}{0,0.89,0.94,0.28}
+\definecolor{Mulberry}{cmyk}{0.34,0.90,0,0.02}
+
 \lstset{
   language=C++,
   basicstyle=\ttfamily\small,
   keywordstyle=\color{blue}\bfseries,
-  stringstyle=\color{red},
+  stringstyle=\color{BrickRed},
   commentstyle=\color{green!50!black},
   morekeywords={vector, unique_ptr, IAnalyzer, AnalysisContext, CodeModel},
   breaklines=true,
-  % frame=tb % Adds a line at the top and bottom
+}
+
+\lstdefinestyle{sharedStyle}{
+  basicstyle=\ttfamily\small,
+  keywordstyle={\color{blue}},
+  stringstyle={\color{BrickRed}},
+  numbers=left,
+  numberstyle=\scriptsize,
+  frame=lines,
+  xleftmargin=2em,
+  xrightmargin=0.5em,
+  captionpos=b,
+}
+
+\lstdefinelanguage{json}{
+  string=[db]{"},
+  morestring=[s][{\color{Mulberry}}]{\ \ "}{":},
+  keywords={true,false,null},
+  morecomment=[l]{//},
+  literate=*%
+  {0.00\ }{{\color{Mulberry}0.00}\ }5
+  {0.05\ }{{\color{Mulberry}0.05}\ }5
+  {0.10\ }{{\color{Mulberry}0.10}\ }5
+  {99.95\ }{{\color{Mulberry}99.95}\ }6
+  {100.00\ }{{\color{Mulberry}100.00}\ }7
+}
+
+\lstdefinestyle{myJSON}{
+  language=json,
+  style=sharedStyle,
 }
 
 \usepackage{booktabs}

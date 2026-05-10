@@ -4,16 +4,18 @@
 
 % Code Listener infrastructure
 % https://www.fit.vut.cz/research/result/c91439/.en
-@article{CodeListener2012,
-  author  = {Kamil {Dudka} and Petr {Peringer} and Tomáš {Vojnar}},
-  title   = {An Easy to Use Infrastructure for Building Static Analysis Tools},
-  journal = {Lecture Notes in Computer Science},
-  year    = {2012},
-  volume  = {2012},
-  number  = {6927},
-  pages   = {527--534},
-  issn    = {0302-9743},
-  url     = {http://www.springerlink.com/content/750240l1tk386572/}
+@inproceedings{CodeListener2012,
+  author    = {Dudka, Kamil and Peringer, Petr and Vojnar, Tom{\'a}{\v{s}}},
+  editor    = {Moreno-D{\'i}az, Roberto and Pichler, Franz and Quesada-Arencibia, Alexis},
+  title     = {An Easy to Use Infrastructure for Building Static Analysis Tools},
+  booktitle = {Computer Aided Systems Theory -- EUROCAST 2011},
+  year      = {2012},
+  publisher = {Springer Berlin Heidelberg},
+  address   = {Berlin, Heidelberg},
+  pages     = {527--534},
+  isbn      = {978-3-642-27549-4},
+  doi       = {10.1007/978-3-642-27549-4_68},
+  url       = {https://link.springer.com/chapter/10.1007/978-3-642-27549-4_68}
 }
 
 % Predator shape analysis tool suite
@@ -30,7 +32,7 @@
   address   = {Zurich},
   doi       = {10.1007/978-3-319-49052-6\{_}13},
   isbn      = {978-3-319-49052-6},
-  url       = {http://link.springer.com/chapter/10.1007/978-3-319-49052-6_13}
+  url       = {https://link.springer.com/chapter/10.1007/978-3-319-49052-6_13}
 }
 
 @webpage{PredatorWebsite,
@@ -39,7 +41,7 @@
   howpublished = {online},
   year         = {2026},
   url          = {https://www.fit.vut.cz/research/group/verifit/public/tools/predator/},
-  cited        = {2026-04-27}
+  cited        = {!2026-04-27}
 }
 
 @webpage{ForesterWebsite,
@@ -48,7 +50,23 @@
   howpublished = {online},
   year         = {2019},
   url          = {https://www.fit.vut.cz/research/group/verifit/public/tools/forester/},
-  cited        = {2026-04-27}
+  cited        = {!2026-04-27}
+}
+
+@webpage{VeriFIT,
+  author = {{VeriFIT Research Group}},
+  title  = {Automated Analysis and Verification Research Group - VeriFIT},
+  year   = {2026},
+  url    = {https://www.fit.vut.cz/research/group/verifit/.en},
+  cited  = {!2026-05-10}
+}
+
+@webpage{PredatorGitHub,
+  author = {{kdudka}},
+  title  = {Predator GitHub Repository},
+  year   = {2026},
+  url    = {https://github.com/kdudka/predator},
+  cited  = {!2026-05-10}
 }
 
 @book{Refactoring,
@@ -72,7 +90,7 @@
   howpublished = {online},
   year         = {2026},
   url          = {https://gcc.gnu.org/projects/cxx-status.html},
-  cited        = {2026-05-06}
+  cited        = {!2026-05-06}
 }
 
 % (2026). Header only - JSON for Modern C++. nlohmann/json. https://json.nlohmann.me/integration/index.html
@@ -81,8 +99,8 @@
   title        = {JSON for Modern C++},
   howpublished = {online},
   year         = {2026},
-  url          = {https://json.nlohmann.me/integration/index.html},
-  cited        = {2026-04-27}
+  url          = {https://json.nlohmann.me},
+  cited        = {!2026-04-27}
 }
 
 @book{EffectiveSTL,
@@ -98,7 +116,7 @@
 }
 
 @book{CleanArchitecture,
-  address    = {Boston Columbus Indianapolis New York San Francisco Amsterdam Cape Town Dubai London Madrid Milan Munich Paris Montreal Toronto Delhi Mexico City São Paulo Sydney Hong Kong Seoul Singapore Taipei Tokyo},
+  address    = {Boston},
   series     = {Robert C. Martin series},
   title      = {Clean Architecture: a craftsman's guide to software structure and design},
   edition    = {1},
@@ -150,7 +168,7 @@
   title        = {{GCC}, the {GNU} Compiler Collection},
   howpublished = {online},
   url          = {https://gcc.gnu.org/},
-  cited        = {2026-04-04}
+  cited        = {!2026-04-04}
 }
 
 % GCC Plugin API
@@ -159,7 +177,7 @@
   title        = {{GCC Plugin API}},
   howpublished = {online},
   url          = {https://gcc.gnu.org/onlinedocs/gccint/Plugins.html},
-  cited        = {2026-04-04}
+  cited        = {!2026-04-04}
 }
 
 % GCC Internals
@@ -172,7 +190,7 @@
   year         = {2024},
   note         = {Version 12.5.0},
   url          = {https://gcc.gnu.org/onlinedocs/gcc-12.5.0/gccint.pdf},
-  cited        = {2026-04-04}
+  cited        = {!2026-04-04}
 }
 
 % LLVM project
@@ -181,7 +199,7 @@
   title        = {The {LLVM} Compiler Infrastructure},
   howpublished = {online},
   url          = {https://llvm.org/},
-  cited        = {2026-04-04}
+  cited        = {!2026-04-04}
 }
 
 % Frama-C: A software analysis perspective
@@ -218,12 +236,12 @@
 @inproceedings{SootFramework2011,
   language     = {en},
   month        = {October},
-  booktitle    = {Cetus Users and Compiler Infastructure Workshop (CETUS 2011)},
+  booktitle    = {Cetus Users and Compiler Infrastructure Workshop (CETUS 2011)},
   organization = {Cetus Users and Compiler Infrastructure Workshop},
   author       = {Patrick Lam and Eric Bodden and Ondrej Lhotak and Laurie Hendren},
   year         = {2011},
   title        = {The Soot framework for Java program analysis: a retrospective},
-  url          = {http://tubiblio.ulb.tu-darmstadt.de/59322/}
+  url          = {https://www.bodden.de/pubs/lblh11soot.pdf}
 }
 
 % Design Patterns: GoF book
@@ -234,10 +252,33 @@
   series     = {Addison-Wesley professional computing series},
   title      = {Design Patterns: Elements of Reusable Object-Oriented Software},
   isbn       = {9780201633610},
-  publisher  = {Addison-Wesley Professional},
+  publisher  = {Addison-Wesley},
   year       = {1994},
   collection = {Addison-Wesley professional computing series},
   language   = {eng}
+}
+
+@book{DoD,
+  title        = {Data-Oriented Design},
+  isbn         = {9781916478701},
+  publisher    = {Richard Fabian},
+  author       = {Fabian, Richard},
+  address      = {Stockport, England, United Kingdom},
+  year         = {2018},
+  language     = {eng},
+  howpublished = {online},
+  url          = {https://www.dataorienteddesign.com/dodbook.pdf}
+}
+
+@book{Cpp,
+  address   = {Upper Saddle River, NJ},
+  edition   = {4},
+  title     = {The C++ programming language},
+  isbn      = {9780321563842},
+  publisher = {Addison-Wesley},
+  author    = {Stroustrup, Bjarne},
+  year      = {2013},
+  language  = {eng}
 }
 
 @article{Tarjan1972,
@@ -256,13 +297,90 @@
   language  = {en}
 }
 
+@webpage{ClangStaticAnalyzer,
+  key          = {ClangStaticAnalyzer},
+  title        = {Clang Static Analyzer},
+  howpublished = {online},
+  url          = {https://clang-analyzer.llvm.org/},
+  year         = {2026},
+  cited        = {!2026-05-09}
+}
+
+@inbook{ACSL,
+  author    = {Blanchard, Allan and March{\'e}, Claude and Prevosto, Virgile},
+  editor    = {Kosmatov, Nikolai and Prevosto, Virgile and Signoles, Julien},
+  title     = {Formally Expressing What a Program Should Do: The ACSL Language},
+  booktitle = {Guide to Software Verification with Frama-C: Core Components, Usages, and Applications},
+  year      = {2024},
+  publisher = {Springer International Publishing},
+  address   = {Cham},
+  pages     = {3--80},
+  isbn      = {978-3-031-55608-1},
+  doi       = {10.1007/978-3-031-55608-1_1},
+  url       = {https://doi.org/10.1007/978-3-031-55608-1_1}
+}
+
+@webpage{JQ,
+  key          = {JQ},
+  title        = {jq},
+  howpublished = {online},
+  url          = {https://jqlang.org/},
+  year         = {2025},
+  cited        = {!2026-05-09}
+}
+
+@article{Graphviz,
+  title    = {An open graph visualization system and its applications to software engineering},
+  volume   = {30},
+  rights   = {http://doi.wiley.com/10.1002/tdm_license_1.1},
+  issn     = {0038-0644, 1097-024X},
+  url      = {https://onlinelibrary.wiley.com/doi/10.1002/1097-024X(200009)30:11<1203::AID-SPE338>3.0.CO;2-N},
+  doi      = {10.1002/1097-024X(200009)30:11<1203::AID-SPE338>3.0.CO;2-N},
+  number   = {11},
+  journal  = {Software: Practice and Experience},
+  author   = {Gansner, Emden R. and North, Stephen C.},
+  year     = {2000},
+  month    = {September},
+  pages    = {1203--1233},
+  language = {en}
+}
+
+@book{CMake,
+  address   = {Clifton Park, NY},
+  edition   = {6},
+  title     = {Mastering CMake},
+  isbn      = {9781930934269},
+  publisher = {Kitware, Inc.},
+  author    = {Martin, Ken and Hoffman, Bill},
+  year      = {2013},
+  language  = {eng}
+}
+
+@article{CRTP,
+  author     = {Coplien, James O.},
+  title      = {Curiously recurring template patterns},
+  year       = {1995},
+  issue_date = {Feb. 1995},
+  publisher  = {SIGS Publications, Inc.},
+  address    = {USA},
+  volume     = {7},
+  number     = {2},
+  issn       = {1040-6042},
+  journal    = {C++ Report},
+  month      = {February},
+  pages      = {24--27},
+  numpages   = {4},
+  doi        = {10.5555/229227.229229},
+  url        = {https://dl.acm.org/doi/10.5555/229227.229229}
+}
+
 % Sparse semantic checker
 @webpage{Sparse,
   key          = {Sparse},
   title        = {Sparse -- a Semantic Parser for {C}},
   howpublished = {online},
   url          = {https://sparse.docs.kernel.org/},
-  cited        = {2026-04-04}
+  cited        = {!2026-04-04}
 }
 
 @manual{AirbusEASA,
