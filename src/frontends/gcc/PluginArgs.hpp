@@ -66,6 +66,9 @@ struct PluginArgs
     /** Compatibility flag matching the historical `dump-types` option. */
     bool dump_types{false};
 
+    /** Whether statistics reporting is enabled. */
+    bool enable_statistics{false};
+
     /** Whether parsing completed without fatal option errors. */
     bool valid{true};
 

@@ -37,7 +37,8 @@ namespace CodeListener
 namespace Core
 {
 class CodeModel;
-}
+class StatisticsReport;
+} // namespace Core
 
 /**
  * Bundles all services an external analyzer might need to analyze the CodeModel.
@@ -50,6 +51,15 @@ class AnalysisContext
 
     /** Shared cache of lazily computed annotations derived from the current model. */
     AnnotationServices::AnalysisManager &analysis_manager;
+
+    /**
+     * Optional statistics report used to accumulate stage timings and counters.
+     *
+     * Set by the GCC plugin when `-fplugin-arg-...-statistics` is active.
+     * Null in all other contexts (standalone tools, unit tests).
+     * Analyzers and bridges may use it to record their own internal stages.
+     */
+    Core::StatisticsReport *statistics_report{nullptr};
 
     /**
      * Constructs a service bundle over the caller-provided reporter and annotation cache.

@@ -20,6 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "StageTimer.hpp"
 #include "Pass.hpp"
 #include "DiagnosticReporter.hpp"
 #include "GCCAdapter.hpp"
@@ -34,8 +35,12 @@ Pass::Pass(gcc::context *ctx, GCCAdapter &adapter) : gimple_opt_pass(pass_metada
 
 unsigned int Pass::execute(function *fun)
 {
-    PluginContext::getInstance().getDiagnosticReporter().report(
-        Core::DiagnosticLevel::Debug, std::string("Processing function: ") + function_name(fun));
+    PluginContext &plugin_ctx = PluginContext::getInstance();
+    plugin_ctx.getDiagnosticReporter().report(Core::DiagnosticLevel::Debug,
+                                              std::string("Processing function: ") + function_name(fun));
+
+    const bool statistics_enabled = plugin_ctx.getArgs() && plugin_ctx.getArgs()->enable_statistics;
+    Core::StageTimer timer(statistics_enabled, plugin_ctx.getStatisticsReport().getStage("gimple_to_codemodel"));
 
     adapter.processFunction(fun);
 

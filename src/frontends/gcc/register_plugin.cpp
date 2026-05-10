@@ -23,6 +23,8 @@
 #include <iostream> // std::cerr
 #include <cstring>  // std::strcmp
 
+#include "StageTimer.hpp"
+
 #include <gcc-plugin.h>     // plugin_init, plugin_is_GPL_compatible
 #include <plugin-version.h> // gcc_version
 
@@ -59,13 +61,11 @@ void print_info(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
     std::cerr << "plugin name: " << plugin_info->base_name << "\n";
     std::cerr << "full plugin name: " << plugin_info->full_name << "\n";
     std::cerr << "argument count: " << plugin_info->argc << "\n";
-    for (int i = 0; i < plugin_info->argc; ++i)
+    for (int i = 0; i < plugin_info->argc; i++)
     {
         std::cerr << "arg " << i << ": key=" << plugin_info->argv[i].key << ", value=" << plugin_info->argv[i].value
                   << "\n";
     }
-    // std::cerr << "plugin version: " << plugin_info->version << "\n";
-    // std::cerr << "plugin help: " << plugin_info->help << "\n";
 
     std::cerr << "\n--- GCC version info ---\n";
     std::cerr << "basever: " << version->basever << "\n";
@@ -99,19 +99,30 @@ int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
         return 0;
     }
 
-    if (!has_compatible_base_version(version))
-    {
-        std::cerr << "Incompatible GCC version: This plugin was compiled against GCC " << safe_basever(&gcc_version)
-                  << ", but the current GCC version is " << safe_basever(version) << "\n";
-
-        return 1;
-    }
-
     CodeListener::CompilerAbstractionLayer::PluginContext &context =
         CodeListener::CompilerAbstractionLayer::PluginContext::getInstance();
-    if (!context.initialize(plugin_info, version))
+
+    CodeListener::Core::StageStats dummy_stats;
+    const bool statistics_enabled = early_args.enable_statistics;
+    auto stage = [&](const char *name) -> CodeListener::Core::StageStats & {
+        return statistics_enabled ? context.getStatisticsReport().getStage(name) : dummy_stats;
+    };
+
     {
-        return 1;
+        CodeListener::Core::StageTimer timer(statistics_enabled, stage("plugin:initialize"));
+
+        if (!has_compatible_base_version(version))
+        {
+            std::cerr << "Incompatible GCC version: This plugin was compiled against GCC " << safe_basever(&gcc_version)
+                      << ", but the current GCC version is " << safe_basever(version) << "\n";
+
+            return 1;
+        }
+
+        if (!context.initialize(plugin_info, version))
+        {
+            return 1;
+        }
     }
 
     return 0;

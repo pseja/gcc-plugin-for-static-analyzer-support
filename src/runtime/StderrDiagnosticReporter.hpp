@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include <cstdio>
-
 #include "DiagnosticLevel.hpp"
 #include "DiagnosticReporter.hpp"
 #include "SourceLocation.hpp"

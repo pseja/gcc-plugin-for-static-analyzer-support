@@ -89,7 +89,15 @@ void GCCDiagnosticReporter::report(Core::DiagnosticLevel level, const Core::Sour
                 msg.c_str());
         break;
     case Core::DiagnosticLevel::Info:
-        inform(gcc_source_location, "%s", message.c_str());
+        if (gcc_source_location == UNKNOWN_LOCATION)
+        {
+            // fall back to stderr, when GCC would print `note: <unknown>`
+            fprintf(stderr, "\033[1;36mnote:\033[0m %s\n", msg.c_str());
+        }
+        else
+        {
+            inform(gcc_source_location, "%s", message.c_str());
+        }
         break;
     case Core::DiagnosticLevel::Warning:
         warning_at(gcc_source_location, 0, "%s", message.c_str());

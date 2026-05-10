@@ -20,9 +20,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "StageTimer.hpp"
 #include "GCCFrontend.hpp"
-
 #include "CodeModel.hpp"
+#include "PluginContext.hpp"
 
 namespace CodeListener::CompilerAbstractionLayer
 {
@@ -33,10 +34,15 @@ GCCFrontend::GCCFrontend(const Core::CodeModel &model) : model(model)
 
 bool GCCFrontend::run(std::vector<std::unique_ptr<Core::IAnalyzer>> &analyzers, CodeListener::AnalysisContext &ctx)
 {
+    PluginContext &plugin_ctx = PluginContext::getInstance();
+    const bool statistics_enabled = plugin_ctx.getArgs() && plugin_ctx.getArgs()->enable_statistics;
+
     bool all_succeeded = true;
-    for (auto &analyzer : analyzers)
+    for (std::size_t i = 0; i < analyzers.size(); i++)
     {
-        if (!analyzer->analyze(model, ctx))
+        const std::string stage_name = "finish:analyzer[" + std::to_string(i) + "]";
+        Core::StageTimer timer(statistics_enabled, plugin_ctx.getStatisticsReport().getStage(stage_name));
+        if (!analyzers[i]->analyze(model, ctx))
         {
             all_succeeded = false;
         }

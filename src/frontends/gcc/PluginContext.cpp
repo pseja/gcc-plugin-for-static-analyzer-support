@@ -22,6 +22,8 @@
 
 #include <fstream>
 
+#include "StageTimer.hpp"
+
 #include <dlfcn.h>
 #include <unistd.h>
 
@@ -137,11 +139,11 @@ bool PluginContext::initialize(const plugin_name_args *plugin_info, const plugin
     }
     else if (!args->use_analyzer && args->load_analyzer.has_value())
     {
-        reporter.report(Core::DiagnosticLevel::Info,
+        reporter.report(Core::DiagnosticLevel::Debug,
                         "Dry-run requested; skipping analyzer load from '" + args->load_analyzer.value() + "'");
     }
 
-    reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin initialized");
+    reporter.report(Core::DiagnosticLevel::Debug, "Code Listener GCC plugin initialized");
 
     return true;
 }
@@ -166,9 +168,21 @@ GCCAdapter *PluginContext::getAdapter()
     return adapter.get();
 }
 
-void PluginContext::loadAnalyzer(const std::string &path, const std::string &analyzer_args,
-                                  const std::string &plugin_full_name)
+Core::StatisticsReport &PluginContext::getStatisticsReport()
 {
+    return statistics_report;
+}
+
+void PluginContext::loadAnalyzer(const std::string &path, const std::string &analyzer_args,
+                                 const std::string &plugin_full_name)
+{
+    Core::StageStats dummy_stats;
+    const bool statistics_enabled = args && args->enable_statistics;
+    auto stage = [&](const std::string &name) -> Core::StageStats & {
+        return statistics_enabled ? statistics_report.getStage(name) : dummy_stats;
+    };
+    Core::StageTimer timer(statistics_enabled, stage("plugin:load_analyzer"));
+
     // dlopen the analyzer shared library
     void *handle = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (!handle)
@@ -253,8 +267,8 @@ void PluginContext::loadAnalyzer(const std::string &path, const std::string &ana
 
 void PluginContext::initPrint(const plugin_gcc_version *version)
 {
-    reporter.report(Core::DiagnosticLevel::Info, "Initializing Code Listener GCC plugin");
-    reporter.report(Core::DiagnosticLevel::Info, std::string("GCC version: ") + version->basever);
+    reporter.report(Core::DiagnosticLevel::Debug, "Initializing Code Listener GCC plugin");
+    reporter.report(Core::DiagnosticLevel::Debug, std::string("GCC version: ") + version->basever);
 
     if (args)
     {
@@ -269,7 +283,7 @@ void PluginContext::onPluginFinish(void *gcc_data, void *user_data)
 
     PluginContext &plugin_context = PluginContext::getInstance();
     Core::DiagnosticReporter &reporter = plugin_context.getDiagnosticReporter();
-    reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin starting to export");
+    reporter.report(Core::DiagnosticLevel::Debug, "Code Listener GCC plugin starting to export");
 
     const PluginArgs *args = plugin_context.getArgs();
     if (!args)
@@ -279,48 +293,85 @@ void PluginContext::onPluginFinish(void *gcc_data, void *user_data)
         return;
     }
 
+    const bool statistics_enabled = args->enable_statistics;
     const Core::CodeModel &model = plugin_context.getCodeModel();
+    Core::StageStats dummy_stats;
+    auto stage = [&](const std::string &name) -> Core::StageStats & {
+        return statistics_enabled ? plugin_context.statistics_report.getStage(name) : dummy_stats;
+    };
 
-    // JSON export
-    if (args->gen_json_file.has_value())
     {
-        CodeListener::Exporters::JSONExporter exporter(args->gen_json_file.value());
-        exporter.exportModel(model);
-        reporter.report(Core::DiagnosticLevel::Info, "Exported JSON to " + args->gen_json_file.value());
-    }
+        Core::StageTimer finish_callback_timer(statistics_enabled, stage("plugin:finish_callback"));
 
-    // DOT export
-    if (args->gen_dot_file.has_value())
-    {
-        CodeListener::Exporters::DOTExporter dot_exporter(args->gen_dot_file.value(), args->gen_dot_verbosity);
-        dot_exporter.exportModel(model);
-        reporter.report(Core::DiagnosticLevel::Info, "Exported DOT to " + args->gen_dot_file.value());
-    }
-
-    // PP export
-    if (args->dump_pp_file.has_value())
-    {
-        CodeListener::Exporters::PPExporter pp_exporter(args->dump_pp_file.value());
-        pp_exporter.exportModel(model);
-        reporter.report(Core::DiagnosticLevel::Info, "Exported PP to " + args->dump_pp_file.value());
-    }
-
-    // feed the model to every loaded analyzer via GCCFrontend
-    if (args->use_analyzer && !plugin_context.analyzers.empty())
-    {
-        GCCFrontend frontend(model);
-        AnalysisContext ctx(reporter, plugin_context.shared_analysis_manager);
-        if (!frontend.run(plugin_context.analyzers, ctx))
+        if (statistics_enabled)
         {
-            reporter.report(Core::DiagnosticLevel::Error, "One or more analyzers reported errors");
+            plugin_context.statistics_report.recordCounter("model:functions", model.functionCount());
+            plugin_context.statistics_report.recordCounter("model:blocks", model.blockCount());
+            plugin_context.statistics_report.recordCounter("model:instructions", model.instructionCount());
+            plugin_context.statistics_report.recordCounter("model:variables", model.variableCount());
+            plugin_context.statistics_report.recordCounter("model:types", model.typeCount());
         }
-    }
-    else if (!args->use_analyzer)
-    {
-        reporter.report(Core::DiagnosticLevel::Info, "Dry-run requested; skipping analyzer execution");
-    }
 
-    reporter.report(Core::DiagnosticLevel::Info, "Code Listener GCC plugin finished");
+        Core::StageTimer total_timer(statistics_enabled, stage("finish:total"));
+
+        // JSON export
+        if (args->gen_json_file.has_value())
+        {
+            Core::StageTimer t(statistics_enabled, stage("finish:json_export"));
+            CodeListener::Exporters::JSONExporter exporter(args->gen_json_file.value());
+            exporter.exportModel(model);
+            reporter.report(Core::DiagnosticLevel::Info, "Exported JSON to " + args->gen_json_file.value());
+        }
+
+        // DOT export
+        if (args->gen_dot_file.has_value())
+        {
+            Core::StageTimer t(statistics_enabled, stage("finish:dot_export"));
+            CodeListener::Exporters::DOTExporter dot_exporter(args->gen_dot_file.value(), args->gen_dot_verbosity);
+            dot_exporter.exportModel(model);
+            reporter.report(Core::DiagnosticLevel::Info, "Exported DOT to " + args->gen_dot_file.value());
+        }
+
+        // PP export
+        if (args->dump_pp_file.has_value())
+        {
+            Core::StageTimer t(statistics_enabled, stage("finish:pp_export"));
+            CodeListener::Exporters::PPExporter pp_exporter(args->dump_pp_file.value());
+            pp_exporter.exportModel(model);
+            reporter.report(Core::DiagnosticLevel::Info, "Exported PP to " + args->dump_pp_file.value());
+        }
+
+        // feed the model to every loaded analyzer via GCCFrontend
+        if (args->use_analyzer && !plugin_context.analyzers.empty())
+        {
+            Core::StageTimer t(statistics_enabled, stage("finish:analyzers"));
+            GCCFrontend frontend(model);
+            AnalysisContext ctx(reporter, plugin_context.shared_analysis_manager);
+            ctx.statistics_report = statistics_enabled ? &plugin_context.statistics_report : nullptr;
+            if (!frontend.run(plugin_context.analyzers, ctx))
+            {
+                reporter.report(Core::DiagnosticLevel::Error, "One or more analyzers reported errors");
+            }
+        }
+        else if (!args->use_analyzer)
+        {
+            reporter.report(Core::DiagnosticLevel::Debug, "Dry-run requested; skipping analyzer execution");
+        }
+        reporter.report(Core::DiagnosticLevel::Debug, "Code Listener GCC plugin finished");
+    } // plugin:finish_callback timer stops here
+
+    if (statistics_enabled)
+    {
+        // temporarily lower the verbosity threshold to Info so StatisticsReport::print()
+        // can emit its table regardless of the user-selected verbosity level
+        const auto saved_level = plugin_context.reporter.getVerbosityLevel();
+        if (saved_level > Core::DiagnosticLevel::Info)
+        {
+            plugin_context.reporter.setVerbosityLevel(Core::DiagnosticLevel::Info);
+        }
+        plugin_context.statistics_report.print(reporter);
+        plugin_context.reporter.setVerbosityLevel(saved_level);
+    }
 }
 
 } // namespace CodeListener::CompilerAbstractionLayer

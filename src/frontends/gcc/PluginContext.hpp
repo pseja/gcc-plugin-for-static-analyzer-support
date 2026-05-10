@@ -25,6 +25,8 @@
 #include <memory> // unique_ptr
 #include <vector> // vector
 
+#include "StatisticsReport.hpp"
+
 #include <gcc-plugin.h>
 #include <tree-pass.h> // register_pass_info
 
@@ -81,6 +83,9 @@ class PluginContext
     /** @return Active GCC adapter instance, or `nullptr` before initialization. */
     GCCAdapter *getAdapter();
 
+    /** @return Mutable statistics report for accumulating stage timings and counters. */
+    Core::StatisticsReport &getStatisticsReport();
+
   private:
     /** Parsed command-line arguments controlling plugin behavior. */
     std::unique_ptr<PluginArgs> args;
@@ -105,6 +110,13 @@ class PluginContext
 
     /** Shared annotation cache reused by all analyzers in the current run. */
     AnnotationServices::AnalysisManager shared_analysis_manager;
+
+    /**
+     * Stage timing and counter accumulators.
+     *
+     * Populated only when statistics are enabled.
+     */
+    Core::StatisticsReport statistics_report;
 
     /** Default constructor hidden behind the singleton accessor. */
     PluginContext() = default;

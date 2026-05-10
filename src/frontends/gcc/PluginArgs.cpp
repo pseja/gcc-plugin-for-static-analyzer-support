@@ -104,6 +104,10 @@ PluginArgs::PluginArgs(const plugin_name_args *plugin_info, Core::DiagnosticRepo
         {
             use_analyzer = false;
         }
+        else if (key == "statistics")
+        {
+            enable_statistics = true;
+        }
         else if (key == "dump-pp")
         {
             dump_pp_file = value;
@@ -194,6 +198,8 @@ std::string PluginArgs::helpText() const
     out << "    -fplugin-arg-" << name << "-load-analyzer=PATH      - load a native or legacy analyzer library\n";
     out << "    -fplugin-arg-" << name << "-args=ANALYZER_ARGS        - forward arguments to the loaded analyzer\n";
     out << "    -fplugin-arg-" << name << "-dry-run                 - skip analyzer loading and execution\n";
+    out << "    -fplugin-arg-" << name
+        << "-statistics              - emit stage timing and counter summaries at plugin finish\n";
     out << "    -fplugin-arg-" << name << "-dump-pp[=OUTPUT_FILE]   - export the pretty-printed CodeModel\n";
     out << "    -fplugin-arg-" << name << "-gen-json[=OUTPUT_FILE]  - export the CodeModel as JSON\n";
     out << "    -fplugin-arg-" << name << "-gen-dot[=OUTPUT_FILE]   - export the CodeModel as DOT\n";
@@ -210,13 +216,13 @@ std::string PluginArgs::helpText() const
 
 void PluginArgs::print(Core::DiagnosticReporter &reporter) const
 {
-    reporter.report(Core::DiagnosticLevel::Info, "PluginArgs:");
-    reporter.report(Core::DiagnosticLevel::Info, "  Base name: '" + base_name + "'");
-    reporter.report(Core::DiagnosticLevel::Info, "  Full name: '" + full_name + "'");
-    reporter.report(Core::DiagnosticLevel::Info, "  Arguments:");
+    reporter.report(Core::DiagnosticLevel::Debug, "PluginArgs:");
+    reporter.report(Core::DiagnosticLevel::Debug, "  Base name: '" + base_name + "'");
+    reporter.report(Core::DiagnosticLevel::Debug, "  Full name: '" + full_name + "'");
+    reporter.report(Core::DiagnosticLevel::Debug, "  Arguments:");
     for (const auto &[key, value] : raw_args)
     {
-        reporter.report(Core::DiagnosticLevel::Info, "    Key: '" + key + "', Value: '" + value + "'");
+        reporter.report(Core::DiagnosticLevel::Debug, "    Key: '" + key + "', Value: '" + value + "'");
     }
 }
 

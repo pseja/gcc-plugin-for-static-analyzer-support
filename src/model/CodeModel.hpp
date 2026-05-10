@@ -25,7 +25,6 @@
 #include <deque>  // std::deque
 #include <ranges> // std::views::transform, std::views::join
 
-// #include "AnnotationBase.hpp"
 #include "Block.hpp"
 #include "BlockId.hpp"
 #include "Function.hpp"
@@ -186,6 +185,36 @@ class CodeModel
     [[nodiscard]] auto instructions() const
     {
         return std::views::all(instructions_pool);
+    }
+
+    /** @return Number of stored types. */
+    [[nodiscard]] std::size_t typeCount() const noexcept
+    {
+        return types_pool.size();
+    }
+
+    /** @return Number of stored variables. */
+    [[nodiscard]] std::size_t variableCount() const noexcept
+    {
+        return variables_pool.size();
+    }
+
+    /** @return Number of stored functions. */
+    [[nodiscard]] std::size_t functionCount() const noexcept
+    {
+        return functions_pool.size();
+    }
+
+    /** @return Number of stored basic blocks. */
+    [[nodiscard]] std::size_t blockCount() const noexcept
+    {
+        return blocks_pool.size();
+    }
+
+    /** @return Number of stored instructions. */
+    [[nodiscard]] std::size_t instructionCount() const noexcept
+    {
+        return instructions_pool.size();
     }
 
     /**
