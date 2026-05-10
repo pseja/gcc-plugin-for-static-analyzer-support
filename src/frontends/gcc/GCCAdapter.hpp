@@ -92,49 +92,131 @@ class GCCAdapter
     /** Cache of synthesized model variables representing GCC internal functions. */
     std::unordered_map<std::string, Core::VariableId> internal_fn_cache;
 
-    /** Map one GCC type tree to a stable model type id, creating it if needed. */
+    /**
+     * Map one GCC type tree to a stable model type id, creating it if needed.
+     *
+     * @param type_tree GCC type tree node.
+     *
+     * @return Model type identifier for the given tree.
+     */
     Core::TypeId getOrCreateType(tree type_tree);
 
-    /** Parse a GCC initializer tree into the model initializer representation. */
+    /**
+     * Parse a GCC initializer tree into the model initializer representation.
+     *
+     * @param init_tree GCC initializer tree node.
+     *
+     * @return Equivalent model Initializer.
+     */
     Core::Initializer parseInitializer(tree init_tree);
 
-    /** Map one GCC variable tree to a stable model variable id, creating it if needed. */
+    /**
+     * Map one GCC variable tree to a stable model variable id, creating it if needed.
+     *
+     * @param var_tree GCC variable tree node.
+     *
+     * @return Model variable identifier for the given tree.
+     */
     Core::VariableId getOrCreateVariable(tree var_tree);
 
-    /** Parse a GCC operand tree into the model operand representation. */
+    /**
+     * Parse a GCC operand tree into the model operand representation.
+     *
+     * @param operand_tree GCC expression tree to parse.
+     *
+     * @return Model operand (constant or variable) corresponding to the tree.
+     */
     Core::Operand parseOperand(tree operand_tree);
 
-    /** Improve a GCC location value using statement-specific fallback logic. */
+    /**
+     * Improve a GCC location value using statement-specific fallback logic.
+     *
+     * @param location Base GCC source location to improve.
+     * @param gcode    GIMPLE statement kind used to select the fallback.
+     * @param stmt     GIMPLE statement carrying additional location data.
+     *
+     * @return Refined location value.
+     */
     location_t enhanceLocationT(location_t location, enum gimple_code gcode, gimple *stmt);
 
-    /** Convert a GCC location value into the model source location form. */
+    /**
+     * Convert a GCC location value into the model source location form.
+     *
+     * @param location GCC source location to convert.
+     *
+     * @return Equivalent model SourceLocation.
+     */
     Core::SourceLocation getSourceLocation(location_t location);
 
-    /** Map one GCC type tree to the coarse `TypeKind` classification. */
+    /**
+     * Map one GCC type tree to the coarse TypeKind classification.
+     *
+     * @param type_tree GCC type tree (may be adjusted in place).
+     *
+     * @return Coarse TypeKind enum value for the given tree.
+     */
     Core::TypeKind mapTypeTreeToTypeKind(tree &type_tree);
 
-    /** Emit parameter variables for the current function. */
+    /**
+     * Emit parameter variables for the current function.
+     *
+     * @param fun      GCC function whose parameters should be processed.
+     * @param function Model function receiving the parameter variables.
+     */
     void processFunctionParameters(function *fun, Core::Function *function);
 
-    /** Compute predecessor and successor relations for a translated basic block. */
+    /**
+     * Compute predecessor and successor relations for a translated basic block.
+     *
+     * @param bb    GCC basic block providing predecessor/successor information.
+     * @param block Model block whose relations should be filled in.
+     */
     void linkPredecessorsAndSuccessors(basic_block bb, Core::Block *block);
 
-    /** Ensure one GCC basic block has a corresponding model block. */
+    /**
+     * Ensure one GCC basic block has a corresponding model block.
+     *
+     * @param bb GCC basic block to register.
+     */
     void registerBasicBlock(basic_block bb);
 
-    /** Register all GCC basic blocks of one function before instruction emission starts. */
+    /**
+     * Register all GCC basic blocks of one function before instruction emission starts.
+     *
+     * @param fun GCC function whose basic blocks should be registered.
+     */
     void registerBasicBlocks(function *fun);
 
-    /** Translate one GCC basic block into the model. */
+    /**
+     * Translate one GCC basic block into the model.
+     *
+     * @param bb          GCC basic block to translate.
+     * @param function_id Model function identifier owning the block.
+     */
     void processBasicBlock(basic_block bb, Core::FunctionId function_id);
 
-    /** Translate all basic blocks of one function into the model. */
+    /**
+     * Translate all basic blocks of one function into the model.
+     *
+     * @param fun      GCC function whose blocks should be processed.
+     * @param function Model function receiving the translated blocks.
+     */
     void processBasicBlocks(function *fun, Core::Function *function);
 
-    /** Translate one GCC statement into a model instruction. */
+    /**
+     * Translate one GCC statement into a model instruction.
+     *
+     * @param stmt  GIMPLE statement to translate.
+     * @param block Model block receiving the new instruction.
+     */
     void processInstruction(gimple *stmt, Core::Block *block);
 
-    /** Translate all statements of one GCC basic block. */
+    /**
+     * Translate all statements of one GCC basic block.
+     *
+     * @param bb    GCC basic block to process.
+     * @param block Model block receiving the translated instructions.
+     */
     void processInstructions(basic_block bb, Core::Block *block);
 };
 

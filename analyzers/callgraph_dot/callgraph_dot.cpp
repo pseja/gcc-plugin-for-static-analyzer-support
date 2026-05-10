@@ -46,6 +46,15 @@
 
 using namespace CodeListener;
 
+/**
+ * Run the callgraph_dot analysis: emit the call graph as a Graphviz DOT file.
+ *
+ * @param model  Fully populated CodeModel for the translation unit.
+ * @param ctx    Services available to the analyzer (reporter, annotation cache).
+ * @param args   Output file path override; defaults to "callgraph.dot" when NULL or empty.
+ *
+ * @return true on success; false if the output file could not be opened.
+ */
 static bool callgraph_analyze(const Core::CodeModel &model, AnalysisContext &ctx, const char *args)
 {
     const std::string outpath = (args && args[0] != '\0') ? args : "callgraph.dot";
@@ -109,6 +118,7 @@ static bool callgraph_analyze(const Core::CodeModel &model, AnalysisContext &ctx
     return true;
 }
 
+/** Native analyzer API descriptor for the callgraph_dot plugin. */
 static const cl_native_analyzer_api_t callgraph_dot_api = {
     CL_NATIVE_API_VERSION,
     callgraph_analyze,

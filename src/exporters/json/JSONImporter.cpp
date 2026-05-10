@@ -63,6 +63,7 @@
 #include "Variable.hpp"
 #include "UnknownInstruction.hpp"
 
+/** Convenience alias for the nlohmann::json type used throughout this file. */
 using json = nlohmann::json;
 
 namespace CodeListener
@@ -71,6 +72,13 @@ namespace CodeListener
 namespace Core
 {
 
+/**
+ * Deserialize a typed Id from a JSON value.
+ *
+ * @tparam T  Entity type the identifier refers to.
+ * @param j   JSON value containing a numeric index or null.
+ * @param id  Id object to populate.
+ */
 template <typename T>
 void from_json(const json &j, Id<T> &id)
 {
@@ -84,6 +92,13 @@ void from_json(const json &j, Id<T> &id)
     }
 }
 
+/**
+ * Parse a SourceLocation from JSON.
+ *
+ * @param j JSON object with file, line, column, and function fields.
+ *
+ * @return Populated SourceLocation.
+ */
 static SourceLocation parseSourceLocation(const json &j)
 {
     SourceLocation loc;
@@ -94,6 +109,13 @@ static SourceLocation parseSourceLocation(const json &j)
     return loc;
 }
 
+/**
+ * Convert a string representation of TypeKind to the corresponding enum value.
+ *
+ * @param s TypeKind string (e.g. "INTEGER", "POINTER").
+ *
+ * @return Equivalent TypeKind enum value.
+ */
 static constexpr TypeKind parseTypeKind(const std::string &s) noexcept
 {
     if (s == "ENUM")
@@ -144,6 +166,13 @@ static constexpr TypeKind parseTypeKind(const std::string &s) noexcept
     return TypeKind::UNKNOWN;
 }
 
+/**
+ * Convert a string representation of InstructionKind to the corresponding enum value.
+ *
+ * @param s InstructionKind string (e.g. "ASSIGN", "CALL").
+ *
+ * @return Equivalent InstructionKind enum value.
+ */
 static constexpr InstructionKind parseInstructionKind(const std::string &s) noexcept
 {
     if (s == "ASSIGN")
@@ -202,6 +231,13 @@ static constexpr InstructionKind parseInstructionKind(const std::string &s) noex
     return InstructionKind::UNKNOWN;
 }
 
+/**
+ * Convert a string representation of OpCode to the corresponding enum value.
+ *
+ * @param s OpCode string (e.g. "ADD", "CAST").
+ *
+ * @return Equivalent OpCode enum value.
+ */
 static constexpr OpCode parseOpCode(const std::string &s) noexcept
 {
     if (s == "NONE")
@@ -328,6 +364,13 @@ static constexpr OpCode parseOpCode(const std::string &s) noexcept
     return OpCode::NONE;
 }
 
+/**
+ * Convert a string representation of Scope to the corresponding enum value.
+ *
+ * @param s Scope string (e.g. "GLOBAL", "FUNCTION").
+ *
+ * @return Equivalent Scope enum value.
+ */
 static constexpr Scope parseScope(const std::string &s) noexcept
 {
     if (s == "GLOBAL")
@@ -346,6 +389,13 @@ static constexpr Scope parseScope(const std::string &s) noexcept
     return Scope::GLOBAL;
 }
 
+/**
+ * Convert a string representation of StorageDuration to the corresponding enum value.
+ *
+ * @param s StorageDuration string (e.g. "AUTO", "STATIC").
+ *
+ * @return Equivalent StorageDuration enum value.
+ */
 static constexpr StorageDuration parseStorageDuration(const std::string &s) noexcept
 {
     if (s == "AUTO")
@@ -372,6 +422,13 @@ static constexpr StorageDuration parseStorageDuration(const std::string &s) noex
     return StorageDuration::AUTO;
 }
 
+/**
+ * Convert a string representation of Linkage to the corresponding enum value.
+ *
+ * @param s Linkage string (e.g. "INTERNAL", "EXTERNAL").
+ *
+ * @return Equivalent Linkage enum value.
+ */
 static constexpr Linkage parseLinkage(const std::string &s) noexcept
 {
     if (s == "INTERNAL")
@@ -386,6 +443,13 @@ static constexpr Linkage parseLinkage(const std::string &s) noexcept
     return Linkage::NONE;
 }
 
+/**
+ * Convert a string representation of AccessorKind to the corresponding enum value.
+ *
+ * @param s AccessorKind string (e.g. "DEREF", "FIELD").
+ *
+ * @return Equivalent AccessorKind enum value.
+ */
 static constexpr AccessorKind parseAccessorKind(const std::string &s) noexcept
 {
     if (s == "DEREF")
@@ -420,6 +484,13 @@ static constexpr AccessorKind parseAccessorKind(const std::string &s) noexcept
 static Operand parseOperand(const json &j);
 static Initializer parseInitializer(const json &j);
 
+/**
+ * Parse an Accessor from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const Accessor&).
+ *
+ * @return Populated Accessor.
+ */
 static Accessor parseAccessor(const json &j)
 {
     Accessor acc;
@@ -468,6 +539,13 @@ static Accessor parseAccessor(const json &j)
     return acc;
 }
 
+/**
+ * Parse an Operand from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const Operand&).
+ *
+ * @return Populated Operand (constant or variable).
+ */
 static Operand parseOperand(const json &j)
 {
     const std::string type = j.at("type").get<std::string>();
@@ -498,6 +576,13 @@ static Operand parseOperand(const json &j)
     }
 }
 
+/**
+ * Parse an Initializer from its JSON representation.
+ *
+ * @param j JSON value (array for an InitializerList, object for a scalar Operand).
+ *
+ * @return Populated Initializer.
+ */
 static Initializer parseInitializer(const json &j)
 {
     if (j.is_array())
@@ -516,6 +601,13 @@ static Initializer parseInitializer(const json &j)
     }
 }
 
+/**
+ * Parse a Type from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const Type&).
+ *
+ * @return Populated Type.
+ */
 static Type parseType(const json &j)
 {
     Type t;
@@ -625,6 +717,13 @@ static Type parseType(const json &j)
     return t;
 }
 
+/**
+ * Parse a Variable from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const Variable&).
+ *
+ * @return Populated Variable.
+ */
 static Variable parseVariable(const json &j)
 {
     Variable v;
@@ -664,6 +763,13 @@ static Variable parseVariable(const json &j)
     return v;
 }
 
+/**
+ * Parse a SwitchCase from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const SwitchCase&).
+ *
+ * @return Populated SwitchCase.
+ */
 static SwitchCase parseSwitchCase(const json &j)
 {
     SwitchCase sc;
@@ -680,6 +786,13 @@ static SwitchCase parseSwitchCase(const json &j)
     return sc;
 }
 
+/**
+ * Parse a PhiIncomingValue from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const PhiIncomingValue&).
+ *
+ * @return Populated PhiIncomingValue.
+ */
 static PhiIncomingValue parsePhiIncomingValue(const json &j)
 {
     PhiIncomingValue piv;
@@ -688,6 +801,13 @@ static PhiIncomingValue parsePhiIncomingValue(const json &j)
     return piv;
 }
 
+/**
+ * Parse an Instruction from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const Instruction&).
+ *
+ * @return Populated Instruction with kind-specific data variant.
+ */
 static Instruction parseInstruction(const json &j)
 {
     Instruction instr;
@@ -838,6 +958,13 @@ static Instruction parseInstruction(const json &j)
     return instr;
 }
 
+/**
+ * Parse a Function from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const Function&).
+ *
+ * @return Populated Function.
+ */
 static Function parseFunction(const json &j)
 {
     Function f;
@@ -868,6 +995,13 @@ static Function parseFunction(const json &j)
     return f;
 }
 
+/**
+ * Parse a Block from its JSON representation.
+ *
+ * @param j JSON object produced by to_json(json&, const Block&).
+ *
+ * @return Populated Block.
+ */
 static Block parseBlock(const json &j)
 {
     Block b;

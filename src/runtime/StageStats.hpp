@@ -36,13 +36,25 @@ struct StageStats
     /** Total elapsed time across all invocations, in nanoseconds. */
     uint64_t total_ns{0};
 
-    /** Record one additional elapsed @p ns. */
+    /**
+     * Record one additional elapsed @p ns.
+     *
+     * @param ns Elapsed time in nanoseconds for this invocation.
+     */
     void record(uint64_t ns) noexcept;
 
-    /** Total elapsed time in milliseconds. */
+    /**
+     * Total elapsed time in milliseconds.
+     *
+     * @return Total nanoseconds converted to milliseconds.
+     */
     [[nodiscard]] double totalMs() const noexcept;
 
-    /** Mean elapsed time per invocation in milliseconds, or 0 if never called. */
+    /**
+     * Mean elapsed time per invocation in milliseconds, or 0 if never called.
+     *
+     * @return Arithmetic mean of elapsed times across all invocations, in milliseconds.
+     */
     [[nodiscard]] double meanMs() const noexcept;
 };
 

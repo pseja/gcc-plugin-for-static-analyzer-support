@@ -77,6 +77,14 @@ struct plugin_info PluginContext::plugin_info = {
             "-fplugin-arg-libcl_gcc-help for the full option list.",
 };
 
+/**
+ * GCC callback invoked at the start of each translation unit.
+ *
+ * Sets the CodeModel filename from the current GCC input location.
+ *
+ * @param gcc_data  Unused GCC hook data pointer.
+ * @param user_data Pointer to the PluginContext instance.
+ */
 static void on_start_unit(void *gcc_data, void *user_data)
 {
     (void)gcc_data;

@@ -52,13 +52,25 @@ struct Id
         return {ULONG_MAX};
     }
 
-    /** Compare two identifiers of the same domain for equality. */
+    /**
+     * Compare two identifiers of the same domain for equality.
+     *
+     * @param other Identifier to compare against.
+     *
+     * @return True if both identifiers refer to the same index.
+     */
     bool operator==(const Id &other) const
     {
         return index == other.index;
     }
 
-    /** Compare two identifiers of the same domain for inequality. */
+    /**
+     * Compare two identifiers of the same domain for inequality.
+     *
+     * @param other Identifier to compare against.
+     *
+     * @return True if the identifiers refer to different indices.
+     */
     bool operator!=(const Id &other) const
     {
         return index != other.index;
@@ -90,7 +102,13 @@ namespace std
 template <typename T>
 struct hash<CodeListener::Core::Id<T>>
 {
-    /** Compute the hash from the wrapped raw index. */
+    /**
+     * Compute the hash from the wrapped raw index.
+     *
+     * @param id Identifier to hash.
+     *
+     * @return Hash value of the underlying index.
+     */
     std::size_t operator()(const CodeListener::Core::Id<T> &id) const
     {
         return std::hash<unsigned long>{}(id.index);

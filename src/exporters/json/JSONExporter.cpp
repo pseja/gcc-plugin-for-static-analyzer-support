@@ -36,6 +36,7 @@
 #include "utility.hpp"
 #include "Variable.hpp"
 
+/** Convenience alias for the nlohmann::json type used throughout this file. */
 using json = nlohmann::json;
 
 namespace CodeListener
@@ -44,6 +45,13 @@ namespace CodeListener
 namespace Core
 {
 
+/**
+ * Serialize an Id<T> to JSON.
+ *
+ * @tparam T  Entity type that the identifier refers to.
+ * @param j   Output JSON value. Set to the numeric index, or null for an invalid id.
+ * @param id  Identifier to serialize.
+ */
 template <typename T>
 void to_json(json &j, const Id<T> &id)
 {
@@ -70,11 +78,23 @@ void to_json(json &j, const Instruction &instr);
 void to_json(json &j, const Block &block);
 void to_json(json &j, const Function &func);
 
+/**
+ * Serialize a SourceLocation to JSON.
+ *
+ * @param j   Output JSON value.
+ * @param loc SourceLocation to serialize.
+ */
 void to_json(json &j, const SourceLocation &loc)
 {
     j = json{{"file", loc.file}, {"line", loc.line}, {"column", loc.column}, {"function", loc.function}};
 }
 
+/**
+ * Serialize a Type to JSON.
+ *
+ * @param j    Output JSON value.
+ * @param type Type to serialize.
+ */
 void to_json(json &j, const Type &type)
 {
     j = json{{"id", type.id},
@@ -111,6 +131,12 @@ void to_json(json &j, const Type &type)
                type.data);
 }
 
+/**
+ * Serialize an Accessor to JSON.
+ *
+ * @param j   Output JSON value.
+ * @param acc Accessor to serialize.
+ */
 void to_json(json &j, const Accessor &acc)
 {
     j = json{{"kind", toString(acc.kind)}};
@@ -126,6 +152,12 @@ void to_json(json &j, const Accessor &acc)
                acc.data);
 }
 
+/**
+ * Serialize an Operand to JSON.
+ *
+ * @param j  Output JSON value.
+ * @param op Operand to serialize.
+ */
 void to_json(json &j, const Operand &op)
 {
     std::visit(Exporters::overloaded{
@@ -142,6 +174,12 @@ void to_json(json &j, const Operand &op)
                op);
 }
 
+/**
+ * Serialize an Initializer to JSON.
+ *
+ * @param j    Output JSON value.
+ * @param init Initializer to serialize.
+ */
 void to_json(json &j, const Initializer &init)
 {
     std::visit(Exporters::overloaded{[&](const Operand &op) -> void { j = op; },
@@ -158,6 +196,12 @@ void to_json(json &j, const Initializer &init)
                init);
 }
 
+/**
+ * Serialize a Variable to JSON.
+ *
+ * @param j   Output JSON value.
+ * @param var Variable to serialize.
+ */
 void to_json(json &j, const Variable &var)
 {
     j = json{{"id", var.id},
@@ -192,6 +236,12 @@ void to_json(json &j, const Variable &var)
                var.data);
 }
 
+/**
+ * Serialize a SwitchCase to JSON.
+ *
+ * @param j  Output JSON value.
+ * @param sc SwitchCase to serialize.
+ */
 void to_json(json &j, const SwitchCase &sc)
 {
     j = json{{"target_block_id", sc.target_block_id}};
@@ -209,11 +259,23 @@ void to_json(json &j, const SwitchCase &sc)
     }
 }
 
+/**
+ * Serialize a PhiIncomingValue to JSON.
+ *
+ * @param j   Output JSON value.
+ * @param val PhiIncomingValue to serialize.
+ */
 void to_json(json &j, const PhiIncomingValue &val)
 {
     j = json{{"block_id", val.block_id}, {"value", val.value}};
 }
 
+/**
+ * Serialize an Instruction to JSON.
+ *
+ * @param j     Output JSON value.
+ * @param instr Instruction to serialize.
+ */
 void to_json(json &j, const Instruction &instr)
 {
     j = json{{"id", instr.id},
@@ -292,6 +354,12 @@ void to_json(json &j, const Instruction &instr)
                instr.data);
 }
 
+/**
+ * Serialize a Block to JSON.
+ *
+ * @param j     Output JSON value.
+ * @param block Block to serialize.
+ */
 void to_json(json &j, const Block &block)
 {
     j = json{{"id", block.id},
@@ -302,6 +370,12 @@ void to_json(json &j, const Block &block)
              {"instruction_ids", block.instruction_ids}};
 }
 
+/**
+ * Serialize a Function to JSON.
+ *
+ * @param j    Output JSON value.
+ * @param func Function to serialize.
+ */
 void to_json(json &j, const Function &func)
 {
     j = json{{"id", func.id},
@@ -322,6 +396,12 @@ void to_json(json &j, const CallGraphEdge &edge);
 void to_json(json &j, const CallGraphNode &node);
 void to_json(json &j, const CallGraph &cg);
 
+/**
+ * Serialize a CallGraphEdge to JSON.
+ *
+ * @param j    Output JSON value.
+ * @param edge CallGraphEdge to serialize.
+ */
 void to_json(json &j, const CallGraphEdge &edge)
 {
     j = json{{"call_instruction", edge.call_instruction}};
@@ -331,6 +411,12 @@ void to_json(json &j, const CallGraphEdge &edge)
         j["callee"] = nullptr;
 }
 
+/**
+ * Serialize a CallGraphNode to JSON.
+ *
+ * @param j    Output JSON value.
+ * @param node CallGraphNode to serialize.
+ */
 void to_json(json &j, const CallGraphNode &node)
 {
     j = json{{"function_id", node.function_id},
@@ -339,6 +425,12 @@ void to_json(json &j, const CallGraphNode &node)
              {"address_taken_at", node.address_taken_at}};
 }
 
+/**
+ * Serialize a full CallGraph annotation to JSON.
+ *
+ * @param j  Output JSON value.
+ * @param cg CallGraph to serialize.
+ */
 void to_json(json &j, const CallGraph &cg)
 {
     j = json::object();

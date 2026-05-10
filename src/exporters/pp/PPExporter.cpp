@@ -153,7 +153,7 @@ void PPExporter::onEndBlock(const Core::CodeModel &model, const Core::Block &blo
     }
 }
 
-void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &inst)
+void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &instr)
 {
     std::visit(
         overloaded{
@@ -271,7 +271,7 @@ void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::In
                 if (cond.opcode != Core::OpCode::NONE)
                 {
                     const auto &norm = analysis_manager.getAnnotation<AnnotationServices::SwitchToIf>(model);
-                    const std::string &tmp = norm.conds.at(inst.id).synth_comp_temp;
+                    const std::string &tmp = norm.conds.at(instr.id).synth_comp_temp;
                     std::string lhs = fmtOperand(cond.lhs, model);
                     std::string rhs = fmtOperand(cond.rhs, model);
                     os << "\t\t" << tmp << " := (" << lhs << " " << binopSym(cond.opcode) << " " << rhs << ")\n";
@@ -298,7 +298,7 @@ void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::In
             },
             [&](const Core::SwitchInstruction &sw) {
                 block_has_terminator = true;
-                emitSwitchUnfolded(sw, inst.id, model);
+                emitSwitchUnfolded(sw, instr.id, model);
             },
             [&](const Core::AbortInstruction &) {
                 block_has_terminator = true;
@@ -336,7 +336,7 @@ void PPExporter::onVisitInstruction(const Core::CodeModel &model, const Core::In
             [&](const Core::PhiInstruction &) { /* PHI nodes: skip */ },
             [&](const Core::AsmInstruction &) { /* inline asm: skip */ },
             [&](const Core::UnknownInstruction &) { /* unknown: skip */ }, [&](const std::monostate &) {}},
-        inst.data);
+        instr.data);
 }
 
 void PPExporter::onEndModel(const Core::CodeModel & /*model*/)

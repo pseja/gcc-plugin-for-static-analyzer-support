@@ -72,7 +72,7 @@ class PPExporter : public Exporter
     void onBeginBlock(const Core::CodeModel &model, const Core::Block &block) override;
 
     /** @copydoc Core::CodeModelVisitor::onVisitInstruction */
-    void onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &inst) override;
+    void onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &instr) override;
 
     /** @copydoc Core::CodeModelVisitor::onEndModel */
     void onEndModel(const Core::CodeModel &model) override;
@@ -87,23 +87,63 @@ class PPExporter : public Exporter
     /** Tracks whether the current block already emitted an explicit terminator. */
     bool block_has_terminator = false;
 
-    /** Render an arbitrary operand in the legacy pp syntax. */
+    /**
+     * Render an arbitrary operand in the legacy pp syntax.
+     *
+     * @param op    Operand to render.
+     * @param model CodeModel used for name look-ups.
+     *
+     * @return Human-readable operand string.
+     */
     std::string fmtOperand(const Core::Operand &op, const Core::CodeModel &model) const;
 
-    /** Render a variable reference together with its accessors in the legacy pp syntax. */
+    /**
+     * Render a variable reference together with its accessors in the legacy pp syntax.
+     *
+     * @param id        Variable identifier.
+     * @param accessors Access path applied to the variable.
+     * @param model     CodeModel used for name look-ups.
+     *
+     * @return Human-readable variable expression string.
+     */
     std::string fmtVar(Core::VariableId id, const std::vector<Core::Accessor> &accessors,
                        const Core::CodeModel &model) const;
 
-    /** Render a constant operand in the legacy pp syntax. */
+    /**
+     * Render a constant operand in the legacy pp syntax.
+     *
+     * @param cst   Constant operand to render.
+     * @param model CodeModel used for type look-ups.
+     *
+     * @return Human-readable constant string.
+     */
     std::string fmtConst(const Core::ConstantOperand &cst, const Core::CodeModel &model) const;
 
-    /** Convert a binary opcode to the corresponding textual operator. */
+    /**
+     * Convert a binary opcode to the corresponding textual operator.
+     *
+     * @param op OpCode to convert.
+     *
+     * @return Operator symbol string (e.g. "+", "==").
+     */
     static std::string binopSym(Core::OpCode op);
 
-    /** Check whether an opcode should be rendered as a binary operation. */
+    /**
+     * Check whether an opcode should be rendered as a binary operation.
+     *
+     * @param op OpCode to test.
+     *
+     * @return true if @p op is a binary operator; false otherwise.
+     */
     static bool isBinOp(Core::OpCode op);
 
-    /** Emit one switch instruction using the normalized if/else lowering. */
+    /**
+     * Emit one switch instruction using the normalized if/else lowering.
+     *
+     * @param sw      Switch instruction to emit.
+     * @param inst_id Identifier of the instruction in the model.
+     * @param model   CodeModel used for operand look-ups.
+     */
     void emitSwitchUnfolded(const Core::SwitchInstruction &sw, Core::InstructionId inst_id,
                             const Core::CodeModel &model);
 

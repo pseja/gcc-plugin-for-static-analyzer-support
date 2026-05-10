@@ -484,7 +484,7 @@ Core::VariableId GCCAdapter::getOrCreateVariable(tree variable_tree)
     }
     else if (TREE_CODE(variable_tree) == SSA_NAME)
     {
-        // Try to follow trivial SSA assignment chains to find an underlying named VAR_DECL
+        // try to follow trivial SSA assignment chains to find an underlying named VAR_DECL
         // mathces traverse_ssa_names()/get_decl_name() behavior
         tree resolved = variable_tree;
         const int max_depth = 4;
@@ -998,6 +998,13 @@ Core::Operand GCCAdapter::parseOperand(tree operand_tree)
     return Core::ConstantOperand{Core::TypeId::invalid(), "<unhandled_operand>"};
 }
 
+/**
+ * Map a GCC tree_code to the corresponding model OpCode.
+ *
+ * @param code GCC tree_code for an arithmetic or logical expression.
+ *
+ * @return Equivalent model OpCode, or OpCode::NONE for unrecognised codes.
+ */
 static Core::OpCode mapTreeCodeToOpCode(enum tree_code code)
 {
     switch (code)

@@ -68,13 +68,26 @@ struct CallGraph : public AnnotationBase<CallGraph>
     static CallGraph build(const Core::CodeModel &model);
 
   private:
-    /** Populate the raw node and edge structure of the graph. */
+    /**
+     * Populate the raw node and edge structure of the graph.
+     *
+     * @param graph Graph to populate.
+     * @param model CodeModel supplying call relationships.
+     */
     static void buildGraph(CallGraph &graph, const Core::CodeModel &model);
 
-    /** Compute the sets of roots and leaves after the graph edges were built. */
+    /**
+     * Compute the sets of roots and leaves after the graph edges were built.
+     *
+     * @param graph Graph whose root/leaf sets should be computed.
+     */
     static void computeRootsAndLeaves(CallGraph &graph);
 
-    /** Compute the SCC topological order using Tarjan's algorithm. */
+    /**
+     * Compute the SCC topological order using Tarjan's algorithm.
+     *
+     * @param graph Graph whose nodes should be topologically ordered.
+     */
     static void computeTopologicalOrder(CallGraph &graph);
 };
 

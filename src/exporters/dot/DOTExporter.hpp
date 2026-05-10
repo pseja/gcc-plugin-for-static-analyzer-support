@@ -102,41 +102,56 @@ class DOTExporter : public Exporter
     /** Close the currently open file cluster, if any. */
     void closeFileCluster();
 
-    /** Open a cluster for the supplied file name. */
+    /**
+     * Open a cluster for the supplied file name.
+     *
+     * @param file Source file name to label the cluster.
+     */
     void openFileCluster(const std::string &file);
 
-    /** Emit CFG edges leaving the supplied block. */
+    /**
+     * Emit a block in CLEAN verbosity.
+     *
+     * @param model CodeModel being exported.
+     * @param block Block to render.
+     */
+    void emitCleanBlock(const Core::CodeModel &model, const Core::Block &block);
+
+    /**
+     * Emit a block in COMPACT or FULL verbosity.
+     *
+     * @param model CodeModel being exported.
+     * @param block Block to render.
+     */
+    void emitDetailedBlock(const Core::CodeModel &model, const Core::Block &block);
+
+    /**
+     * Emit one inter-procedural call edge according to the active verbosity.
+     *
+     * @param model        CodeModel being exported.
+     * @param instr        Call instruction that triggers the edge.
+     * @param callee_id    Identifier of the called function.
+     * @param target_block First visible block in the callee.
+     */
+    void emitCallGraphEdge(const Core::CodeModel &model, const Core::Instruction &instr, Core::FunctionId callee_id,
+                           const Core::Block &target_block);
+
+    /**
+     * Emit CFG edges leaving the supplied block.
+     *
+     * @param model CodeModel being exported.
+     * @param block Source block whose outgoing edges are emitted.
+     */
     void emitBlockEdges(const Core::CodeModel &model, const Core::Block &block);
 
-    /** Check whether a block should be visible in the current verbosity mode. */
+    /**
+     * Check whether a block should be visible in the current verbosity mode.
+     *
+     * @param model CodeModel being exported.
+     * @param id    Identifier of the block to test.
+     * @return true if the block should appear in the DOT output; false otherwise.
+     */
     bool isBlockVisible(const Core::CodeModel &model, Core::BlockId id) const;
-
-    /** Format the source endpoint string of an outgoing edge. */
-    std::string edgeSrcNodeStr(const Core::CodeModel &model, const Core::Block &block) const;
-
-    /** Format the target endpoint string of an outgoing edge. */
-    std::string edgeTargetNodeStr(Core::BlockId id) const;
-
-    /** Classify terminal instructions for the compact DOT rendering. */
-    static std::tuple<const char *, const char *, const char *> cleanTerminalInfo(const Core::Instruction &instr);
-
-    /** Render one instruction in the verbosity-specific DOT label format. */
-    std::string exportInstruction(const Core::CodeModel &model, const Core::Instruction &instr);
-
-    /** Render one operand in DOT text form. */
-    std::string formatOperand(const Core::CodeModel &model, const Core::Operand &op);
-
-    /** Render one accessor chain fragment in DOT text form. */
-    std::string formatAccessor(const Core::CodeModel &model, const Core::Accessor &acc, const std::string &base);
-
-    /** Render one instruction as plain label text. */
-    std::string formatInstructionText(const Core::CodeModel &model, const Core::Instruction &instr);
-
-    /** Escape text so it is safe inside DOT string literals. */
-    std::string escape(const std::string &str);
-
-    /** Convert an operation code to its textual operator spelling. */
-    std::string opCodeToString(Core::OpCode opcode);
 };
 
 } // namespace CodeListener::Exporters

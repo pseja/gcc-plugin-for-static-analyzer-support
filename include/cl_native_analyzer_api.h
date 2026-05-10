@@ -30,8 +30,10 @@
 #include "AnalysisContext.hpp"
 #include "CodeModel.hpp"
 
+/** ABI version tag embedded in cl_native_analyzer_api_t::api_version. Bumped on every incompatible change. */
 #define CL_NATIVE_API_VERSION 2
 
+/** Marks a symbol as part of the public shared-library ABI on all platforms. */
 #if defined(_WIN32) || defined(__CYGWIN__)
 #define CL_ANALYZER_EXPORT __declspec(dllexport)
 #else
@@ -67,6 +69,9 @@ extern "C"
 {
     /**
      * Entry point that every native analyzer shared library must export.
+     *
+     * @return Pointer to a statically allocated cl_native_analyzer_api_t descriptor,
+     *         or NULL on failure.
      */
     CL_ANALYZER_EXPORT const cl_native_analyzer_api_t *cl_get_native_api(void);
 }

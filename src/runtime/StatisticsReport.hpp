@@ -3,7 +3,7 @@
  * @author Lukáš Pšeja <xpsejal00@vutbr.cz>
  * @brief Declares the stage-timing and counter report accumulator and formatted printer.
  *
- * Has to be included before <gcc-plugin.h> because of conflicts in <chrono>.
+ * Has to be included before @c gcc-plugin.h because of conflicts in @c chrono.
  *
  * @date 2026-05-08
  *
@@ -47,6 +47,8 @@ class StatisticsReport
      * insertion order in the final report.
      *
      * @param stage Human-readable stage identifier.
+     *
+     * @return Reference to the StageStats for the given stage name.
      */
     StageStats &getStage(const std::string &stage);
 
@@ -57,6 +59,8 @@ class StatisticsReport
      * preserving insertion order in the final report.
      *
      * @param counter Human-readable counter identifier.
+     *
+     * @return Reference to the CounterStats for the given counter name.
      */
     CounterStats &getCounter(const std::string &counter);
 

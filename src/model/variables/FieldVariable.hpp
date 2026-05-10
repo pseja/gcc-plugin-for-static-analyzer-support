@@ -27,10 +27,14 @@
 namespace CodeListener::Core
 {
 
+/** Represents a struct/union field variable with layout information. */
 struct FieldVariable
 {
+    /** Byte offset of this field within its containing type, if known. */
     std::optional<unsigned> byte_offset;
+    /** Size of the bitfield in bits; absent for non-bitfield members. */
     std::optional<unsigned> bitfield_size;   // in bits
+    /** Bit offset within the storage unit; absent for non-bitfield members. */
     std::optional<unsigned> bitfield_offset; // in bits from the start of the storage unit
 };
 

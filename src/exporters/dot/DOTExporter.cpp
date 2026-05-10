@@ -20,7 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <optional>
 #include <sstream>
+#include <vector>
 
 #include "CallGraph.hpp"
 #include "DOTExporter.hpp"
@@ -29,6 +31,55 @@
 
 namespace CodeListener::Exporters
 {
+
+namespace
+{
+
+enum class CleanBlockNodeKind
+{
+    Body,
+    Call,
+    Terminal,
+};
+
+struct CleanBlockNode
+{
+    CleanBlockNodeKind kind;
+    int suffix;
+    std::optional<Core::InstructionId> instruction_id;
+};
+
+struct CleanBlockLayout
+{
+    std::vector<CleanBlockNode> nodes;
+
+    int entrySuffix() const;
+    int exitSuffix() const;
+    int callSuffixOrExit(Core::InstructionId instruction_id) const;
+};
+
+bool isCleanTerminal(const Core::Instruction &instr);
+void appendPendingCleanBodyNode(CleanBlockLayout &layout, int &next_suffix, bool &has_pending_body);
+CleanBlockLayout describeCleanBlock(const Core::CodeModel &model, const Core::Block &block);
+void emitCleanBlockNode(std::ostream &os, const Core::CodeModel &model, const Core::Block &block,
+                        const CleanBlockNode &node);
+void emitCleanBlockLinks(std::ostream &os, const Core::Block &block, const CleanBlockLayout &layout);
+std::string edgeSrcNodeStr(DotVerbosity verbosity, const Core::CodeModel &model, const Core::Block &block);
+std::string edgeTargetNodeStr(DotVerbosity verbosity, Core::BlockId id);
+std::string cleanBlockEntryNodeStr(const Core::CodeModel &model, const Core::Block &block);
+std::string cleanBlockExitNodeStr(const Core::CodeModel &model, const Core::Block &block);
+std::string cleanCallNodeStr(const Core::CodeModel &model, const Core::Instruction &instr);
+std::tuple<const char *, const char *, const char *> cleanTerminalInfo(const Core::Instruction &instr);
+std::string exportInstruction(const Core::CodeModel &model, const Core::Instruction &instr, DotVerbosity verbosity);
+std::string formatOperand(const Core::CodeModel &model, const Core::Operand &op);
+std::string formatAccessor(const Core::CodeModel &model, const Core::Accessor &acc, const std::string &base);
+std::string formatInstructionText(const Core::CodeModel &model, const Core::Instruction &instr);
+std::string rawTypeName(const Core::CodeModel &model, const Core::Operand &op);
+std::string lhsTypeHTML(const Core::CodeModel &model, const Core::Operand &op);
+std::string escapeDotText(const std::string &str);
+std::string opCodeToString(Core::OpCode opcode);
+
+} // namespace
 
 DOTExporter::DOTExporter(std::ostream &os, DotVerbosity verbosity) : os(os), verbosity(verbosity)
 {
@@ -39,8 +90,35 @@ DOTExporter::DOTExporter(const std::string &filepath, DotVerbosity verbosity)
 {
 }
 
+namespace
+{
+
+int CleanBlockLayout::entrySuffix() const
+{
+    return nodes.empty() ? 0 : nodes.front().suffix;
+}
+
+int CleanBlockLayout::exitSuffix() const
+{
+    return nodes.empty() ? 0 : nodes.back().suffix;
+}
+
+int CleanBlockLayout::callSuffixOrExit(Core::InstructionId instruction_id) const
+{
+    for (const auto &node : nodes)
+    {
+        if (node.kind == CleanBlockNodeKind::Call && node.instruction_id.has_value() &&
+            node.instruction_id.value() == instruction_id)
+        {
+            return node.suffix;
+        }
+    }
+
+    return exitSuffix();
+}
+
 /** Return whether an instruction is an explicit CFG terminator in CLEAN mode. */
-static bool isCleanTerminal(const Core::Instruction &instr)
+bool isCleanTerminal(const Core::Instruction &instr)
 {
     return std::visit(
         overloaded{
@@ -50,22 +128,68 @@ static bool isCleanTerminal(const Core::Instruction &instr)
         instr.data);
 }
 
-/** Return whether a block in CLEAN mode needs an explicit "..." body node. */
-static bool cleanHasBody(const Core::CodeModel &model, const Core::Block &block)
+void appendPendingCleanBodyNode(CleanBlockLayout &layout, int &next_suffix, bool &has_pending_body)
 {
+    if (!has_pending_body)
+    {
+        return;
+    }
+
+    layout.nodes.push_back({CleanBlockNodeKind::Body, next_suffix++, std::nullopt});
+    has_pending_body = false;
+}
+
+CleanBlockLayout describeCleanBlock(const Core::CodeModel &model, const Core::Block &block)
+{
+    CleanBlockLayout layout;
+
     if (block.instruction_ids.empty())
     {
-        return false;
+        return layout;
     }
 
-    const auto *last = model.getInstruction(block.instruction_ids.back());
-    if (!last)
+    int next_suffix = 0;
+    bool has_pending_body = false;
+    bool saw_explicit_terminal = false;
+
+    for (const auto instruction_id : block.instruction_ids)
     {
-        return false;
+        const auto *instr = model.getInstruction(instruction_id);
+        if (!instr)
+        {
+            continue;
+        }
+
+        if (isCleanTerminal(*instr))
+        {
+            appendPendingCleanBodyNode(layout, next_suffix, has_pending_body);
+            layout.nodes.push_back({CleanBlockNodeKind::Terminal, next_suffix++, instruction_id});
+            saw_explicit_terminal = true;
+            break;
+        }
+
+        if (std::holds_alternative<Core::CallInstruction>(instr->data))
+        {
+            appendPendingCleanBodyNode(layout, next_suffix, has_pending_body);
+            layout.nodes.push_back({CleanBlockNodeKind::Call, next_suffix++, instruction_id});
+        }
+        else
+        {
+            has_pending_body = true;
+        }
     }
 
-    return isCleanTerminal(*last) ? (block.instruction_ids.size() > 1) : true;
+    appendPendingCleanBodyNode(layout, next_suffix, has_pending_body);
+
+    if (!saw_explicit_terminal)
+    {
+        layout.nodes.push_back({CleanBlockNodeKind::Terminal, next_suffix++, std::nullopt});
+    }
+
+    return layout;
 }
+
+} // namespace
 
 bool DOTExporter::shouldVisitBlock(const Core::CodeModel &, const Core::Block &block)
 {
@@ -113,7 +237,7 @@ void DOTExporter::openFileCluster(const std::string &file)
 
     curr_file = file;
     os << "    subgraph cluster_file_" << file_cluster_id++ << " {\n";
-    os << "        label=" << '"' << escape(file) << '"' << ";\n";
+    os << "        label=" << '"' << escapeDotText(file) << '"' << ";\n";
     os << "        color=\"#d1d5db\";\n";
     os << "        style=dashed;\n";
     os << "        bgcolor=\"#f9fafb\";\n";
@@ -156,24 +280,13 @@ void DOTExporter::onEndModel(const Core::CodeModel &model)
                     break;
                 }
             }
+
             if (!target_block)
             {
                 continue;
             }
 
-            if (verbosity == DotVerbosity::CLEAN)
-            {
-                const auto *src_block = model.getBlock(instr->parent_block_id);
-                bool has_body = src_block && cleanHasBody(model, *src_block);
-                os << "    block_" << instr->parent_block_id << (has_body ? "_1" : "_0") << " -> block_"
-                   << target_block->id << "_0"
-                   << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
-            }
-            else
-            {
-                os << "    block_" << instr->parent_block_id << " -> block_" << target_block->id
-                   << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"];\n";
-            }
+            emitCallGraphEdge(model, *instr, callee_id, *target_block);
         }
     }
 
@@ -191,7 +304,7 @@ void DOTExporter::onBeginFunction(const Core::CodeModel &, const Core::Function 
     }
 
     os << "        subgraph cluster_func_" << func.id << " {\n";
-    os << "            label=<<b>" << escape(func.name) << "()</b>>;\n";
+    os << "            label=<<b>" << escapeDotText(func.name) << "()</b>>;\n";
     os << "            style=filled;\n";
     os << "            fillcolor=\"#ffffff\";\n";
     os << "            color=\"#9ca3af\";\n";
@@ -207,41 +320,42 @@ void DOTExporter::onBeginBlock(const Core::CodeModel &model, const Core::Block &
 {
     if (verbosity == DotVerbosity::CLEAN)
     {
-        os << "        subgraph cluster_block_" << block.id << " {\n";
-        os << "            label=\"" << escape(block.name) << "\";\n";
-        os << "            color=\"#6b7280\";\n";
-        os << "            style=dashed;\n";
-        os << "            bgcolor=\"#ffffff\";\n";
-        os << "            margin=8;\n";
+        emitCleanBlock(model, block);
+        return;
+    }
 
-        if (block.instruction_ids.empty())
-        {
-            os << "            block_" << block.id << "_0 [shape=box, color=\"#9ca3af\", "
-               << "fontcolor=\"#9ca3af\", style=dotted, label=\"(empty)\"];\n";
-        }
-        else
-        {
-            const auto *last_instr = model.getInstruction(block.instruction_ids.back());
-            bool has_body = cleanHasBody(model, block);
-            if (has_body)
-            {
-                os << "            block_" << block.id << "_0 [shape=box, color=\"#9ca3af\", "
-                   << "fontcolor=\"#9ca3af\", style=dotted, label=\"...\"];\n";
-                os << "            block_" << block.id << "_0 -> block_" << block.id << "_1 "
-                   << "[color=\"#9ca3af\", style=dotted, arrowhead=open];\n";
-            }
+    emitDetailedBlock(model, block);
+}
 
-            const std::string term_suffix = has_body ? "_1" : "_0";
+void DOTExporter::emitCleanBlock(const Core::CodeModel &model, const Core::Block &block)
+{
+    os << "        subgraph cluster_block_" << block.id << " {\n";
+    os << "            label=\"" << escapeDotText(block.name) << "\";\n";
+    os << "            color=\"#6b7280\";\n";
+    os << "            style=dashed;\n";
+    os << "            bgcolor=\"#ffffff\";\n";
+    os << "            margin=8;\n";
 
-            auto [term_label, term_color, term_style] = DOTExporter::cleanTerminalInfo(*last_instr);
-            os << "            block_" << block.id << term_suffix << " [shape=box, color=\"" << term_color
-               << "\", fontcolor=\"" << term_color << "\", style=" << term_style << ", label=\"" << term_label
-               << "\"];\n";
-        }
-
+    if (block.instruction_ids.empty())
+    {
+        os << "            block_" << block.id << "_0 [shape=box, color=\"#9ca3af\", fontcolor=\"#9ca3af\", "
+           << "style=dotted, label=\"(empty)\"]\n";
         os << "        }\n";
         return;
     }
+
+    const CleanBlockLayout layout = describeCleanBlock(model, block);
+    for (const auto &node : layout.nodes)
+    {
+        emitCleanBlockNode(os, model, block, node);
+    }
+
+    emitCleanBlockLinks(os, block, layout);
+    os << "        }\n";
+}
+
+void DOTExporter::emitDetailedBlock(const Core::CodeModel &, const Core::Block &block)
+{
 
     os << "        block_" << block.id << " [label=<\n";
     os << "            <table border=\"0\" cellborder=\"1\" cellspacing=\"0\" cellpadding=\"4\">\n";
@@ -249,12 +363,12 @@ void DOTExporter::onBeginBlock(const Core::CodeModel &model, const Core::Block &
     if (verbosity == DotVerbosity::FULL)
     {
         os << "                <tr><td bgcolor=\"#f3f4f6\" colspan=\"2\" align=\"center\">"
-           << "<b>Block " << escape(block.name) << " (" << block.id << ")</b></td></tr>\n";
+           << "<b>Block " << escapeDotText(block.name) << " (" << block.id << ")</b></td></tr>\n";
     }
     else
     {
         os << "                <tr><td bgcolor=\"#f3f4f6\" align=\"center\">"
-           << "<b>" << escape(block.name) << "</b></td></tr>\n";
+           << "<b>" << escapeDotText(block.name) << "</b></td></tr>\n";
     }
 
     if (block.instruction_ids.empty())
@@ -264,6 +378,46 @@ void DOTExporter::onBeginBlock(const Core::CodeModel &model, const Core::Block &
     }
 }
 
+namespace
+{
+
+void emitCleanBlockNode(std::ostream &os, const Core::CodeModel &model, const Core::Block &block,
+                        const CleanBlockNode &node)
+{
+    switch (node.kind)
+    {
+    case CleanBlockNodeKind::Body:
+        os << "            block_" << block.id << "_" << node.suffix
+           << " [shape=box, color=\"#9ca3af\", fontcolor=\"#9ca3af\", style=dotted, label=\"...\"]\n";
+        return;
+    case CleanBlockNodeKind::Call:
+        os << "            block_" << block.id << "_" << node.suffix
+           << " [shape=box, color=\"#2563eb\", fontcolor=\"#2563eb\", style=dashed, label=\"call\"]\n";
+        return;
+    case CleanBlockNodeKind::Terminal: {
+        const auto *terminal_instr =
+            node.instruction_id.has_value() ? model.getInstruction(*node.instruction_id) : nullptr;
+        const auto [term_label, term_color, term_style] =
+            terminal_instr ? cleanTerminalInfo(*terminal_instr)
+                           : std::tuple<const char *, const char *, const char *>{"goto", "#6b7280", "bold"};
+        os << "            block_" << block.id << "_" << node.suffix << " [shape=box, color=\"" << term_color
+           << "\", fontcolor=\"" << term_color << "\", style=" << term_style << ", label=\"" << term_label << "\"]\n";
+        return;
+    }
+    }
+}
+
+void emitCleanBlockLinks(std::ostream &os, const Core::Block &block, const CleanBlockLayout &layout)
+{
+    for (std::size_t index = 1; index < layout.nodes.size(); ++index)
+    {
+        os << "            block_" << block.id << "_" << layout.nodes[index - 1].suffix << " -> block_" << block.id
+           << "_" << layout.nodes[index].suffix << " [color=\"#9ca3af\", style=dotted, arrowhead=open]\n";
+    }
+}
+
+} // namespace
+
 void DOTExporter::onVisitInstruction(const Core::CodeModel &model, const Core::Instruction &instr)
 {
     if (verbosity == DotVerbosity::CLEAN)
@@ -271,7 +425,7 @@ void DOTExporter::onVisitInstruction(const Core::CodeModel &model, const Core::I
         return;
     }
 
-    os << exportInstruction(model, instr);
+    os << exportInstruction(model, instr, verbosity);
 }
 
 void DOTExporter::onEndBlock(const Core::CodeModel &model, const Core::Block &block)
@@ -288,7 +442,7 @@ void DOTExporter::onEndBlock(const Core::CodeModel &model, const Core::Block &bl
 void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block &block)
 {
     bool handled_edges = false;
-    std::string src = edgeSrcNodeStr(model, block);
+    std::string src = edgeSrcNodeStr(verbosity, model, block);
 
     if (!block.instruction_ids.empty())
     {
@@ -307,8 +461,9 @@ void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block
                         label += " ... " + formatOperand(model, sw_case.high_value.value());
                     }
 
-                    edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(sw_case.target_block_id) << " [label=\""
-                                << escape(label) << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
+                    edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(verbosity, sw_case.target_block_id)
+                                << " [label=\"" << escapeDotText(label)
+                                << "\", color=\"#d97706\", fontcolor=\"#d97706\"];\n";
                 }
             }
             handled_edges = true;
@@ -317,12 +472,12 @@ void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block
         {
             if (cond_instr->true_target.isValid() && isBlockVisible(model, cond_instr->true_target))
             {
-                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(cond_instr->true_target)
+                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(verbosity, cond_instr->true_target)
                             << " [label=\"true\", color=\"#059669\", fontcolor=\"#059669\"];\n";
             }
             if (cond_instr->false_target.isValid() && isBlockVisible(model, cond_instr->false_target))
             {
-                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(cond_instr->false_target)
+                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(verbosity, cond_instr->false_target)
                             << " [label=\"false\", color=\"#dc2626\", fontcolor=\"#dc2626\"];\n";
             }
             handled_edges = true;
@@ -335,7 +490,8 @@ void DOTExporter::emitBlockEdges(const Core::CodeModel &model, const Core::Block
         {
             if (isBlockVisible(model, succ_id))
             {
-                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(succ_id) << " [color=\"#6b7280\"];\n";
+                edge_buffer << "    " << src << " -> " << edgeTargetNodeStr(verbosity, succ_id)
+                            << " [color=\"#6b7280\"];\n";
             }
         }
     }
@@ -364,18 +520,20 @@ bool DOTExporter::isBlockVisible(const Core::CodeModel &model, Core::BlockId id)
     return true;
 }
 
-std::string DOTExporter::edgeSrcNodeStr(const Core::CodeModel &model, const Core::Block &block) const
+namespace
+{
+
+std::string edgeSrcNodeStr(DotVerbosity verbosity, const Core::CodeModel &model, const Core::Block &block)
 {
     if (verbosity == DotVerbosity::CLEAN)
     {
-        bool has_body = cleanHasBody(model, block);
-        return "block_" + std::to_string(block.id.index) + (has_body ? "_1" : "_0");
+        return cleanBlockExitNodeStr(model, block);
     }
 
     return "block_" + std::to_string(block.id.index);
 }
 
-std::string DOTExporter::edgeTargetNodeStr(Core::BlockId id) const
+std::string edgeTargetNodeStr(DotVerbosity verbosity, Core::BlockId id)
 {
     if (verbosity == DotVerbosity::CLEAN)
     {
@@ -385,7 +543,46 @@ std::string DOTExporter::edgeTargetNodeStr(Core::BlockId id) const
     return "block_" + std::to_string(id.index);
 }
 
-std::tuple<const char *, const char *, const char *> DOTExporter::cleanTerminalInfo(const Core::Instruction &instr)
+std::string cleanBlockEntryNodeStr(const Core::CodeModel &model, const Core::Block &block)
+{
+    const CleanBlockLayout layout = describeCleanBlock(model, block);
+    return "block_" + std::to_string(block.id.index) + "_" + std::to_string(layout.entrySuffix());
+}
+
+std::string cleanBlockExitNodeStr(const Core::CodeModel &model, const Core::Block &block)
+{
+    const CleanBlockLayout layout = describeCleanBlock(model, block);
+    return "block_" + std::to_string(block.id.index) + "_" + std::to_string(layout.exitSuffix());
+}
+
+std::string cleanCallNodeStr(const Core::CodeModel &model, const Core::Instruction &instr)
+{
+    const auto *src_block = model.getBlock(instr.parent_block_id);
+    const CleanBlockLayout layout = src_block ? describeCleanBlock(model, *src_block) : CleanBlockLayout{};
+    return "block_" + std::to_string(instr.parent_block_id.index) + "_" +
+           std::to_string(layout.callSuffixOrExit(instr.id));
+}
+
+} // namespace
+
+void DOTExporter::emitCallGraphEdge(const Core::CodeModel &model, const Core::Instruction &instr,
+                                    Core::FunctionId callee_id, const Core::Block &target_block)
+{
+    if (verbosity == DotVerbosity::CLEAN)
+    {
+        os << "    " << cleanCallNodeStr(model, instr) << " -> " << cleanBlockEntryNodeStr(model, target_block)
+           << " [lhead=cluster_func_" << callee_id << ", color=\"#6c757d\"]\n";
+        return;
+    }
+
+    os << "    block_" << instr.parent_block_id << " -> block_" << target_block.id << " [lhead=cluster_func_"
+       << callee_id << ", color=\"#6c757d\"]\n";
+}
+
+namespace
+{
+
+std::tuple<const char *, const char *, const char *> cleanTerminalInfo(const Core::Instruction &instr)
 {
     if (!isCleanTerminal(instr))
     {
@@ -417,7 +614,7 @@ std::tuple<const char *, const char *, const char *> DOTExporter::cleanTerminalI
         instr.data);
 }
 
-std::string DOTExporter::exportInstruction(const Core::CodeModel &model, const Core::Instruction &instr)
+std::string exportInstruction(const Core::CodeModel &model, const Core::Instruction &instr, DotVerbosity verbosity)
 {
     std::ostringstream ss;
 
@@ -461,9 +658,9 @@ std::string DOTExporter::exportInstruction(const Core::CodeModel &model, const C
     std::string tooltip_attr = "";
     if (!instr.source_location.file.empty() && instr.source_location.file != "<unknown>")
     {
-        // TODO: let user click to open source file?
-        tooltip_attr = " tooltip=\"" + escape(instr.source_location.file) + ":" +
-                       std::to_string(instr.source_location.line) + "\" href=\"#\"";
+        tooltip_attr = " tooltip=\"" + escapeDotText(instr.source_location.file) + ":" +
+                       std::to_string(instr.source_location.line) + "\" href=\"file:///" +
+                       escapeDotText(instr.source_location.file) + "\"";
     }
 
     ss << "                <tr>\n"
@@ -476,9 +673,9 @@ std::string DOTExporter::exportInstruction(const Core::CodeModel &model, const C
     return ss.str();
 }
 
-std::string DOTExporter::formatOperand(const Core::CodeModel &model, const Core::Operand &op)
+std::string formatOperand(const Core::CodeModel &model, const Core::Operand &op)
 {
-    return std::visit(overloaded{[&](const Core::ConstantOperand &co) { return escape(co.value); },
+    return std::visit(overloaded{[&](const Core::ConstantOperand &co) { return escapeDotText(co.value); },
                                  [&](const Core::VariableOperand &vo) {
                                      const auto *var = model.getVariable(vo.id);
                                      std::string res;
@@ -488,7 +685,7 @@ std::string DOTExporter::formatOperand(const Core::CodeModel &model, const Core:
                                      }
                                      else if (!var->name.empty())
                                      {
-                                         res = escape(var->name);
+                                         res = escapeDotText(var->name);
                                      }
                                      else if (var->artificial)
                                      {
@@ -507,8 +704,7 @@ std::string DOTExporter::formatOperand(const Core::CodeModel &model, const Core:
                       op);
 }
 
-std::string DOTExporter::formatAccessor(const Core::CodeModel &model, const Core::Accessor &acc,
-                                        const std::string &base)
+std::string formatAccessor(const Core::CodeModel &model, const Core::Accessor &acc, const std::string &base)
 {
     return std::visit(
         overloaded{
@@ -516,7 +712,7 @@ std::string DOTExporter::formatAccessor(const Core::CodeModel &model, const Core
             [&](const Core::ArrayAccessor &a) { return base + "[" + formatOperand(model, a.index) + "]"; },
             [&](const Core::FieldAccessor &f) {
                 const auto *var = model.getVariable(f.field_id);
-                return base + "." + (var ? escape(var->name) : "???");
+                return base + "." + (var ? escapeDotText(var->name) : "???");
             },
             [&](const Core::AddressOfAccessor &) { return "&amp;(" + base + ")"; },
             [&](const Core::OffsetAccessor &o) { return "(" + base + " + " + formatOperand(model, o.offset) + ")"; },
@@ -526,7 +722,7 @@ std::string DOTExporter::formatAccessor(const Core::CodeModel &model, const Core
         acc.data);
 }
 
-std::string DOTExporter::escape(const std::string &str)
+std::string escapeDotText(const std::string &str)
 {
     std::string res;
     res.reserve(str.size());
@@ -557,7 +753,7 @@ std::string DOTExporter::escape(const std::string &str)
     return res;
 }
 
-std::string DOTExporter::opCodeToString(Core::OpCode opcode)
+std::string opCodeToString(Core::OpCode opcode)
 {
     switch (opcode)
     {
@@ -633,141 +829,146 @@ std::string DOTExporter::opCodeToString(Core::OpCode opcode)
     }
 }
 
-std::string DOTExporter::formatInstructionText(const Core::CodeModel &model, const Core::Instruction &instr)
+std::string formatInstructionText(const Core::CodeModel &model, const Core::Instruction &instr)
 {
-    // helper to extract just the raw type name string
-    auto getRawTypeName = [&](const Core::Operand &op) -> std::string {
-        if (auto *var_op = std::get_if<Core::VariableOperand>(&op))
-        {
-            if (const auto *var = model.getVariable(var_op->id))
-            {
-                if (const auto *type = model.getType(var->type_id))
-                {
-                    return type->name;
-                }
-            }
-        }
-        return "";
-    };
-
-    // helper to format the type for the left-hand side assignment visualization
-    auto getLhsTypeHTML = [&](const Core::Operand &op) -> std::string {
-        std::string name = getRawTypeName(op);
-        if (!name.empty())
-        {
-            return "<font color=\"#059669\">" + escape(name) + "</font> ";
-        }
-        return "";
-    };
-
     return std::visit(
-        overloaded{
-            [&](const std::monostate &) -> std::string { return "<b>&lt;empty instruction&gt;</b>"; },
-            [&](const Core::AssignInstruction &assign) -> std::string {
-                std::string type_html = getLhsTypeHTML(assign.lhs);
-                std::string res = "<b>" + type_html + formatOperand(model, assign.lhs) + "</b> = ";
+        overloaded{[&](const std::monostate &) -> std::string { return "<b>&lt;empty instruction&gt;</b>"; },
+                   [&](const Core::AssignInstruction &assign) -> std::string {
+                       std::string type_html = lhsTypeHTML(model, assign.lhs);
+                       std::string res = "<b>" + type_html + formatOperand(model, assign.lhs) + "</b> = ";
 
-                if (assign.opcode == Core::OpCode::CAST && assign.rhs1)
-                {
-                    std::string cast_type = getRawTypeName(assign.lhs);
-                    std::string cast_str = cast_type.empty() ? "cast" : escape(cast_type);
-                    res += "(" + cast_str + ") " + formatOperand(model, *assign.rhs1);
-                }
-                else if (assign.opcode == Core::OpCode::MAX || assign.opcode == Core::OpCode::MIN ||
-                         assign.opcode == Core::OpCode::ABS || assign.opcode == Core::OpCode::ROTATE_LEFT ||
-                         assign.opcode == Core::OpCode::ROTATE_RIGHT)
-                {
-                    // format as a function call (e.g. MAX(a, b))
-                    res += "<b>" + opCodeToString(assign.opcode) + "</b>(" + formatOperand(model, *assign.rhs1);
-                    if (assign.rhs2)
-                        res += ", " + formatOperand(model, *assign.rhs2);
-                    res += ")";
-                }
-                else if (assign.opcode != Core::OpCode::NONE)
-                {
-                    // format as a standard infix/prefix operator (e.g. a + b)
-                    std::string op_str = opCodeToString(assign.opcode);
-                    if (assign.rhs2)
-                    {
-                        res += formatOperand(model, *assign.rhs1) + " " + op_str + " " +
-                               formatOperand(model, *assign.rhs2);
-                    }
-                    else if (assign.rhs1)
-                    {
-                        res += op_str + " " + formatOperand(model, *assign.rhs1);
-                    }
-                }
-                else if (assign.rhs1)
-                {
-                    res += formatOperand(model, *assign.rhs1);
-                }
-                return res;
-            },
-            [&](const Core::CallInstruction &call) -> std::string {
-                std::string res = "";
-                if (call.lhs)
-                {
-                    res += "<b>" + getLhsTypeHTML(*call.lhs) + formatOperand(model, *call.lhs) + "</b> = ";
-                }
-                res += "<b>call</b> " + formatOperand(model, call.callee) + "(";
-                for (size_t i = 0; i < call.arguments.size(); ++i)
-                {
-                    res += formatOperand(model, call.arguments[i]);
-                    if (i + 1 < call.arguments.size())
-                    {
-                        res += ", ";
-                    }
-                }
-                res += ")";
-                return res;
-            },
-            [&](const Core::CondInstruction &cond) -> std::string {
-                return "<b>if</b> (" + formatOperand(model, cond.lhs) + " " + opCodeToString(cond.opcode) + " " +
-                       formatOperand(model, cond.rhs) + ")";
-            },
-            [&](const Core::ReturnInstruction &ret) -> std::string {
-                return "<b>return</b> " + (ret.return_value ? formatOperand(model, *ret.return_value) : "");
-            },
-            [&](const Core::SwitchInstruction &sw) -> std::string {
-                return "<b>switch</b> (" + formatOperand(model, sw.index) + ")";
-            },
-            [&](const Core::GotoInstruction &gt) -> std::string {
-                const auto *target_block = model.getBlock(gt.target);
-                std::string block_name = target_block ? target_block->name : "unknown";
+                       if (assign.opcode == Core::OpCode::CAST && assign.rhs1)
+                       {
+                           std::string cast_type = rawTypeName(model, assign.lhs);
+                           std::string cast_str = cast_type.empty() ? "cast" : escapeDotText(cast_type);
+                           res += "(" + cast_str + ") " + formatOperand(model, *assign.rhs1);
+                       }
+                       else if (assign.opcode == Core::OpCode::MAX || assign.opcode == Core::OpCode::MIN ||
+                                assign.opcode == Core::OpCode::ABS || assign.opcode == Core::OpCode::ROTATE_LEFT ||
+                                assign.opcode == Core::OpCode::ROTATE_RIGHT)
+                       {
+                           // format as a function call (e.g. MAX(a, b))
+                           res += "<b>" + opCodeToString(assign.opcode) + "</b>(" + formatOperand(model, *assign.rhs1);
+                           if (assign.rhs2)
+                               res += ", " + formatOperand(model, *assign.rhs2);
+                           res += ")";
+                       }
+                       else if (assign.opcode != Core::OpCode::NONE)
+                       {
+                           // format as a standard infix/prefix operator (e.g. a + b)
+                           std::string op_str = opCodeToString(assign.opcode);
+                           if (assign.rhs2)
+                           {
+                               res += formatOperand(model, *assign.rhs1) + " " + op_str + " " +
+                                      formatOperand(model, *assign.rhs2);
+                           }
+                           else if (assign.rhs1)
+                           {
+                               res += op_str + " " + formatOperand(model, *assign.rhs1);
+                           }
+                       }
+                       else if (assign.rhs1)
+                       {
+                           res += formatOperand(model, *assign.rhs1);
+                       }
+                       return res;
+                   },
+                   [&](const Core::CallInstruction &call) -> std::string {
+                       std::string res = "";
+                       if (call.lhs)
+                       {
+                           res += "<b>" + lhsTypeHTML(model, *call.lhs) + formatOperand(model, *call.lhs) + "</b> = ";
+                       }
+                       res += "<b>call</b> " + formatOperand(model, call.callee) + "(";
+                       for (size_t i = 0; i < call.arguments.size(); ++i)
+                       {
+                           res += formatOperand(model, call.arguments[i]);
+                           if (i + 1 < call.arguments.size())
+                           {
+                               res += ", ";
+                           }
+                       }
+                       res += ")";
+                       return res;
+                   },
+                   [&](const Core::CondInstruction &cond) -> std::string {
+                       return "<b>if</b> (" + formatOperand(model, cond.lhs) + " " + opCodeToString(cond.opcode) + " " +
+                              formatOperand(model, cond.rhs) + ")";
+                   },
+                   [&](const Core::ReturnInstruction &ret) -> std::string {
+                       return "<b>return</b> " + (ret.return_value ? formatOperand(model, *ret.return_value) : "");
+                   },
+                   [&](const Core::SwitchInstruction &sw) -> std::string {
+                       return "<b>switch</b> (" + formatOperand(model, sw.index) + ")";
+                   },
+                   [&](const Core::GotoInstruction &gt) -> std::string {
+                       const auto *target_block = model.getBlock(gt.target);
+                       std::string block_name = target_block ? target_block->name : "unknown";
 
-                return "<b>goto</b> " + escape(block_name);
-            },
-            [&](const Core::LabelInstruction &lbl) -> std::string {
-                return "<b>" + formatOperand(model, lbl.label) + ":</b>";
-            },
-            [&](const Core::ClobberInstruction &cl) -> std::string {
-                return "<b><font color=\"#dc2626\">clobber</font></b> " + formatOperand(model, cl.clobbered_variable);
-            },
-            [&](const Core::PhiInstruction &phi) -> std::string {
-                std::string res =
-                    "<b>" + getLhsTypeHTML(phi.lhs) + formatOperand(model, phi.lhs) + "</b> = <b>phi</b>(";
-                for (size_t i = 0; i < phi.incoming_values.size(); ++i)
-                {
-                    const auto *src_block = model.getBlock(phi.incoming_values[i].block_id);
-                    std::string block_name = src_block ? src_block->name : "unknown";
+                       return "<b>goto</b> " + escapeDotText(block_name);
+                   },
+                   [&](const Core::LabelInstruction &lbl) -> std::string {
+                       return "<b>" + formatOperand(model, lbl.label) + ":</b>";
+                   },
+                   [&](const Core::ClobberInstruction &cl) -> std::string {
+                       return "<b><font color=\"#dc2626\">clobber</font></b> " +
+                              formatOperand(model, cl.clobbered_variable);
+                   },
+                   [&](const Core::PhiInstruction &phi) -> std::string {
+                       std::string res =
+                           "<b>" + lhsTypeHTML(model, phi.lhs) + formatOperand(model, phi.lhs) + "</b> = <b>phi</b>(";
+                       for (size_t i = 0; i < phi.incoming_values.size(); ++i)
+                       {
+                           const auto *src_block = model.getBlock(phi.incoming_values[i].block_id);
+                           std::string block_name = src_block ? src_block->name : "unknown";
 
-                    res += "[" + escape(block_name) + ": " + formatOperand(model, phi.incoming_values[i].value) + "]";
+                           res += "[" + escapeDotText(block_name) + ": " +
+                                  formatOperand(model, phi.incoming_values[i].value) + "]";
 
-                    if (i + 1 < phi.incoming_values.size())
-                    {
-                        res += ", ";
-                    }
-                }
-                res += ")";
-                return res;
-            },
-            [&](const Core::AbortInstruction &) -> std::string { return "<b>abort()</b>"; },
-            [&](const Core::UnreachableInstruction &) -> std::string { return "<b>unreachable</b>"; },
-            [&](const Core::AsmInstruction &) -> std::string { return "<b>asm()</b>"; },
-            [&](const Core::UnknownInstruction &u) -> std::string {
-                return "<b>unknown</b>: " + escape(u.description);
-            }},
+                           if (i + 1 < phi.incoming_values.size())
+                           {
+                               res += ", ";
+                           }
+                       }
+                       res += ")";
+                       return res;
+                   },
+                   [&](const Core::AbortInstruction &) -> std::string { return "<b>abort()</b>"; },
+                   [&](const Core::UnreachableInstruction &) -> std::string { return "<b>unreachable</b>"; },
+                   [&](const Core::AsmInstruction &) -> std::string { return "<b>asm()</b>"; },
+                   [&](const Core::UnknownInstruction &u) -> std::string {
+                       return "<b>unknown</b>: " + escapeDotText(u.description);
+                   }},
         instr.data);
 }
+
+std::string rawTypeName(const Core::CodeModel &model, const Core::Operand &op)
+{
+    if (auto *var_op = std::get_if<Core::VariableOperand>(&op))
+    {
+        if (const auto *var = model.getVariable(var_op->id))
+        {
+            if (const auto *type = model.getType(var->type_id))
+            {
+                return type->name;
+            }
+        }
+    }
+
+    return "";
+}
+
+std::string lhsTypeHTML(const Core::CodeModel &model, const Core::Operand &op)
+{
+    std::string name = rawTypeName(model, op);
+    if (!name.empty())
+    {
+        return "<font color=\"#059669\">" + escapeDotText(name) + "</font> ";
+    }
+
+    return "";
+}
+
+} // namespace
 
 } // namespace CodeListener::Exporters

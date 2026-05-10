@@ -44,6 +44,15 @@
 
 using namespace CodeListener;
 
+/**
+ * Run the json_dump analysis: serialize the CodeModel to a JSON file.
+ *
+ * @param model  Fully populated CodeModel for the translation unit.
+ * @param ctx    Services available to the analyzer (reporter, export helpers).
+ * @param args   Output file path override; defaults to "ir_dump.json" when NULL or empty.
+ *
+ * @return Always true (JSON export failures are silently ignored by the exporter).
+ */
 static bool json_dump_analyze(const Core::CodeModel &model, AnalysisContext &ctx, const char *args)
 {
     const std::string outpath = (args && args[0] != '\0') ? args : "ir_dump.json";
@@ -51,6 +60,7 @@ static bool json_dump_analyze(const Core::CodeModel &model, AnalysisContext &ctx
     return true;
 }
 
+/** Native analyzer API descriptor for the json_dump plugin. */
 static const cl_native_analyzer_api_t json_dump_api = {
     CL_NATIVE_API_VERSION,
     json_dump_analyze,

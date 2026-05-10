@@ -49,7 +49,7 @@ const char *safe_basever(const plugin_gcc_version *version)
 
 } // namespace
 
-// required by GCC to indicate that the plugin is GPL-compatible
+/** Required marker that declares this plugin as GPL-compatible to GCC. */
 int plugin_is_GPL_compatible;
 
 namespace CodeListener::CompilerAbstractionLayer
@@ -77,6 +77,16 @@ void print_info(struct plugin_name_args *plugin_info, struct plugin_gcc_version 
 
 } // namespace CodeListener::CompilerAbstractionLayer
 
+/**
+ * GCC plugin entry point called when the plugin is loaded.
+ *
+ * Registers the plugin pass and callbacks with the GCC pass manager.
+ *
+ * @param plugin_info GCC-provided plugin metadata (name, arguments).
+ * @param version     GCC version information for compatibility checks.
+ *
+ * @return 0 on success, 1 if initialisation failed.
+ */
 int plugin_init(struct plugin_name_args *plugin_info, struct plugin_gcc_version *version)
 {
     // CodeListener::CompilerAbstractionLayer::print_info(plugin_info, version);

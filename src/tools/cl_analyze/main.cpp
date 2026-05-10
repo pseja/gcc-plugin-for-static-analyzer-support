@@ -47,6 +47,11 @@
 #include "PPExporter.hpp"
 #include "StderrDiagnosticReporter.hpp"
 
+/**
+ * Print usage information for cl_analyze to stderr.
+ *
+ * @param program_name argv[0] of the invoked process.
+ */
 static void printUsage(const char *program_name)
 {
     std::cerr << "Usage: " << program_name << " <model.json> [options] [--analyzer=<lib.so> [--args=<string>]]\n"
@@ -59,6 +64,17 @@ static void printUsage(const char *program_name)
               << "  --gen-pp=<file>         - Export the model as a pretty-printed text listing.\n";
 }
 
+/**
+ * Entry point for the cl_analyze tool.
+ *
+ * Loads a CodeModel JSON file, optionally runs a native analyzer, and
+ * produces any requested DOT or pretty-printed exports.
+ *
+ * @param argc Argument count.
+ * @param argv Argument vector.
+ *
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on error.
+ */
 int main(int argc, char *argv[])
 {
     // parse cmd arguments

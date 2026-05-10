@@ -30,8 +30,10 @@ extern "C"
 
     struct cl_code_listener;
 
+/** ABI version tag embedded in cl_analyzer_api_t::api_version. Bumped on every incompatible change. */
 #define CL_ANALYZER_API_VERSION 1
 
+/** Marks a symbol as part of the public shared-library ABI on all platforms. */
 #if defined(_WIN32) || defined(__CYGWIN__)
 #define CL_ANALYZER_EXPORT __declspec(dllexport)
 #else
@@ -72,6 +74,9 @@ extern "C"
      *
      * The symbol must be visible (not hidden by -fvisibility=hidden).
      * Use the CL_ANALYZER_EXPORT macro on the definition.
+     *
+     * @return Pointer to a statically allocated cl_analyzer_api_t descriptor,
+     *         or NULL on failure.
      */
     CL_ANALYZER_EXPORT const cl_analyzer_api_t *cl_get_analyzer_api(void);
 

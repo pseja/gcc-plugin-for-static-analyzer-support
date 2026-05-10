@@ -36,11 +36,18 @@ namespace CodeListener::AnnotationServices
 template <typename Derived>
 struct AnnotationBase : public Annotation
 {
-    /** Unique key instance used to identify the derived annotation type in the cache. */
+    /**
+     * Unique key instance used to identify the derived annotation type in the cache.
+     *
+     * Each specialisation of AnnotationBase<Derived> gets its own statically allocated key
+     * that is used to look up the corresponding annotation in the AnalysisContext cache.
+     */
     static AnalysisKey Key;
 };
 
+/// @cond INTERNAL
 template <typename Derived>
 AnalysisKey AnnotationBase<Derived>::Key;
+/// @endcond
 
 } // namespace CodeListener::AnnotationServices

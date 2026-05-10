@@ -43,10 +43,20 @@ class Pass : public gimple_opt_pass
      */
     Pass(gcc::context *ctx, GCCAdapter &adapter);
 
-    /** Execute the pass for one GCC function. */
+    /**
+     * Execute the pass for one GCC function.
+     *
+     * @param fun GCC function being optimized/analyzed.
+     *
+     * @return Zero to indicate no changes were made.
+     */
     unsigned int execute(function *fun) override final;
 
-    /** Clone the pass instance for GCC's internal pass management. */
+    /**
+     * Clone the pass instance for GCC's internal pass management.
+     *
+     * @return Pointer to a newly allocated clone of this pass.
+     */
     opt_pass *clone() override final;
 
   private:

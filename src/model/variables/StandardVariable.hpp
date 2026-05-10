@@ -32,11 +32,16 @@
 namespace CodeListener::Core
 {
 
+/** Represents a standard (non-field) variable with storage class information. */
 struct StandardVariable
 {
+    /** Visibility scope of this variable. */
     Scope scope;
+    /** Storage duration category (auto, static, extern, etc.). */
     StorageDuration storage_duration;
+    /** Linkage of this variable (internal, external, or none). */
     Linkage linkage;
+    /** Optional initial value; absent for variables without an explicit initializer. */
     std::optional<Initializer> initial_value;
 };
 

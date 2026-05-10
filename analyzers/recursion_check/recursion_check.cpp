@@ -40,6 +40,15 @@
 
 ;
 
+/**
+ * Run the recursion_check analysis: detect direct and mutual recursion.
+ *
+ * @param model  Fully populated CodeModel for the translation unit.
+ * @param ctx    Services available to the analyzer (reporter, annotation cache).
+ * @param args   Output file path override; defaults to "recursion_report.txt" when NULL or empty.
+ *
+ * @return true on success; false if the output file could not be opened.
+ */
 static bool recursion_analyze(const CodeListener::Core::CodeModel &model, CodeListener::AnalysisContext &ctx,
                               const char *args)
 {
@@ -123,6 +132,7 @@ static bool recursion_analyze(const CodeListener::Core::CodeModel &model, CodeLi
     return true;
 }
 
+/** Native analyzer API descriptor for the recursion_check plugin. */
 static const cl_native_analyzer_api_t recursion_check_api = {
     CL_NATIVE_API_VERSION,
     recursion_analyze,

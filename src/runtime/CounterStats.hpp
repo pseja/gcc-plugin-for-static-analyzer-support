@@ -36,10 +36,18 @@ struct CounterStats
     /** Total accumulated counter value across all samples. */
     uint64_t total{0};
 
-    /** Record one additional sample with value @p value. */
+    /**
+     * Record one additional sample with value @p value.
+     *
+     * @param value Counter value of this sample.
+     */
     void record(uint64_t value) noexcept;
 
-    /** Mean counter value per recorded sample, or 0 if never recorded. */
+    /**
+     * Mean counter value per recorded sample, or 0 if never recorded.
+     *
+     * @return Arithmetic mean over all recorded samples, or 0.0 if count is zero.
+     */
     [[nodiscard]] double mean() const noexcept;
 };
 

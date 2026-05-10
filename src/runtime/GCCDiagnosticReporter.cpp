@@ -30,6 +30,13 @@
 namespace CodeListener::CompilerAbstractionLayer
 {
 
+/**
+ * Shorten an absolute path to a project-relative form for cleaner diagnostics.
+ *
+ * @param path Absolute or relative filesystem path.
+ *
+ * @return Shortened path relative to the project src/ directory, or basename.
+ */
 static std::string getProjectRelativePath(const std::string &path)
 {
     size_t pos = path.find("/src/");

@@ -33,6 +33,11 @@
 #include "JSONImporter.hpp"
 #include "ModelMerger.hpp"
 
+/**
+ * Print usage information for cl_merge to stderr.
+ *
+ * @param program_name argv[0] of the invoked process.
+ */
 static void printUsage(const char *program_name)
 {
     std::cerr << "Usage: " << program_name << " <input1.json> [input2.json ...] -o <output.json>\n"
@@ -41,6 +46,17 @@ static void printUsage(const char *program_name)
               << "whole-program CodeModel and write it to <output.json>.\n";
 }
 
+/**
+ * Entry point for the cl_merge tool.
+ *
+ * Merges per-translation-unit CodeModel JSON files into a single
+ * whole-program CodeModel and writes the result to an output file.
+ *
+ * @param argc Argument count.
+ * @param argv Argument vector.
+ *
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on error.
+ */
 int main(int argc, char **argv)
 {
     // parse cmd arguments

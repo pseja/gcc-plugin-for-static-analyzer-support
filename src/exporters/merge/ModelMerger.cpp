@@ -65,6 +65,14 @@
 namespace CodeListener::Exporters
 {
 
+/**
+ * Map a source TypeId to its merged-model equivalent using the provided id maps.
+ *
+ * @param id   Source TypeId to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Corresponding TypeId in the merged model.
+ */
 static Core::TypeId remapType(Core::TypeId id, const IdMaps &maps)
 {
     if (!id.isValid())
@@ -77,6 +85,14 @@ static Core::TypeId remapType(Core::TypeId id, const IdMaps &maps)
     return it->second;
 }
 
+/**
+ * Map a source VariableId to its merged-model equivalent.
+ *
+ * @param id   Source VariableId to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Corresponding VariableId in the merged model.
+ */
 static Core::VariableId remapVar(Core::VariableId id, const IdMaps &maps)
 {
     if (!id.isValid())
@@ -89,6 +105,14 @@ static Core::VariableId remapVar(Core::VariableId id, const IdMaps &maps)
     return it->second;
 }
 
+/**
+ * Map a source FunctionId to its merged-model equivalent.
+ *
+ * @param id   Source FunctionId to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Corresponding FunctionId in the merged model.
+ */
 static Core::FunctionId remapFunc(Core::FunctionId id, const IdMaps &maps)
 {
     if (!id.isValid())
@@ -101,6 +125,14 @@ static Core::FunctionId remapFunc(Core::FunctionId id, const IdMaps &maps)
     return it->second;
 }
 
+/**
+ * Map a source BlockId to its merged-model equivalent.
+ *
+ * @param id   Source BlockId to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Corresponding BlockId in the merged model.
+ */
 static Core::BlockId remapBlock(Core::BlockId id, const IdMaps &maps)
 {
     if (!id.isValid())
@@ -113,6 +145,14 @@ static Core::BlockId remapBlock(Core::BlockId id, const IdMaps &maps)
     return it->second;
 }
 
+/**
+ * Map a source InstructionId to its merged-model equivalent.
+ *
+ * @param id   Source InstructionId to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Corresponding InstructionId in the merged model.
+ */
 static Core::InstructionId remapInstr(Core::InstructionId id, const IdMaps &maps)
 {
     if (!id.isValid())
@@ -129,6 +169,14 @@ static Core::InstructionId remapInstr(Core::InstructionId id, const IdMaps &maps
 static Core::Operand remapOperand(const Core::Operand &op, const IdMaps &maps);
 static Core::Initializer remapInitializer(const Core::Initializer &init, const IdMaps &maps);
 
+/**
+ * Deep-copy and remap all id references inside an Accessor.
+ *
+ * @param acc  Accessor to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Remapped Accessor with all ids pointing into the merged model.
+ */
 static Core::Accessor remapAccessor(const Core::Accessor &acc, const IdMaps &maps)
 {
     Core::Accessor result;
@@ -151,6 +199,14 @@ static Core::Accessor remapAccessor(const Core::Accessor &acc, const IdMaps &map
     return result;
 }
 
+/**
+ * Deep-copy and remap all id references inside an Operand.
+ *
+ * @param op   Operand to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Remapped Operand with all ids pointing into the merged model.
+ */
 static Core::Operand remapOperand(const Core::Operand &op, const IdMaps &maps)
 {
     return std::visit(overloaded{[&](const Core::ConstantOperand &co) -> Core::Operand {
@@ -172,6 +228,14 @@ static Core::Operand remapOperand(const Core::Operand &op, const IdMaps &maps)
                       op);
 }
 
+/**
+ * Deep-copy and remap all id references inside an Initializer.
+ *
+ * @param init Initializer to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Remapped Initializer with all ids pointing into the merged model.
+ */
 static Core::Initializer remapInitializer(const Core::Initializer &init, const IdMaps &maps)
 {
     return std::visit(overloaded{[&](const Core::Operand &op) -> Core::Initializer { return remapOperand(op, maps); },
@@ -192,6 +256,14 @@ static Core::Initializer remapInitializer(const Core::Initializer &init, const I
                       init);
 }
 
+/**
+ * Deep-copy and remap all id references inside a SwitchCase.
+ *
+ * @param sc   SwitchCase to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Remapped SwitchCase with all ids pointing into the merged model.
+ */
 static Core::SwitchCase remapSwitchCase(const Core::SwitchCase &sc, const IdMaps &maps)
 {
     Core::SwitchCase result;
@@ -207,11 +279,27 @@ static Core::SwitchCase remapSwitchCase(const Core::SwitchCase &sc, const IdMaps
     return result;
 }
 
+/**
+ * Deep-copy and remap all id references inside a PhiIncomingValue.
+ *
+ * @param piv  PhiIncomingValue to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Remapped PhiIncomingValue with all ids pointing into the merged model.
+ */
 static Core::PhiIncomingValue remapPhiIncoming(const Core::PhiIncomingValue &piv, const IdMaps &maps)
 {
     return Core::PhiIncomingValue{remapBlock(piv.block_id, maps), remapOperand(piv.value, maps)};
 }
 
+/**
+ * Deep-copy and remap all id references inside a TypeData variant.
+ *
+ * @param data TypeData variant to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Remapped TypeData with all ids pointing into the merged model.
+ */
 static Core::TypeData remapTypeData(const Core::TypeData &data, const IdMaps &maps)
 {
     return std::visit(overloaded{[&](const Core::UnknownType &u) -> Core::TypeData { return u; },
@@ -258,6 +346,14 @@ static Core::TypeData remapTypeData(const Core::TypeData &data, const IdMaps &ma
                       data);
 }
 
+/**
+ * Deep-copy and remap all id references inside an InstructionData variant.
+ *
+ * @param data InstructionData variant to remap.
+ * @param maps Id translation tables built during the merge.
+ *
+ * @return Remapped InstructionData with all ids pointing into the merged model.
+ */
 static Core::InstructionData remapInstrData(const Core::InstructionData &data, const IdMaps &maps)
 {
     return std::visit(overloaded{[&](const std::monostate &m) -> Core::InstructionData { return m; },
@@ -355,7 +451,15 @@ static Core::InstructionData remapInstrData(const Core::InstructionData &data, c
                       data);
 }
 
-// type deduplication key
+/**
+ * Compute a deduplication key for a named type.
+ *
+ * Anonymous types (empty name) return an empty string, which prevents deduplication.
+ *
+ * @param t Type to derive a key for.
+ *
+ * @return Stable string key encoding kind, name, size, alignment, and qualifiers.
+ */
 static std::string typeKey(const Core::Type &t)
 {
     if (t.name.empty())
