@@ -1,7 +1,7 @@
 /**
  * @file LegacyPredatorBridge.cpp
  * @author Lukáš Pšeja <xpsejal00@vutbr.cz>
- * @brief Implements the bridge that adapts the legacy Predator ABI to IAnalyzer.
+ * @brief Implements the bridge that adapts the legacy Predator C API to IAnalyzer.
  * @date 2026-05-02
  *
  * @copyright Copyright (c) 2026 Lukáš Pšeja

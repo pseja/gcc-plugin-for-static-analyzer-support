@@ -1,7 +1,7 @@
 /**
  * @file NativeAnalyzerBridge.hpp
  * @author Lukáš Pšeja <xpsejal00@vutbr.cz>
- * @brief Declares the bridge that adapts the native analyzer ABI to IAnalyzer.
+ * @brief Declares the bridge that adapts the native analyzer API (C-ABI) to IAnalyzer.
  * @date 2026-05-02
  *
  * @copyright Copyright (c) 2026 Lukáš Pšeja
@@ -40,7 +40,7 @@ class NativeAnalyzerBridge : public Core::IAnalyzer
     /**
      * Constructs a bridge over one native analyzer API table.
      *
-     * @param api Native analyzer ABI exported by the loaded shared library.
+     * @param api Native analyzer API table (C-ABI) exported by the loaded shared library.
      * @param args Opaque argument string forwarded to the analyzer.
      */
     explicit NativeAnalyzerBridge(const cl_native_analyzer_api_t *api, std::string args = {});

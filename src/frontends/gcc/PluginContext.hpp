@@ -129,7 +129,7 @@ class PluginContext
     void initPrint(const plugin_gcc_version *version);
 
     /**
-     * Load one analyzer shared library and wrap its exposed ABI in an `IAnalyzer` implementation.
+     * Load one analyzer shared library and wrap its exported API in an `IAnalyzer` implementation.
      *
      * @param path Shared library path.
      * @param analyzer_args Opaque argument string forwarded to the analyzer.

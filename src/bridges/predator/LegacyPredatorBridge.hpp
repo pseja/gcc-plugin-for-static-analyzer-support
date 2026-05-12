@@ -1,7 +1,7 @@
 /**
  * @file LegacyPredatorBridge.hpp
  * @author Lukáš Pšeja <xpsejal00@vutbr.cz>
- * @brief Declares the bridge that adapts the legacy Predator ABI to IAnalyzer.
+ * @brief Declares the bridge that adapts the legacy Predator C API to IAnalyzer.
  * @date 2026-05-02
  *
  * @copyright Copyright (c) 2026 Lukáš Pšeja
@@ -38,7 +38,7 @@ class LegacyPredatorBridge : public Core::IAnalyzer
     /**
      * Constructs a bridge over an already created legacy listener instance.
      *
-     * @param listener Legacy analyzer instance created through the C ABI.
+     * @param listener Legacy analyzer instance created through the C API.
      */
     explicit LegacyPredatorBridge(struct cl_code_listener *listener);
 

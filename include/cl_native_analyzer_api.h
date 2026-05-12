@@ -1,7 +1,7 @@
 /**
  * @file cl_native_analyzer_api.h
  * @author Lukáš Pšeja <xpsejal00@vutbr.cz>
- * @brief Declares the native C++ analyzer ABI built around the CodeModel.
+ * @brief Declares the native C++ analyzer API built around the CodeModel.
  * @date 2026-05-02
  *
  * @copyright Copyright (c) 2026 Lukáš Pšeja
