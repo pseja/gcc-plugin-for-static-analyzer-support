@@ -11,16 +11,16 @@
 sudo apt install texlive-full
 ```
 
-## Getting Started
+## Usage
 
-### 1. Clone the repository
+### Clone the repository
 
 ```bash
-git clone -b thesis git@github.com:pseja/gcc-plugin-for-static-analyzer-support.git
-cd gcc-plugin-for-static-analyzer-support
+git clone -b thesis git@github.com:pseja/gcc-plugin-for-static-analyzer-support.git thesis
+cd thesis
 ```
 
-### 2. Build the PDF
+### Build the PDF
 
 ```bash
 make
@@ -28,7 +28,7 @@ make
 
 This produces `xpsejal00-gcc-plugin.pdf` in the current directory, which is the submitted version of the text.
 
-### 3. Clean build artifacts
+### Clean build artifacts
 
 ```bash
 make clean
