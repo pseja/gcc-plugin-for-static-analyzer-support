@@ -22,13 +22,13 @@ sudo apt install gcc-12 g++-12 gcc-12-plugin-dev cmake jq patch
 
 If your system has a newer supported GCC, install the matching package instead, for example `gcc-13-plugin-dev` or `gcc-14-plugin-dev`.
 
-## Getting Started
+## Usage
 
 ### 1. Clone with submodules
 
 ```bash
-git clone --recurse-submodules -b implementation git@github.com:pseja/gcc-plugin-for-static-analyzer-support.git
-cd gcc-plugin-for-static-analyzer-support
+git clone --recurse-submodules -b implementation git@github.com:pseja/gcc-plugin-for-static-analyzer-support.git implementation
+cd implementation
 ```
 
 If you already cloned without `--recurse-submodules`:
