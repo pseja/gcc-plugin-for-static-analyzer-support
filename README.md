@@ -59,7 +59,7 @@ Optional CMake variables:
 | --- | --- | --- |
 | `TARGET_GCC` | auto-detected | GCC executable name or absolute path |
 | `GCC_PLUGIN_INCLUDE_DIR` | auto-detected | Directory containing `gcc-plugin.h`; can be used to specify local installation of the plugin headers |
-| `WITH_PREDATOR` | `OFF` | Don't build Predator and its regression tests |
+| `WITH_PREDATOR` | `ON` | Build Predator and its regression tests |
 
 ### 4. Build
 
