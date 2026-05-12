@@ -20,14 +20,14 @@ Because the infrastructure acts as a~mediator between the compiler and the analy
 To systematically verify each phase, the project utilizes the CTest~\cite{CMake} framework to orchestrate four distinct regression suites.
 Testing was conducted on Linux, specifically Ubuntu 24.04 LTS and Arch Linux.
 Within the checked-in CMake configuration, the plugin build is parameterized by the \texttt{TARGET\_GCC} variable, which defaults to \texttt{gcc-12}.
-To verify portability across supported compiler releases, the project was rebuilt from a~clean state, and the full \texttt{make test} pipeline was rerun separately with GCC 12, GCC 13, GCC 14 and GCC 15.
+To verify portability across supported compiler releases, the project was rebuilt from a~clean state, and the full \texttt{make test} pipeline was rerun separately with GCC~12, GCC~13, GCC~14, and GCC~15.
 The testing pipeline is fully automated via the \texttt{make test} build target, with dedicated entry points for the \texttt{cl-adapter}, \texttt{codemodel}, \texttt{cl\_analyze}, and Predator compatibility suites.
 
 The two primary evaluation environments were intentionally different in character.
-The Ubuntu 24.04 setup ran under WSL 2 on a~desktop-class machine with an Intel Core i5--8400 CPU (6 cores at 2.8~GHz), an NVIDIA GeForce GTX~1070~Ti GPU, and 16~GB of RAM.\@
-The Arch Linux setup ran on a~laptop with an Intel Core i5--1135G7 CPU (4 cores at 2.40~GHz), integrated Intel Iris Xe Graphics, and 24~GB of RAM.\@
+The Ubuntu 24.04 setup ran under WSL~2~\cite{WSL2} on a~desktop-class machine with an Intel Core i5--8400 CPU (6~cores at 2.8~GHz), an NVIDIA GeForce GTX~1070~Ti GPU, and 16~GB of RAM.\@
+The Arch Linux setup ran on a~laptop with an Intel Core i5--1135G7 CPU (4~cores at 2.40~GHz), integrated Intel Iris Xe Graphics, and 24~GB of RAM.\@
 These systems were not used as a~controlled benchmark platform, but they provide useful operational context for the executed regression campaign.
-On the Ubuntu/WSL 2 machine, a~clean \texttt{make} rebuild took approximately 1~minute and 48~seconds, while the full \texttt{make test} pipeline completed in about 18~seconds.
+On the Ubuntu/WSL~2 machine, a~clean \texttt{make} rebuild took approximately 1~minute and 48~seconds, while the full \texttt{make test} pipeline completed in about 18~seconds.
 On the Arch Linux laptop, the same commands took approximately 39~seconds and 11~seconds, respectively.
 
 \section{Verification of the Modernized Infrastructure}\label{sec:verification}
@@ -43,7 +43,7 @@ This verification is covered by three dedicated test suites:
     This suite proves that the Compiler Abstraction Layer correctly intercepts GCC's GIMPLE passes, recovers source locations, and accurately identifies types and control flow edges.
   \item \textit{Code Model Integration Tests (38 tests):} These tests compile dedicated C inputs through the live plugin and inspect the resulting JSON model through suite-specific assertion scripts.
     They verify the representation of primitive and aggregate types, function calls, control flow constructs, initializers, and other edge cases that stress the internal Code Model layout.
-  \item \textit{Offline Pipeline Tests (3 tests):} These end-to-end tests that exercise the standalone \texttt{cl\_analyze} tool.
+  \item \textit{Offline Pipeline Tests (3 tests):} These are end-to-end tests that exercise the standalone \texttt{cl\_analyze} tool.
     Each test first exports a~Code Model to JSON through the live plugin, then invokes \texttt{cl\_analyze} with a~native analyzer and checks the produced output file.
     These tests exercise the \texttt{JSONFrontend} to \texttt{NativeAnalyzerBridge} path using the reference \texttt{callgraph\_dot} and \texttt{recursion\_check} analyzers.
 \end{enumerate}
@@ -52,14 +52,14 @@ All tests across these three suites pass successfully, confirming that the new c
 
 \section{Backward Compatibility: Predator Regression Analysis}\label{sec:predator-regression}
 
-The most rigorous constraint placed on the modernization effort was ensuring that the VeriFIT group's primary analysis tool, the Predator shape analyzer, continued to function without modifications to its source code.
-The compatibility patch integrates the Predator GCC regression test suite directly into CTest.
-In its default fast configuration, this registers 1,192 \texttt{new-plugin} tests, corresponding to the GCC regression inputs executed in four modes: the default error-label mode, \texttt{track\_uninit}, OOM simulation, and \texttt{exit\_leaks}.
-These tests cover pointer arithmetic, dynamically linked structures, sorting routines, and memory-management diagnostics~\cite{PredatorSuite2016}.
+The most rigorous constraint placed on the modernization effort was ensuring that the VeriFIT group's~\cite{VeriFIT} primary analysis tool, the Predator shape analyzer~\cite{PredatorSuite2016}, continued to function without modifications to its source code.
+The compatibility patch integrates the Predator GCC regression test suite directly into CTest~\cite{CMake}.
+In its default fast configuration, this registers 1\,192 \texttt{new-plugin} tests, corresponding to the GCC regression inputs executed in four modes: the default error-label mode, \texttt{track\_uninit}, OOM simulation, and \texttt{exit\_leaks}.
+These tests cover pointer arithmetic, dynamically linked structures, sorting routines, and memory-management diagnostics.
 
 To evaluate backward compatibility, the patched Predator kernel is compiled against the new infrastructure and invoked through the \texttt{LegacyPredatorBridge} and \texttt{PredatorAdapter}.
 The harness compares the filtered diagnostic output of the new plugin path against the same expected \texttt{.err} files used by Predator's GCC-based regression workflow.
-Across the clean rebuilds performed for GCC 12, GCC 13, GCC 14, and GCC 15, all 1,192 registered \texttt{new-plugin} tests passed successfully.
+Across the clean rebuilds performed for GCC~12, GCC~13, GCC~14, and GCC~15, all 1\,192 registered \texttt{new-plugin} tests passed successfully.
 
 During development, compatibility debugging was driven repeatedly against this regression harness, with a~quick verification subset covering tests 1 through 20 used to track the adapter fixes summarized in the implementation chapter.
 
@@ -80,15 +80,15 @@ The harness runs the checked-in workload with a~fixed per-file timeout and does 
 Consequently, the reported numbers should be interpreted as reproducible implementation data rather than as a~universal claim about static-analysis performance.
 
 A~full compatibility benchmark was executed over 360 regression test files, using one iteration and a~30-second timeout per file.
-The end-to-end wall-clock time remained effectively unchanged: the legacy path completed in 5~minutes 6.817~seconds, while the new path completed in 5~minutes 7.077~seconds.
-The absolute difference was only 260~milliseconds.
+The end-to-end wall-clock time remained effectively unchanged: the legacy path completed in 306.8~s, while the new path completed in 307.1~s.
+The absolute difference was only 0.3~s.
 Both suites also reported the exact same non-zero runs, so the benchmark did not reveal any additional instability in the modernized compatibility path.
 
-To isolate the framework cost more clearly, the same benchmark was also executed in \texttt{dry-run} mode, where Predator itself is skipped and only the front-end path is measured.
-In this configuration, the legacy path completed in 7.293~seconds, while the new path required 10.664~seconds, that is approximately 46\% more wall-clock time, with the same amount of non-zero runs in both suites.
-Unlike the historical plugin, which streams GCC data directly into the listener interface, the modernized implementation still constructs the full persistent \texttt{CodeModel} even when no analyzer is executed.
-Across the dry-run benchmark, the new plugin processed 4,521~functions, 34,884~basic blocks, 63,455~instructions, 55,567~variables, and 19,002~types.
-Its internal statistics attributed 814.840~milliseconds to \texttt{gimple\_to\_codemodel}, together with 13.386~milliseconds in plugin initialization and 4.981~milliseconds in finish processing.
+To isolate the framework cost more clearly, the same benchmark was also executed in \texttt{dry-run} mode, where Predator itself is skipped, and only the front-end path is measured.
+In this configuration, the legacy path completed in 7.3~s, while the new path required 10.7~s, that is approximately 46\% more wall-clock time, with the same amount of non-zero runs in both suites.
+Unlike the historical plugin, which streams GCC data directly into the listener interface~\cite{CodeListener2012}, the modernized implementation still constructs the full persistent \texttt{CodeModel} even when no analyzer is executed.
+Across the dry-run benchmark, the new plugin processed 4\,521~functions, 34\,884~basic blocks, 63\,455~instructions, 55\,567~variables, and 19\,002~types.
+Its internal statistics attributed 815~ms to \texttt{gimple\_to\_codemodel}, together with 13~ms in plugin initialization and 5~ms in finish processing.
 The remaining gap between these internal measurements and the total wall-clock slowdown is consistent with fixed process-level costs that are outside the current plugin-internal timers, such as GCC startup, plugin loading, and other compiler-side overheads.
 For this reason, the dry-run configuration also provides a~natural starting point for future memory-profiling work, because it isolates the cost of materializing the persistent representation from Predator's own verification kernel.
 
@@ -100,7 +100,7 @@ In the new architecture, however, the execution flow performs the work twice: th
 Consequently, the baseline structural processing time for legacy tools is inherently higher in the new system.
 This overhead is specific to the compatibility path and should not be generalized to native analyzers that consume the \texttt{CodeModel} directly.
 Internal statistics measured by the new plugin show that this extra reconstruction step is real, but small relative to Predator's own work.
-Across the 354 benchmark runs that reached the final statistics-reporting point, \texttt{gimple\_to\_codemodel} accounted for 3.389~seconds in total and \texttt{predator\_adapter:serialize} for 1.505~seconds, whereas \texttt{predator\_adapter:analyze} consumed 285.110~seconds.
+Across the 354 benchmark runs that reached the final statistics-reporting point, \texttt{gimple\_to\_codemodel} accounted for 3.4~s in total and \texttt{predator\_adapter:serialize} for 1.5~s, whereas \texttt{predator\_adapter:analyze} consumed 285~s.
 In other words, the full compatibility benchmark is dominated by Predator's legacy analysis kernel after the callback stream has been reconstructed, not by the framework's own structural translation stages.
 
 \subsection*{Algorithmic Efficiency (The Elimination of Eager Pre-Analyses)}\label{sec:algorithmic-efficiency}
@@ -115,10 +115,10 @@ For a~fair quantitative comparison, this shift still needs to be interpreted sep
 
 Ultimately, the modernized infrastructure introduces a~clear trade-off.
 The legacy compatibility path pays for an additional reconstruction step, while the native path operates directly on the \texttt{CodeModel} and requests derived analyses only when needed.
-The benchmark results therefore show a~split picture.
+The benchmark results, therefore, show a~split picture.
 In the full Predator compatibility benchmark, the modernized path achieves practical end-to-end parity on the executed regression test files because the analyzer's own verification kernel dominates the total runtime.
 In the \texttt{dry-run} benchmark, however, the new plugin introduces a~clearly measurable front-end overhead because it builds and owns a~persistent whole-program representation instead of streaming callbacks directly.
 At the same time, the framework now makes this compatibility overhead explicit, removes mandatory framework-side pre-processing from the native path, and preserves correct behavior across the executed regression test files and the tested GCC versions.
-A~more rigorous future study could extend this work with dedicated memory profiling, and separate benchmarks for the native and offline workflows.
+A~more rigorous future study could extend this work with dedicated memory profiling and separate benchmarks for the native and offline workflows.
 
 \end{document}

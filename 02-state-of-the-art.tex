@@ -8,17 +8,17 @@ This chapter provides a~detailed account of the existing Code Listener infrastru
 Understanding the design decisions and limitations of the current implementation is necessary background for the design choices made in this thesis.
 
 To provide this context, the chapter first introduces the Code Listener infrastructure and compares it to similar projects within the broader static analysis ecosystem in Section~\ref{sec:cl-infrastructure} on page~\pageref{sec:cl-infrastructure}.
-It then details the underlying GCC compiler architecture and its GIMPLE intermediate representation, from which the program semantics are initially extracted in Section~\ref{sec:gcc-gimple} on page~\pageref{sec:gcc-gimple}.
-Following this, the internal architecture of the Code Listener and the importance of data structure visualization are examined in Section~\ref{sec:cl-architecture} on page~\pageref{sec:cl-architecture}.
+It then details the underlying GCC compiler architecture~\cite{GCCInternals} and its GIMPLE intermediate representation, from which the program semantics are initially extracted in Section~\ref{sec:gcc-gimple} on page~\pageref{sec:gcc-gimple}.
+Following this, the internal architecture of the Code Listener is examined in Section~\ref{sec:cl-architecture} on page~\pageref{sec:cl-architecture}, and the role of data structure visualization in static analysis infrastructure is discussed in Section~\ref{sec:visualization} on page~\pageref{sec:visualization}.
 Finally, the chapter concludes with Section~\ref{sec:limitations} on page~\pageref{sec:limitations} by identifying the critical limitations of the legacy implementation, directly motivating the architectural modernization proposed in the subsequent chapter.
 
 \section{The Code Listener Infrastructure}\label{sec:cl-infrastructure}
 
 The Code Listener (CL) infrastructure is an open-source middleware designed to simplify the construction of static analysis tools for C~\cite{CodeListener2012} and, by extension, C++~\cite{CppExtension2014} programs.
 It was developed by the VeriFIT research group~\cite{VeriFIT} at Brno University of Technology mainly in the years 2009--2015, with some contributors continuing work on it until the present\footnote{\url{https://github.com/kdudka/predator/graphs/contributors}}.
-Its primary goal is to wrap the complex and often undocumented interfaces of existing code parsers to provide a~unified, well-documented, and object-oriented Application Programming Interface (API) for static analysis tool developers~\cite{CodeListener2012}.
+Its primary goal is to wrap the complex and often undocumented interfaces of existing code parsers to provide a~unified, well-documented, and object-oriented Application Programming Interface (API) for static analysis tool developers.
 By transforming the native internal representations of compilers into its own simplified format, the Code Listener API exposed to static analyzers becomes completely independent of the underlying parser.
-This abstraction layer allows the same analysis tool to run across different compilers without requiring modifications to the analyzer's source code~\cite{CodeListener2012}.
+This abstraction layer allows the same analysis tool to run across different compilers without requiring modifications to the analyzer's source code.
 
 The architecture of the original Code Listener is highly modular, effectively acting as a~bridge between the compiler's internal representations and the static analysis tools, as illustrated in Figure~\ref{fig:old-architecture} on page~\pageref{fig:old-architecture}, where data flows from the code parser interface through optional listeners and through mandatory filters into the persistent code storage and finally to the analyzers, and is composed of several key components:
 \begin{itemize}
@@ -56,35 +56,35 @@ This ensures that the user does not need to manually preprocess source code or m
 To contextualize the architectural choices of the Code Listener infrastructure, it is valuable to compare it against peer projects in the static analysis domain.
 
 The primary peer to Code Listener is the Frama-C platform~\cite{FramaC2015}, an extensible, open-source framework dedicated to the static analysis of C source code.
-Much like Code Listener, Frama-C isolates its analysis plug-ins from the raw compiler to provide a~unified Application Programming Interface.
-It achieves this by using a~modified version of the CIL (C Intermediate Language) front-end, which parses ISO C99 programs into a~normalized Abstract Syntax Tree (AST).
-Frama-C utilizes a~highly collaborative architecture where various plug-ins, such as those based on abstract interpretation or deductive verification, share this AST and communicate via ACSL (ANSI/ISO C Specification Language) annotations~\cite{ACSL}.
+Much like Code Listener, Frama-C isolates its analysis plugins from the raw compiler to provide a~unified Application Programming Interface.
+It achieves this by using a~modified version of the CIL (C Intermediate Language) front-end~\cite{CIL}, which parses ISO C99 programs into a~normalized Abstract Syntax Tree (AST).
+Frama-C utilizes a~highly collaborative architecture where various plugins, such as those based on abstract interpretation or deductive verification, share this AST and communicate via ACSL (ANSI/ISO C Specification Language) annotations~\cite{ACSL}.
 While Frama-C operates primarily at the AST level, Code Listener translates compiler internals into a~reduced, instruction-based control flow graph.
-The key advantage of Code Listener's approach is that it allows building of analyzers capable of handling everything industrial compilers are able to compile~\cite{CodeListener2012}, whereas Frama-C is limited to the subset of C that can be represented in its AST and supported by the CIL front-end~\cite{FramaC2015}.
+The key advantage of Code Listener's approach is that it allows building of analyzers capable of handling everything industrial compilers are able to compile~\cite{CodeListener2012}, whereas Frama-C is limited to the subset of C that can be represented in its AST and supported by the CIL front-end.
 
-Other notable comparisons can be drawn from the LLVM compiler infrastructure.
+Other notable comparisons can be drawn from the LLVM compiler infrastructure~\cite{LLVM}.
 The Clang Static Analyzer~\cite{ClangStaticAnalyzer}, built on top of the Clang/LLVM architecture, provides an extensible framework for checking C and C++ code, though historically its scope has been more limited to compilation and AST-level linting than Frama-C's exhaustive verification~\cite{FramaC2015}.
 However, the LLVM core provides a~highly optimized, typed, Static Single Assignment (SSA) intermediate representation.
-Notably, modern LLVM utilizes an \texttt{AnalysisManager} approach that elegantly solves the \uv{God Object} anti-pattern observed in the legacy Code Listener, which is described in Section~\ref{sub:ir-pollution} on page~\pageref{sub:ir-pollution}.
+Notably, modern LLVM utilizes an \texttt{AnalysisManager} approach that elegantly solves the \uv{Large Class} anti-pattern~\cite{Refactoring} observed in the legacy Code Listener, which is described in Section~\ref{sub:ir-pollution} on page~\pageref{sub:ir-pollution}.
 Instead of polluting the core Intermediate Representation (IR) with analysis results, LLVM's \texttt{AnalysisManager} computes results lazily and stores them externally, keyed by the IR node identity~\cite{LLVMCompilationFramework}.
 This clean separation of concerns heavily inspires the modernized architecture proposed in this thesis.
 
-Outside the C and C++ domain, the Soot framework provides a~highly successful, conceptually similar infrastructure for the static analysis of Java programs.
+Outside the C and C++ domain, the Soot framework~\cite{SootFramework2011} provides a~highly successful, conceptually similar infrastructure for the static analysis of Java programs.
 Much like Code Listener acts as an abstraction layer over native compiler structures, Soot addresses the difficulty of directly analyzing stack-based Java Virtual Machine (JVM) bytecode by transforming it into a~simplified, typed three-address intermediate representation known as Jimple.
-By exposing local data flow along a~Control Flow Graph (CFG), Soot isolates researchers from the complexities of the underlying bytecode, paralleling Code Listener's decoupling of analyzers from GCC~\cite{SootFramework2011}.
+By exposing local data flow along a~Control Flow Graph (CFG), Soot isolates researchers from the complexities of the underlying bytecode, paralleling Code Listener's decoupling of analyzers from GCC.
 
 \section{The GCC Architecture and GIMPLE Representation}\label{sec:gcc-gimple}
 
-To understand how the Code Listener extracts program semantics, it is essential to examine the internal architecture of the GNU Compiler Collection (GCC).
-GCC operates as a~sequential pipeline divided into three primary blocks: the front end, the middle end, and the back end, and uses three main intermediate languages to represent a~program during compilation, specifically GENERIC, GIMPLE, and RTL~\cite{GCCInternals}.
+To understand how the Code Listener extracts program semantics, it is essential to examine the internal architecture of the GNU Compiler Collection (GCC)~\cite{GCCInternals}.
+GCC operates as a~sequential pipeline divided into three primary blocks: the front end, the middle end, and the back end, and uses three main intermediate languages to represent a~program during compilation, specifically GENERIC, GIMPLE, and RTL.
 
 The front end is responsible for the lexical analysis and parsing of a~specific programming language.
-It generates GENERIC, a~common, language-independent representation that can represent programs written in all languages supported by GCC.\@
-GENERIC serves as the standardized interface between the parser and the optimizer~\cite{GCCInternals}.
+It generates GENERIC~\cite{GCCInternals}, a~common, language-independent representation that can represent programs written in all languages supported by GCC.\@
+GENERIC serves as the standardized interface between the parser and the optimizer.
 
-The middle end optimizes the program using the GIMPLE representation.
+The middle end optimizes the program using the GIMPLE representation~\cite{GCCInternals}.
 The compiler pass responsible for converting GENERIC into GIMPLE is called the \emph{gimplifier}.
-At this stage, GCC also supports loadable modules called plugins, which are invoked at pre-determined locations in the compilation process to provide extra features to the compiler~\cite{GCCInternals}.
+At this stage, GCC also supports loadable modules called plugins, which are invoked at predetermined locations in the compilation process to provide extra features to the compiler.
 The Code Listener infrastructure utilizes this plugin API, registering callbacks for specific events to intercept the compilation process and access the intermediate code without modifying the compiler itself~\cite{CodeListener2012}.
 
 Finally, the back end uses RTL (Register Transfer Language) to perform architecture-dependent optimizations and generate the assembly code for the specific target hardware~\cite{GCCInternals}.
@@ -112,7 +112,7 @@ To decouple static analysis tools from the GCC compiler, the Code Listener adapt
 In this representation, the execution structure of each parsed function is modeled using a~Control Flow Graph (CFG)~\cite{CodeListener2012}.
 Figure~\ref{fig:cfg} on page~\pageref{fig:cfg} shows this organization: each basic block contains a~sequence of non-terminal instructions and ends with exactly one terminal instruction that determines the outgoing CFG edges.
 
-A~Control Flow Graph is a~directed mathematical graph where the vertices represent basic blocks, and the edges represent the possible transfers of control flow during program execution~\cite{CodeListener2012}.
+A~Control Flow Graph is a~directed mathematical graph where the vertices represent basic blocks, and the edges represent the possible transfers of control flow during program execution.
 A~basic block is defined as a~straight-line sequence of code with exactly one entry point and one exit point.
 Once execution enters a~basic block, all instructions within it are executed sequentially, without branching or halting, until the end of the block is reached.
 
@@ -120,9 +120,9 @@ To construct these blocks, the Code Listener API restricts its intermediate inst
 
 \begin{itemize}
   \item \textit{Non-terminal instructions} which form the body of a~basic block and cannot be used to exit it~\cite{CodeListener2012}.
-    The set is highly reduced, consisting only of unary operations (\texttt{UNOP}), binary operations (\texttt{BINOP}), and function calls (\texttt{CALL})~\cite{CodeListener2012}.
+    The set is highly reduced, consisting only of unary operations (\texttt{UNOP}), binary operations (\texttt{BINOP}), and function calls (\texttt{CALL}).
   \item \textit{Terminal instructions} are strictly located at the very end of a~basic block and are responsible for determining the outgoing edges of the CFG~\cite{CodeListener2012}.
-    This group includes unconditional jumps (\texttt{JMP}), conditional jumps (\texttt{COND}), switch statements (\texttt{SWITCH}), function returns (\texttt{RET}), and program aborts (\texttt{ABORT})~\cite{CodeListener2012}.
+    This group includes unconditional jumps (\texttt{JMP}), conditional jumps (\texttt{COND}), switch statements (\texttt{SWITCH}), function returns (\texttt{RET}), and program aborts (\texttt{ABORT}).
 \end{itemize}
 
 \begin{figure}[H]
@@ -133,35 +133,53 @@ To construct these blocks, the Code Listener API restricts its intermediate inst
 \end{figure}
 
 Instructions manipulate data through operands, represented by the \texttt{cl\_operand} structure.
-An operand must refer either to a~variable, such as a~local or global variable, or a~constant, such as a~numeric literal, a~string, or a~function definition~\cite{CodeListener2012}.
-To alter the semantic meaning of an operand, for instance, to dereference a~pointer, access an array element, or read a~specific field within a~composite structure, Code Listener uses accessors (\texttt{cl\_accessor})~\cite{CodeListener2012}.
+An operand must refer either to a~variable, such as a~local or global variable, or a~constant, such as a~numeric literal, a~string, or a~function definition.
+To alter the semantic meaning of an operand, for instance, to dereference a~pointer, access an array element, or read a~specific field within a~composite structure, Code Listener uses accessors (\texttt{cl\_accessor}).
 To guarantee simplicity for the analysis tools, Code Listener enforces a~strict rule: the chaining of multiple dereferences is not allowed, and whenever a~multiple dereference appears in the original C source code, the adapter automatically breaks it down into a~sequence of separate instructions, ensuring each operand contains at most one dereference~\cite{CodeListener2012}.
 
 Furthermore, the C programming language is statically typed, and Code Listener preserves all type information known at compile-time.
-Every operand and accessor is explicitly associated with a~type (\texttt{cl\_type}), and composite types are defined recursively based on their constituent elements~\cite{CodeListener2012}.
+Every operand and accessor is explicitly associated with a~type (\texttt{cl\_type}), and composite types are defined recursively based on their constituent elements.
 Because variable names in C source code are often ambiguous due to lexical scoping, Code Listener assigns a~globally unique integer identifier (\texttt{uid}) to every variable and function~\cite{CodeListener2012}.
 
 Ultimately, the incoming stream of instructions, operands, and types is aggregated to build a~persistent, serialized object model known as the Code Storage~\cite{CodeListener2012}.
 This C++ API provides the static analyzers with look-up databases for types (\texttt{TypeDb}), variables (\texttt{VarDb}), and functions (\texttt{FncDb}), effectively delivering a~complete, parser-independent representation of the program ready for formal verification.
 
-\subsection*{Data Structure Visualization Concepts}\label{sub:data-structures}
+\section{Data Structure Visualization}\label{sec:visualization}
 
 Static analysis tools extract and generate massive amounts of complex semantic data.
-To ensure that the Code Listener correctly translates the compiler's internal representation and to allow users to interpret analysis results, robust data-structure visualization is required.
+To ensure that the Code Listener correctly translates the compiler's internal representation and to allow users to interpret analysis results, robust data structure visualization is an important part of the infrastructure.
+The legacy Code Listener provides dedicated listener components, specifically \texttt{cl\_dotgen} for control flow graphs and \texttt{cl\_typedot} for type hierarchies~\cite{CodeListener2012}, which serialize extracted data into the DOT graph description language~\cite{Graphviz}.
+These components are active only when explicitly requested via compiler flags at invocation time and operate as ordinary listeners within the standard pipeline.
 
-\subsubsection*{Program Graph Visualization}\label{sub:program-graph}
+\subsection*{Program Graph Visualization}\label{sub:program-graph}
 
 The execution structure of a~program is inherently non-linear and is best modeled mathematically as a~directed graph.
-Consequently, visualizing the program's Control Flow Graph (CFG) and Call Graph is crucial for inspecting what the infrastructure has extracted.
-By outputting these structures into standard graph description languages, such as the DOT format, developers can generate visual plots of the basic blocks, terminal instructions, and branching paths~\cite{CodeListener2012}.
-This provides immediate visual confirmation that the adapter has successfully mapped the compiler's intermediate code without losing structural integrity.
+Visualizing the Control Flow Graph (CFG) and the Call Graph is therefore crucial for verifying the correctness of what the infrastructure has extracted.
 
-\subsubsection*{Heap Shape Visualization}\label{sub:heap-shape}
+A~CFG visualization produced by \texttt{cl\_dotgen} represents each function as a~separate graph~\cite{CodeListener2012}.
+Nodes correspond to basic blocks and display the sequence of instructions they contain, while directed edges encode the possible transfers of control flow, including both taken and not-taken branches of conditional jumps.
+This makes it immediately apparent whether the adapter has correctly identified all branching paths, preserved the ordering of instructions within blocks, and introduced synthetic entry and exit pseudo-blocks as expected.
+
+Alongside the per-function CFG, the infrastructure can also emit a~Call Graph that depicts the interprocedural call relationships across the entire translation unit~\cite{CodeListener2012}.
+Nodes in the Call Graph represent individual functions, and directed edges indicate caller-to-callee relationships.
+This graph is especially useful for quickly identifying recursive functions, verifying that indirect call sites are resolved correctly, and understanding the overall call topology of the analyzed program.
+
+Both graph types are emitted in the standard DOT format~\cite{Graphviz} and can be rendered into multiple formats, such as PDF or PNG, using standard Graphviz tools.
+This provides immediate visual confirmation that the adapter has successfully mapped the compiler's intermediate code without losing structural integrity and serves as an indispensable debugging aid when extending the infrastructure to handle new language constructs.
+
+\subsection*{Heap Shape Visualization}\label{sub:heap-shape}
 
 Beyond control flow, visualization is particularly vital for the specific domain of the Predator shape analyzer.
 Predator verifies programs that manipulate dynamically linked data structures by using an abstract interpretation domain based on Symbolic Memory Graphs (SMGs)~\cite{PredatorSuite2016}.
-Because tracking infinite sets of heap configurations, such as cyclic doubly-linked lists, is highly complex, Predator can produce error traces in a~graphical format~\cite{PredatorSuite2016}.
-Visualizing these heap shapes enables analysts to graphically track memory leaks, invalid pointer dereferences, and the layout of the memory, bridging the gap between abstract mathematical models and human comprehension.
+
+An SMG is a~labeled directed graph that compactly represents a~potentially infinite set of concrete heap configurations.
+Its nodes model individual heap objects, stack-allocated variables, and regions of uninitialized or unknown memory, while its edges encode pointer relationships and field offsets within composite types.
+Abstraction is achieved through list segment predicates that summarize unbounded sequences of identical heap cells, allowing the analyzer to represent, for example, an entire singly-linked list of arbitrary length as a~single summarizing edge.
+
+Because tracking these abstract configurations across program statements is highly complex, Predator can produce error traces in a~graphical format~\cite{PredatorSuite2016}.
+At each step of the inaccurate execution path, the current SMG is serialized into a~DOT file, capturing the state of all live heap objects, their sizes, the pointer edges connecting them, and any detected invalid accesses or leaked regions.
+Visualizing these heap shapes enables analysts to graphically track memory leaks, invalid pointer dereferences, and the full layout of the heap, bridging the gap between abstract mathematical models and human comprehension.
+This visualization capability is also an important quality signal for the infrastructure itself: if the callback stream delivered to Predator is malformed, the resulting SMG snapshots will exhibit structural anomalies that are far easier to diagnose visually than by inspecting raw diagnostic output.
 
 \section{Limitations of the Legacy Architecture}\label{sec:limitations}
 
@@ -180,7 +198,7 @@ The standard entry point for an analyzer within the legacy framework is the \tex
 Before this interface hands control over to the implemented analyzer, it unconditionally executes four mandatory pre-analyses: building the call graph, finding loop-closing edges, performing a~points-to analysis, and resolving variable liveness.
 Because there is no lazy evaluation or feature-flag mechanism, every analyzer is forced to pay the full computational cost of these operations, even for a~trivial tool, such as a~smoke test, that requires none of the resulting data.
 
-\subsection*{IR Pollution and the God Object Anti-Pattern}\label{sub:ir-pollution}
+\subsection*{IR Pollution and the Large Class Anti-Pattern}\label{sub:ir-pollution}
 
 The root cause of the mandatory pre-analyses is the design of the Code Storage data structures.
 The legacy architecture violates the Single Responsibility Principle by embedding the results of pre-analyses directly as member fields within the core Intermediate Representation (IR) nodes, including the \texttt{Insn}, \texttt{Fnc}, and \texttt{Storage} structures.
