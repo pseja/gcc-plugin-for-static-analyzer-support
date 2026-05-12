@@ -43,6 +43,9 @@
 # build directory
 build/
 
+# legacy in-source Predator cl build directory (now built under build/)
+analyzers/predator/cl_build/
+
 # cache directory
 .cache/
 

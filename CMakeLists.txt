@@ -448,7 +448,7 @@ if(WITH_PREDATOR)
   file(WRITE "${PREDATOR_SRC}/sl/version.h"
        "#define SL_GIT_SHA1 \"${PREDATOR_GIT_SHA1}\"\n")
 
-  set(PREDATOR_CL_BUILD "${PREDATOR_SRC}/cl_build")
+  set(PREDATOR_CL_BUILD "${CMAKE_BINARY_DIR}/predator_cl_build")
 
   include(ExternalProject)
   ExternalProject_Add(
@@ -467,6 +467,8 @@ if(WITH_PREDATOR)
                   "${PATCH_FILE}" || true
     CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release -DGCC_HOST=${GCC_HOST_BIN}
                -DCL_GCC_PLUGIN=$<TARGET_FILE:cl_gcc>
+               -DCL_LIB=${PREDATOR_CL_BUILD}/libcl.a
+               -DCLGCC_LIB=${PREDATOR_CL_BUILD}/libclgcc.a
     BUILD_COMMAND ${CMAKE_COMMAND} --build . --target sl_analyzer
     INSTALL_COMMAND ""
     DEPENDS cl_gcc predator_cl)
