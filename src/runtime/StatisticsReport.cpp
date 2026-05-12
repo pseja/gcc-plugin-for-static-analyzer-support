@@ -194,7 +194,7 @@ void StatisticsReport::print(DiagnosticReporter &reporter) const
         timing_rows.push_back(formatTimingRow(name, s));
     }
 
-    printTable(reporter, no_loc, "Timing Summary", {"Stage", "Calls", "Total (ms)", "Mean (ms)"},
+    printTable(reporter, no_loc, "Timing Summary", {"Stage Name", "Calls", "Total (ms)", "Mean (ms)"},
                {true, true, true, true}, timing_rows, {true, false, false, false});
 
     bool have_counters = false;
@@ -224,7 +224,7 @@ void StatisticsReport::print(DiagnosticReporter &reporter) const
         counter_rows.push_back(formatCounterRow(name, c));
     }
 
-    printTable(reporter, no_loc, "Counter Summary", {"Counter", "Samples", "Total", "Mean"}, {true, true, true, true},
+    printTable(reporter, no_loc, "Counter Summary", {"Counter Name", "Samples", "Total", "Mean"}, {true, true, true, true},
                counter_rows, {true, false, false, false});
 }
 

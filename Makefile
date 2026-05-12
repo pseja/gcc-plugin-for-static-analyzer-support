@@ -50,11 +50,17 @@ DIR ?=
 # DOT verbosity for dot-multi (CLEAN | COMPACT | FULL)
 VERBOSITY ?= CLEAN
 
-# MAKEFLAGS += --no-builtin-rules
+# benchmark overrides (may be set on the command line)
+BENCH_ITERATIONS ?= 1
+BENCH_FILTER ?= *.c
+BENCH_TIMEOUT ?= 30
+BENCH_CSV ?=
+BENCH_DRY_RUN ?= 0
+
 .PHONY: all build configure callgraph json recursion predator \
 	json-multi merge dot-multi \
 	test-predator test-cl-adapter test-codemodel test-cl-analyze test \
-	check-deps clean clean-docs help doxygen
+	benchmark check-deps clean clean-docs help doxygen
 
 # silently check that FILE was provided before an analyzer target runs
 define require_file
@@ -206,6 +212,21 @@ endif
 
 test: $(TEST_TARGETS)
 
+## compare old CL (libsl.so) vs new CL (libcl_gcc.so + libsl_analyzer.so)
+benchmark:
+	@if [ "$(WITH_PREDATOR)" != "ON" ]; then \
+		echo "Benchmark requires the Predator build (WITH_PREDATOR=ON)."; \
+		echo "Reconfigure with 'make build WITH_PREDATOR=ON' first."; \
+		exit 1; \
+	fi
+	cmake --build $(PRED_TESTS) --target sl -j$(JOBS)
+	bash ./build-aux/benchmark.sh \
+		--iterations $(BENCH_ITERATIONS) \
+		--filter '$(BENCH_FILTER)' \
+		--timeout $(BENCH_TIMEOUT) \
+		$(if $(filter 1,$(BENCH_DRY_RUN)),--dry-run,) \
+		$(if $(BENCH_CSV),--csv $(BENCH_CSV),)
+
 # cleanup
 
 ## remove the build directory
@@ -238,10 +259,10 @@ help:
 	@echo "     make clean-predator - reset the Predator submodule to a clean state"
 	@echo ""
 	@echo " Configure overrides:"
-	@echo "     TARGET_GCC=/path/to/gcc            - force a specific GCC executable"
-	@echo "     GCC_PLUGIN_INCLUDE_DIR=/path       - use a manual gcc-plugin.h tree"
-	@echo "     WITH_PREDATOR=OFF                  - don't run Predator and its tests"
-	@echo "     CMAKE_ARGS='...'                   - pass additional options to CMake"
+	@echo "     TARGET_GCC=/path/to/gcc      - force a specific GCC executable"
+	@echo "     GCC_PLUGIN_INCLUDE_DIR=/path - use a manual gcc-plugin.h tree"
+	@echo "     WITH_PREDATOR=OFF            - don't run Predator and its tests"
+	@echo "     CMAKE_ARGS='...'             - pass additional options to CMake"
 	@echo ""
 	@echo " Analyzers (single translation unit):"
 	@echo "     make callgraph  FILE=foo.c [ARGS=callgraph.dot]     - emit a Graphviz call-graph DOT file"
@@ -261,4 +282,13 @@ help:
 	@echo "     make test-cl-analyze - run cl_analyze pipeline tests"
 	@echo "     make test            - run all of the above"
 	@echo ""
-	@echo "     make doxygen         - generate API documentation with Doxygen"
+	@echo " Documentation:"
+	@echo "     make doxygen - generate API documentation with Doxygen"
+	@echo ""
+	@echo " Benchmark:"
+	@echo "     make benchmark                          - compare old CL vs new CL on predator-regre suite"
+	@echo "     make benchmark BENCH_ITERATIONS=1       - run 1 repetition for stable measurements"
+	@echo "     make benchmark BENCH_FILTER='test-00*.c' - restrict the test set to files matching the given pattern"
+	@echo "     make benchmark BENCH_DRY_RUN=1          - skip Predator analysis; measure CL front-end overhead only"
+	@echo "     make benchmark BENCH_CSV=/tmp/bench.csv - save per-file timings and counters to CSV"
+	@echo "     make benchmark BENCH_TIMEOUT=30         - increase per-file timeout (seconds)"
