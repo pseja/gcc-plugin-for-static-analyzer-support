@@ -1,7 +1,7 @@
 # Thesis
 
 **Author:** Lukáš Pšeja  
-**Supervisor:** Dr. Ing. Petr Peringer  
+**Supervisor:** Dr. Ing. Petr Peringer
 
 ## Requirements
 
@@ -26,7 +26,8 @@ cd thesis
 make
 ```
 
-This produces `xpsejal00-gcc-plugin.pdf` in the current directory, which is the submitted version of the text.
+This produces `xpsejal00-gcc-plugin.pdf` in the current directory, which is the submitted version of the text. 
+> The officially published PDF is also available [here](https://www.vut.cz/www_base/zav_prace_soubor_verejne.php?file_id=293456).
 
 ### Clean build artifacts
 
