@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0" version="29.3.6">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0">
   <diagram name="Page-1" id="S6OmCUEmMxhwl08jMdMk">
-    <mxGraphModel dx="1218" dy="806" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1177" dy="858" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -54,7 +54,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="otm4VXCvAfrzWUoPNE-S-19" edge="1" parent="1" source="otm4VXCvAfrzWUoPNE-S-5" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#888888;strokeWidth=5;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#888888;labelBackgroundColor=default;endArrow=classic;" target="otm4VXCvAfrzWUoPNE-S-16">
+        <mxCell id="otm4VXCvAfrzWUoPNE-S-19" edge="1" parent="1" source="otm4VXCvAfrzWUoPNE-S-5" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#000000,#FFFFFF);strokeWidth=5;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#888888;labelBackgroundColor=default;endArrow=classic;" target="otm4VXCvAfrzWUoPNE-S-16">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="otm4VXCvAfrzWUoPNE-S-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontSize=20;textDirection=vertical-lr;strokeWidth=3;" value="Code Parser Interface" vertex="1">
@@ -82,10 +82,10 @@
         <mxCell id="otm4VXCvAfrzWUoPNE-S-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontSize=22;textDirection=vertical-lr;strokeWidth=3;" value="&lt;font&gt;Code Storage&lt;/font&gt;" vertex="1">
           <mxGeometry height="160" width="50" x="520" y="200" as="geometry" />
         </mxCell>
-        <mxCell id="otm4VXCvAfrzWUoPNE-S-22" edge="1" parent="1" source="otm4VXCvAfrzWUoPNE-S-16" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#888888;strokeWidth=5;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#888888;labelBackgroundColor=default;endArrow=classic;" target="otm4VXCvAfrzWUoPNE-S-21">
+        <mxCell id="otm4VXCvAfrzWUoPNE-S-22" edge="1" parent="1" source="otm4VXCvAfrzWUoPNE-S-16" style="edgeStyle=orthogonalEdgeStyle;shape=connector;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#000000,#FFFFFF);strokeWidth=5;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#888888;labelBackgroundColor=default;endArrow=classic;" target="otm4VXCvAfrzWUoPNE-S-21">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="otm4VXCvAfrzWUoPNE-S-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontColor=#888888;strokeColor=#888888;strokeWidth=3;" value="..." vertex="1">
+        <mxCell id="otm4VXCvAfrzWUoPNE-S-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontColor=light-dark(#000000,#FFFFFF);strokeColor=light-dark(#000000,#FFFFFF);strokeWidth=3;" value="..." vertex="1">
           <mxGeometry height="60" width="60" x="300" y="280" as="geometry" />
         </mxCell>
         <mxCell id="K6fZ3zG5ofALGaZFlhua-1" edge="1" parent="1" source="otm4VXCvAfrzWUoPNE-S-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=5;" target="otm4VXCvAfrzWUoPNE-S-5">
@@ -106,7 +106,7 @@
         <mxCell id="otm4VXCvAfrzWUoPNE-S-20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;strokeWidth=3;fontSize=12;" value="Predator" vertex="1">
           <mxGeometry height="60" width="60" x="630" y="250" as="geometry" />
         </mxCell>
-        <mxCell id="otm4VXCvAfrzWUoPNE-S-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontColor=#888888;strokeColor=#888888;strokeWidth=3;" value="CFG Plotter" vertex="1">
+        <mxCell id="otm4VXCvAfrzWUoPNE-S-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=1;fontColor=light-dark(#000000,#FFFFFF);strokeColor=light-dark(#000000,#FFFFFF);strokeWidth=3;" value="CFG Plotter" vertex="1">
           <mxGeometry height="60" width="60" x="410" y="280" as="geometry" />
         </mxCell>
         <mxCell id="otm4VXCvAfrzWUoPNE-S-23" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Helvetica;fontSize=16;fontColor=default;labelBackgroundColor=default;fontStyle=1;strokeWidth=1;" value="Filters" vertex="1">
